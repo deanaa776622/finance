@@ -100,38 +100,6 @@
       height: 260px;
       margin-top: 10px;
     }
-/* 底部導覽列樣式 (無 Icon 純文字版) */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 50px;
-  background-color: #1e293b;
-  border-top: 1px solid #334155;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  z-index: 1000;
-}
-
-.nav-item {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 50%;
-  height: 100%;
-  color: #94a3b8;
-  text-decoration: none;
-  font-size: 0.95rem;
-  transition: color 0.2s ease-in-out;
-}
-
-.nav-item.active {
-  color: #38bdf8;
-  font-weight: bold;
-  border-top: 2px solid #38bdf8; /* 當前頁面上方加細線標示 */
-}
 
 /* 確保頁面底部不被導覽列遮擋 */
 body {
@@ -392,11 +360,8 @@ body {
     calculate();
   };
 </script>
-<!-- 底部導覽列（純文字版） -->
-<nav class="bottom-nav">
-  <a href="index.html" class="nav-item active">儲蓄試算</a>
-  <a href="stock.html" class="nav-item">資產淨值</a>
-</nav>
+<!-- 引入統一管理的導覽列腳本 -->
+<script src="nav.js"></script>
 
 </body>
 </html>
