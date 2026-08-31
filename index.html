@@ -6,6 +6,8 @@
   <title>退休儲蓄目標試算</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- 導入 Chart.js CDN 繪製圖表 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --bg-color: #0f172a;
@@ -41,6 +43,7 @@
       padding: 20px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.3);
       border: 1px solid var(--border-color);
+      margin-bottom: 20px;
     }
     .input-group {
       margin-bottom: 15px;
@@ -91,14 +94,21 @@
       font-size: 0.85rem;
       color: var(--sub-text);
     }
+    .chart-container {
+      position: relative;
+      width: 100%;
+      height: 260px;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
   <h2>退休儲蓄目標試算</h2>
+  
+  <!-- 輸入卡片 -->
   <div class="card">
-    <!-- 新增一欄：預期年生活費 -->
     <div class="input-group">
       <label>預期退休年生活費 (元)</label>
       <input type="text" id="annual_cost" value="1,440,000" oninput="formatAndCalculate(this)">
@@ -106,11 +116,9 @@
 
     <div class="input-group">
       <label>預期年化報酬率 (%) <span style="font-size:0.7rem;">(支援小數後兩位)</span></label>
-      <!-- 修改：支援並格式化小數後兩位 -->
       <input type="number" step="0.01" id="rate" value="7.00" oninput="calculate()" onblur="formatRate(this)">
     </div>
 
-    <!-- 修改：改為公式計算，預設禁用手動輸入 -->
     <div class="input-group">
       <label>未來目標金額 (元) <span style="font-size:0.7rem;">(公式自動計算)</span></label>
       <input type="text" id="fv" value="20,571,429" disabled>
@@ -132,31 +140,36 @@
       <div class="result-detail" id="result-months">-- 個月</div>
     </div>
   </div>
+
+  <!-- 新增：資產成長曲線圖卡片 -->
+  <div class="card">
+    <div class="result-title" style="text-align: left; margin-bottom: 10px;">預估資產累積曲線</div>
+    <div class="chart-container">
+      <canvas id="assetChart"></canvas>
+    </div>
+  </div>
 </div>
 
 <script>
-  // 轉為千分位格式字串 (例如 1000000 -> 1,000,000)
+  let assetChart = null; // 儲存圖表實例
+
   function formatNumber(num) {
     if (num === null || num === undefined || isNaN(num)) return '';
     return Number(Math.round(num)).toLocaleString('en-US');
   }
 
-  // 從千分位字串還原為純數字 (例如 1,000,000 -> 1000000)
   function parseNumber(formattedStr) {
     if (!formattedStr) return 0;
     return parseFloat(formattedStr.toString().replace(/,/g, '')) || 0;
   }
 
-  // 輸入框即時格式化千分位並觸發計算
   function formatAndCalculate(input) {
     let rawValue = parseNumber(input.value);
-    // 限制最大資產數值，避免運算溢位
     if (rawValue > 999999999999999) rawValue = 999999999999999; 
     input.value = rawValue ? rawValue.toLocaleString('en-US') : (input.value === '0' ? '0' : '');
     calculate();
   }
 
-  // 格式化報酬率至小數點後兩位 (當失去焦點時)
   function formatRate(input) {
     let value = parseFloat(input.value);
     if (!isNaN(value)) {
@@ -164,33 +177,26 @@
     }
   }
 
-  // 金融 NPER 計算函式 (算出需要多少期)
   function calculateNPER(rate, pmt, pv, fv) {
     if (rate === 0) return -(pv + fv) / pmt;
-    // 標準公式: log((pmt - fv*r)/(pmt + pv*r)) / log(1+r)
     const num = pmt - fv * rate;
     const den = pmt + pv * rate;
-    if (den === 0 || num / den <= 0) return NaN; // 無法達成
+    if (den === 0 || num / den <= 0) return NaN;
     return Math.log(num / den) / Math.log(1 + rate);
   }
 
   function calculate() {
-    // 1. 讀取輸入
     const annualCost = parseNumber(document.getElementById('annual_cost').value);
-    // 讀取報酬率，確保最高支援到小數後兩位
     let annualRate = (parseFloat(document.getElementById('rate').value) || 0) / 100;
-    annualRate = Math.round(annualRate * 10000) / 10000; // 輔助確保精度
+    annualRate = Math.round(annualRate * 10000) / 10000;
 
-    // 2. 公式計算未來目標金額 (FV = 年生活費 / 年報酬率)
     let fv = 0;
     if (annualRate > 0) {
       fv = annualCost / annualRate;
     } else if (annualCost > 0 && annualRate <= 0) {
-      // 報酬率為0或負，無法透過提領資產維持生計
       fv = Infinity; 
     }
     
-    // 更新 FV 顯示欄位 (帶千分位)
     const fvInput = document.getElementById('fv');
     if (fv === Infinity) {
         fvInput.value = "需正報酬率才能反推";
@@ -198,50 +204,140 @@
         fvInput.value = formatNumber(fv);
     }
 
-    // 3. 讀取其他現金流 (轉為標準財務公式的負號)
-    const pv = -Math.abs(parseNumber(document.getElementById('pv').value));
-    const pmt = -Math.abs(parseNumber(document.getElementById('pmt').value));
+    const pvVal = parseNumber(document.getElementById('pv').value);
+    const pmtVal = parseNumber(document.getElementById('pmt').value);
     const monthlyRate = annualRate / 12;
 
-    // 4. 計算所需月份 (NPER)
+    const pv = -Math.abs(pvVal);
+    const pmt = -Math.abs(pmtVal);
+
     const totalMonths = calculateNPER(monthlyRate, pmt, pv, (fv === Infinity ? 0 : fv));
 
-    // 5. 顯示結果
     const resultYears = document.getElementById('result-years');
     const resultMonths = document.getElementById('result-months');
+
+    let targetYearsNumber = 0;
 
     if (fv === Infinity || fvInput.value === "需正報酬率才能反推") {
         resultYears.innerText = "無法計算";
         resultMonths.innerText = "請設定正的報酬率";
+        updateChart([], [], fv);
+        return;
     } else if (isNaN(totalMonths) || totalMonths <= 0) {
-      // 情況1: 目前資產已大於目標 (totalMonths 為負或0)
       if (Math.abs(pv) >= fv && fv > 0) {
-        resultYears.innerText = "已達成目标！";
+        resultYears.innerText = "已達成目標！";
         resultYears.style.fontSize = "1.8rem";
         resultMonths.innerText = "目前資產已足夠支應退休生活";
+        targetYearsNumber = 0;
       } else {
-        // 情況2: 存入金額與報酬率太低，追不上目標 (Num/Den <= 0)
         resultYears.innerText = "無法達成";
         resultYears.style.fontSize = "2.2rem";
         resultMonths.innerText = "請增加每月存入金額或預期報酬率";
+        updateChart([], [], fv);
+        return;
       }
     } else {
-      // 正常算出時間
       resultYears.style.fontSize = "2.2rem";
       const years = (totalMonths / 12).toFixed(2);
       const months = Math.ceil(totalMonths);
       resultYears.innerText = `${years} 年`;
       resultMonths.innerText = `約 ${months} 個月`;
-      
-      // 自動儲存純數字到手機 LocalStorage (供下次開啟讀取)
+      targetYearsNumber = parseFloat(years);
+
       localStorage.setItem('sav_annual_cost', annualCost);
       localStorage.setItem('sav_rate', (annualRate * 100).toFixed(2));
       localStorage.setItem('sav_pv', Math.abs(pv));
       localStorage.setItem('sav_pmt', Math.abs(pmt));
     }
+
+    // 計算每年預估資產，用於繪製曲線圖
+    generateChartData(pvVal, pmtVal, annualRate, targetYearsNumber, fv);
   }
 
-  // 頁面載入時讀取舊資料並初始化
+  // 逐年模擬資產成長並繪製圖表
+  function generateChartData(initialPv, monthlyPmt, annualRate, yearsTarget, fv) {
+    const labels = [];
+    const assetData = [];
+    
+    // 最多預測至達成年數的 1.2 倍或至少 5 年
+    const maxYears = Math.max(Math.ceil(yearsTarget) + 1, 5);
+    const monthlyRate = annualRate / 12;
+
+    let currentAsset = initialPv;
+
+    for (let yr = 0; yr <= maxYears; yr++) {
+      labels.push(`第 ${yr} 年`);
+      assetData.push(Math.round(currentAsset));
+
+      // 模擬下一年的 12 個月複利及投入
+      for (let m = 0; m < 12; m++) {
+        currentAsset = (currentAsset + monthlyPmt) * (1 + monthlyRate);
+      }
+    }
+
+    updateChart(labels, assetData, fv);
+  }
+
+  // 更新或創建 Chart.js 折線圖
+  function updateChart(labels, data, fvTarget) {
+    const ctx = document.getElementById('assetChart').getContext('2d');
+
+    if (assetChart) {
+      assetChart.destroy(); // 銷毀舊圖表以供重繪
+    }
+
+    if (labels.length === 0) return;
+
+    assetChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '預估總資產 (元)',
+          data: data,
+          borderColor: '#38bdf8',
+          backgroundColor: 'rgba(56, 189, 248, 0.1)',
+          fill: true,
+          tension: 0.3, // 曲線平滑度
+          pointRadius: 3,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return ` 資產: $${formatNumber(context.raw)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: '#334155' },
+            ticks: { color: '#94a3b8', font: { size: 10 } }
+          },
+          y: {
+            grid: { color: '#334155' },
+            ticks: { 
+              color: '#94a3b8',
+              font: { size: 10 },
+              callback: function(value) {
+                if (value >= 100000000) return (value / 100000000).toFixed(1) + '億';
+                if (value >= 10000) return (value / 10000).toFixed(0) + '萬';
+                return value;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
   window.onload = function() {
     if (localStorage.getItem('sav_annual_cost')) {
       document.getElementById('annual_cost').value = formatNumber(localStorage.getItem('sav_annual_cost'));
@@ -255,7 +351,7 @@
     if (localStorage.getItem('sav_pmt')) {
       document.getElementById('pmt').value = formatNumber(localStorage.getItem('sav_pmt'));
     }
-    calculate(); // 初始化計算
+    calculate();
   };
 </script>
 
