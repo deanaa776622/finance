@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>儲蓄試算工具</title>
+  <title>退休儲蓄目標試算</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style>
@@ -14,6 +14,7 @@
       --text-color: #f8fafc;
       --sub-text: #94a3b8;
       --border-color: #334155;
+      --disabled-bg: #0b1120;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -64,6 +65,12 @@
       outline: none;
       border-color: var(--accent-color);
     }
+    input:disabled {
+      background-color: var(--disabled-bg);
+      color: var(--sub-text);
+      cursor: not-allowed;
+      border-style: dashed;
+    }
     .result-box {
       margin-top: 20px;
       padding-top: 15px;
@@ -89,8 +96,26 @@
 <body>
 
 <div class="container">
-  <h2>儲蓄目標試算</h2>
+  <h2>退休儲蓄目標試算</h2>
   <div class="card">
+    <!-- 新增一欄：預期年生活費 -->
+    <div class="input-group">
+      <label>預期退休年生活費 (元)</label>
+      <input type="text" id="annual_cost" value="1,440,000" oninput="formatAndCalculate(this)">
+    </div>
+
+    <div class="input-group">
+      <label>預期年化報酬率 (%) <span style="font-size:0.7rem;">(支援小數後兩位)</span></label>
+      <!-- 修改：支援並格式化小數後兩位 -->
+      <input type="number" step="0.01" id="rate" value="7.00" oninput="calculate()" onblur="formatRate(this)">
+    </div>
+
+    <!-- 修改：改為公式計算，預設禁用手動輸入 -->
+    <div class="input-group">
+      <label>未來目標金額 (元) <span style="font-size:0.7rem;">(公式自動計算)</span></label>
+      <input type="text" id="fv" value="20,571,429" disabled>
+    </div>
+
     <div class="input-group">
       <label>目前持有金額 (元)</label>
       <input type="text" id="pv" value="11,622,880" oninput="formatAndCalculate(this)">
@@ -101,94 +126,136 @@
       <input type="text" id="pmt" value="13,500" oninput="formatAndCalculate(this)">
     </div>
     
-    <div class="input-group">
-      <label>預期年化報酬率 (%)</label>
-      <input type="number" step="0.1" id="rate" value="7.0" oninput="calculate()">
-    </div>
-
-    <div class="input-group">
-      <label>未來目標金額 (元)</label>
-      <input type="text" id="fv" value="20,571,429" oninput="formatAndCalculate(this)">
-    </div>
-
     <div class="result-box">
       <div class="result-title">預計達成目標時間</div>
-      <div class="result-value" id="result-years">7.33 年</div>
-      <div class="result-detail" id="result-months">約 88 個月</div>
+      <div class="result-value" id="result-years">-- 年</div>
+      <div class="result-detail" id="result-months">-- 個月</div>
     </div>
   </div>
 </div>
 
 <script>
   // 轉為千分位格式字串 (例如 1000000 -> 1,000,000)
-  function formatNumber(numStr) {
-    let cleanNum = numStr.toString().replace(/[^0-9]/g, '');
-    if (!cleanNum) return '';
-    return Number(cleanNum).toLocaleString('en-US');
+  function formatNumber(num) {
+    if (num === null || num === undefined || isNaN(num)) return '';
+    return Number(Math.round(num)).toLocaleString('en-US');
   }
 
   // 從千分位字串還原為純數字 (例如 1,000,000 -> 1000000)
   function parseNumber(formattedStr) {
+    if (!formattedStr) return 0;
     return parseFloat(formattedStr.toString().replace(/,/g, '')) || 0;
   }
 
-  // 輸入框即時格式化與計算
+  // 輸入框即時格式化千分位並觸發計算
   function formatAndCalculate(input) {
-    const rawValue = parseNumber(input.value);
-    input.value = rawValue ? rawValue.toLocaleString('en-US') : '';
+    let rawValue = parseNumber(input.value);
+    // 限制最大資產數值，避免運算溢位
+    if (rawValue > 999999999999999) rawValue = 999999999999999; 
+    input.value = rawValue ? rawValue.toLocaleString('en-US') : (input.value === '0' ? '0' : '');
     calculate();
   }
 
-  // 金融 NPER 計算函式
+  // 格式化報酬率至小數點後兩位 (當失去焦點時)
+  function formatRate(input) {
+    let value = parseFloat(input.value);
+    if (!isNaN(value)) {
+      input.value = value.toFixed(2);
+    }
+  }
+
+  // 金融 NPER 計算函式 (算出需要多少期)
   function calculateNPER(rate, pmt, pv, fv) {
     if (rate === 0) return -(pv + fv) / pmt;
+    // 標準公式: log((pmt - fv*r)/(pmt + pv*r)) / log(1+r)
     const num = pmt - fv * rate;
     const den = pmt + pv * rate;
-    if (den === 0 || num / den <= 0) return NaN;
+    if (den === 0 || num / den <= 0) return NaN; // 無法達成
     return Math.log(num / den) / Math.log(1 + rate);
   }
 
   function calculate() {
+    // 1. 讀取輸入
+    const annualCost = parseNumber(document.getElementById('annual_cost').value);
+    // 讀取報酬率，確保最高支援到小數後兩位
+    let annualRate = (parseFloat(document.getElementById('rate').value) || 0) / 100;
+    annualRate = Math.round(annualRate * 10000) / 10000; // 輔助確保精度
+
+    // 2. 公式計算未來目標金額 (FV = 年生活費 / 年報酬率)
+    let fv = 0;
+    if (annualRate > 0) {
+      fv = annualCost / annualRate;
+    } else if (annualCost > 0 && annualRate <= 0) {
+      // 報酬率為0或負，無法透過提領資產維持生計
+      fv = Infinity; 
+    }
+    
+    // 更新 FV 顯示欄位 (帶千分位)
+    const fvInput = document.getElementById('fv');
+    if (fv === Infinity) {
+        fvInput.value = "需正報酬率才能反推";
+    } else {
+        fvInput.value = formatNumber(fv);
+    }
+
+    // 3. 讀取其他現金流 (轉為標準財務公式的負號)
     const pv = -Math.abs(parseNumber(document.getElementById('pv').value));
     const pmt = -Math.abs(parseNumber(document.getElementById('pmt').value));
-    const fv = Math.abs(parseNumber(document.getElementById('fv').value));
-    const annualRate = (parseFloat(document.getElementById('rate').value) || 0) / 100;
     const monthlyRate = annualRate / 12;
 
-    const totalMonths = calculateNPER(monthlyRate, pmt, pv, fv);
+    // 4. 計算所需月份 (NPER)
+    const totalMonths = calculateNPER(monthlyRate, pmt, pv, (fv === Infinity ? 0 : fv));
 
-    if (isNaN(totalMonths) || totalMonths <= 0) {
-      document.getElementById('result-years').innerText = "無法達成";
-      document.getElementById('result-months').innerText = "請檢查目標金額或報酬率設定";
+    // 5. 顯示結果
+    const resultYears = document.getElementById('result-years');
+    const resultMonths = document.getElementById('result-months');
+
+    if (fv === Infinity || fvInput.value === "需正報酬率才能反推") {
+        resultYears.innerText = "無法計算";
+        resultMonths.innerText = "請設定正的報酬率";
+    } else if (isNaN(totalMonths) || totalMonths <= 0) {
+      // 情況1: 目前資產已大於目標 (totalMonths 為負或0)
+      if (Math.abs(pv) >= fv && fv > 0) {
+        resultYears.innerText = "已達成目标！";
+        resultYears.style.fontSize = "1.8rem";
+        resultMonths.innerText = "目前資產已足夠支應退休生活";
+      } else {
+        // 情況2: 存入金額與報酬率太低，追不上目標 (Num/Den <= 0)
+        resultYears.innerText = "無法達成";
+        resultYears.style.fontSize = "2.2rem";
+        resultMonths.innerText = "請增加每月存入金額或預期報酬率";
+      }
     } else {
+      // 正常算出時間
+      resultYears.style.fontSize = "2.2rem";
       const years = (totalMonths / 12).toFixed(2);
       const months = Math.ceil(totalMonths);
-      document.getElementById('result-years').innerText = `${years} 年`;
-      document.getElementById('result-months').innerText = `約 ${months} 個月`;
+      resultYears.innerText = `${years} 年`;
+      resultMonths.innerText = `約 ${months} 個月`;
       
-      // 儲存純數字到 LocalStorage
+      // 自動儲存純數字到手機 LocalStorage (供下次開啟讀取)
+      localStorage.setItem('sav_annual_cost', annualCost);
+      localStorage.setItem('sav_rate', (annualRate * 100).toFixed(2));
       localStorage.setItem('sav_pv', Math.abs(pv));
       localStorage.setItem('sav_pmt', Math.abs(pmt));
-      localStorage.setItem('sav_rate', annualRate * 100);
-      localStorage.setItem('sav_fv', fv);
     }
   }
 
-  // 讀取紀錄與初始化顯示
+  // 頁面載入時讀取舊資料並初始化
   window.onload = function() {
+    if (localStorage.getItem('sav_annual_cost')) {
+      document.getElementById('annual_cost').value = formatNumber(localStorage.getItem('sav_annual_cost'));
+    }
+    if (localStorage.getItem('sav_rate')) {
+      document.getElementById('rate').value = localStorage.getItem('sav_rate');
+    }
     if (localStorage.getItem('sav_pv')) {
       document.getElementById('pv').value = formatNumber(localStorage.getItem('sav_pv'));
     }
     if (localStorage.getItem('sav_pmt')) {
       document.getElementById('pmt').value = formatNumber(localStorage.getItem('sav_pmt'));
     }
-    if (localStorage.getItem('sav_rate')) {
-      document.getElementById('rate').value = localStorage.getItem('sav_rate');
-    }
-    if (localStorage.getItem('sav_fv')) {
-      document.getElementById('fv').value = formatNumber(localStorage.getItem('sav_fv'));
-    }
-    calculate();
+    calculate(); // 初始化計算
   };
 </script>
 
