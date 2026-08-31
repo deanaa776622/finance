@@ -93,12 +93,12 @@
   <div class="card">
     <div class="input-group">
       <label>目前持有金額 (元)</label>
-      <input type="number" id="pv" value="11622880" oninput="calculate()">
+      <input type="text" id="pv" value="11,622,880" oninput="formatAndCalculate(this)">
     </div>
     
     <div class="input-group">
       <label>每月定期存入金額 (元)</label>
-      <input type="number" id="pmt" value="13500" oninput="calculate()">
+      <input type="text" id="pmt" value="13,500" oninput="formatAndCalculate(this)">
     </div>
     
     <div class="input-group">
@@ -108,7 +108,7 @@
 
     <div class="input-group">
       <label>未來目標金額 (元)</label>
-      <input type="number" id="fv" value="20571429" oninput="calculate()">
+      <input type="text" id="fv" value="20,571,429" oninput="formatAndCalculate(this)">
     </div>
 
     <div class="result-box">
@@ -120,10 +120,28 @@
 </div>
 
 <script>
-  // Financial NPER Function calculation
+  // 轉為千分位格式字串 (例如 1000000 -> 1,000,000)
+  function formatNumber(numStr) {
+    let cleanNum = numStr.toString().replace(/[^0-9]/g, '');
+    if (!cleanNum) return '';
+    return Number(cleanNum).toLocaleString('en-US');
+  }
+
+  // 從千分位字串還原為純數字 (例如 1,000,000 -> 1000000)
+  function parseNumber(formattedStr) {
+    return parseFloat(formattedStr.toString().replace(/,/g, '')) || 0;
+  }
+
+  // 輸入框即時格式化與計算
+  function formatAndCalculate(input) {
+    const rawValue = parseNumber(input.value);
+    input.value = rawValue ? rawValue.toLocaleString('en-US') : '';
+    calculate();
+  }
+
+  // 金融 NPER 計算函式
   function calculateNPER(rate, pmt, pv, fv) {
     if (rate === 0) return -(pv + fv) / pmt;
-    // Standard NPER formula: log((pmt - fv*r)/(pmt + pv*r)) / log(1+r)
     const num = pmt - fv * rate;
     const den = pmt + pv * rate;
     if (den === 0 || num / den <= 0) return NaN;
@@ -131,9 +149,9 @@
   }
 
   function calculate() {
-    const pv = -Math.abs(parseFloat(document.getElementById('pv').value) || 0);
-    const pmt = -Math.abs(parseFloat(document.getElementById('pmt').value) || 0);
-    const fv = Math.abs(parseFloat(document.getElementById('fv').value) || 0);
+    const pv = -Math.abs(parseNumber(document.getElementById('pv').value));
+    const pmt = -Math.abs(parseNumber(document.getElementById('pmt').value));
+    const fv = Math.abs(parseNumber(document.getElementById('fv').value));
     const annualRate = (parseFloat(document.getElementById('rate').value) || 0) / 100;
     const monthlyRate = annualRate / 12;
 
@@ -148,7 +166,7 @@
       document.getElementById('result-years').innerText = `${years} 年`;
       document.getElementById('result-months').innerText = `約 ${months} 個月`;
       
-      // 自動儲存到手機 LocalStorage
+      // 儲存純數字到 LocalStorage
       localStorage.setItem('sav_pv', Math.abs(pv));
       localStorage.setItem('sav_pmt', Math.abs(pmt));
       localStorage.setItem('sav_rate', annualRate * 100);
@@ -156,12 +174,20 @@
     }
   }
 
-  // 頁面載入時讀取舊資料
+  // 讀取紀錄與初始化顯示
   window.onload = function() {
-    if (localStorage.getItem('sav_pv')) document.getElementById('pv').value = localStorage.getItem('sav_pv');
-    if (localStorage.getItem('sav_pmt')) document.getElementById('pmt').value = localStorage.getItem('sav_pmt');
-    if (localStorage.getItem('sav_rate')) document.getElementById('rate').value = localStorage.getItem('sav_rate');
-    if (localStorage.getItem('sav_fv')) document.getElementById('fv').value = localStorage.getItem('sav_fv');
+    if (localStorage.getItem('sav_pv')) {
+      document.getElementById('pv').value = formatNumber(localStorage.getItem('sav_pv'));
+    }
+    if (localStorage.getItem('sav_pmt')) {
+      document.getElementById('pmt').value = formatNumber(localStorage.getItem('sav_pmt'));
+    }
+    if (localStorage.getItem('sav_rate')) {
+      document.getElementById('rate').value = localStorage.getItem('sav_rate');
+    }
+    if (localStorage.getItem('sav_fv')) {
+      document.getElementById('fv').value = formatNumber(localStorage.getItem('sav_fv'));
+    }
     calculate();
   };
 </script>
