@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>儲蓄試算工具</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent-color: #38bdf8;
+      --text-color: #f8fafc;
+      --sub-text: #94a3b8;
+      --border-color: #334155;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 420px;
+    }
+    h2 {
+      text-align: center;
+      color: var(--accent-color);
+      margin-bottom: 20px;
+    }
+    .card {
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      border: 1px solid var(--border-color);
+    }
+    .input-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--sub-text);
+      margin-bottom: 5px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background-color: #0f172a;
+      color: var(--text-color);
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--accent-color);
+    }
+    .result-box {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid var(--border-color);
+      text-align: center;
+    }
+    .result-title {
+      font-size: 0.9rem;
+      color: var(--sub-text);
+    }
+    .result-value {
+      font-size: 2.2rem;
+      font-weight: bold;
+      color: var(--accent-color);
+      margin: 5px 0;
+    }
+    .result-detail {
+      font-size: 0.85rem;
+      color: var(--sub-text);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>儲蓄目標試算</h2>
+  <div class="card">
+    <div class="input-group">
+      <label>目前持有金額 (元)</label>
+      <input type="number" id="pv" value="11622880" oninput="calculate()">
+    </div>
+    
+    <div class="input-group">
+      <label>每月定期存入金額 (元)</label>
+      <input type="number" id="pmt" value="13500" oninput="calculate()">
+    </div>
+    
+    <div class="input-group">
+      <label>預期年化報酬率 (%)</label>
+      <input type="number" step="0.1" id="rate" value="7.0" oninput="calculate()">
+    </div>
+
+    <div class="input-group">
+      <label>未來目標金額 (元)</label>
+      <input type="number" id="fv" value="20571429" oninput="calculate()">
+    </div>
+
+    <div class="result-box">
+      <div class="result-title">預計達成目標時間</div>
+      <div class="result-value" id="result-years">7.33 年</div>
+      <div class="result-detail" id="result-months">約 88 個月</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Financial NPER Function calculation
+  function calculateNPER(rate, pmt, pv, fv) {
+    if (rate === 0) return -(pv + fv) / pmt;
+    // Standard NPER formula: log((pmt - fv*r)/(pmt + pv*r)) / log(1+r)
+    const num = pmt - fv * rate;
+    const den = pmt + pv * rate;
+    if (den === 0 || num / den <= 0) return NaN;
+    return Math.log(num / den) / Math.log(1 + rate);
+  }
+
+  function calculate() {
+    const pv = -Math.abs(parseFloat(document.getElementById('pv').value) || 0);
+    const pmt = -Math.abs(parseFloat(document.getElementById('pmt').value) || 0);
+    const fv = Math.abs(parseFloat(document.getElementById('fv').value) || 0);
+    const annualRate = (parseFloat(document.getElementById('rate').value) || 0) / 100;
+    const monthlyRate = annualRate / 12;
+
+    const totalMonths = calculateNPER(monthlyRate, pmt, pv, fv);
+
+    if (isNaN(totalMonths) || totalMonths <= 0) {
+      document.getElementById('result-years').innerText = "無法達成";
+      document.getElementById('result-months').innerText = "請檢查目標金額或報酬率設定";
+    } else {
+      const years = (totalMonths / 12).toFixed(2);
+      const months = Math.ceil(totalMonths);
+      document.getElementById('result-years').innerText = `${years} 年`;
+      document.getElementById('result-months').innerText = `約 ${months} 個月`;
+      
+      // 自動儲存到手機 LocalStorage
+      localStorage.setItem('sav_pv', Math.abs(pv));
+      localStorage.setItem('sav_pmt', Math.abs(pmt));
+      localStorage.setItem('sav_rate', annualRate * 100);
+      localStorage.setItem('sav_fv', fv);
+    }
+  }
+
+  // 頁面載入時讀取舊資料
+  window.onload = function() {
+    if (localStorage.getItem('sav_pv')) document.getElementById('pv').value = localStorage.getItem('sav_pv');
+    if (localStorage.getItem('sav_pmt')) document.getElementById('pmt').value = localStorage.getItem('sav_pmt');
+    if (localStorage.getItem('sav_rate')) document.getElementById('rate').value = localStorage.getItem('sav_rate');
+    if (localStorage.getItem('sav_fv')) document.getElementById('fv').value = localStorage.getItem('sav_fv');
+    calculate();
+  };
+</script>
+
+</body>
+</html>
