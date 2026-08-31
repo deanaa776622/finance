@@ -21,7 +21,7 @@
       color: var(--text-color);
       margin: 0;
       padding: 20px;
-      padding-bottom: 80px;
+      padding-bottom: 70px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -48,9 +48,6 @@
       font-weight: bold;
       color: var(--accent-color);
       margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
     }
     .input-group {
       margin-bottom: 15px;
@@ -89,13 +86,14 @@
       color: var(--accent-color);
       margin: 5px 0;
     }
-    /* 底部導覽列 */
+
+    /* 底部導覽列 (純文字版) */
     .bottom-nav {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      height: 60px;
+      height: 50px;
       background-color: #1e293b;
       border-top: 1px solid #334155;
       display: flex;
@@ -105,19 +103,19 @@
     }
     .nav-item {
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
+      width: 50%;
+      height: 100%;
       color: #94a3b8;
       text-decoration: none;
-      font-size: 0.75rem;
+      font-size: 0.95rem;
+      transition: color 0.2s ease-in-out;
     }
     .nav-item.active {
       color: #38bdf8;
       font-weight: bold;
-    }
-    .nav-icon {
-      font-size: 1.2rem;
-      margin-bottom: 2px;
+      border-top: 2px solid #38bdf8;
     }
   </style>
 </head>
@@ -136,7 +134,7 @@
 
   <!-- 1. 股票卡片 -->
   <div class="card">
-    <div class="card-title">📈 股票</div>
+    <div class="card-title">股票</div>
     <div class="input-group">
       <label>股票總價值 (元)</label>
       <input type="text" id="stock_val" value="0" oninput="formatAndCalculate(this)">
@@ -145,7 +143,7 @@
 
   <!-- 2. 現金卡片 -->
   <div class="card">
-    <div class="card-title">💵 現金</div>
+    <div class="card-title">現金</div>
     <div class="input-group">
       <label>現金總額 (元)</label>
       <input type="text" id="cash_val" value="0" oninput="formatAndCalculate(this)">
@@ -154,7 +152,7 @@
 
   <!-- 3. 房子卡片 -->
   <div class="card">
-    <div class="card-title">🏠 房子</div>
+    <div class="card-title">房子</div>
     <div class="input-group">
       <label>房屋預估價值 (元)</label>
       <input type="text" id="house_val" value="0" oninput="formatAndCalculate(this)">
@@ -162,16 +160,10 @@
   </div>
 </div>
 
-<!-- 底部導覽列 -->
+<!-- 底部導覽列（純文字版） -->
 <nav class="bottom-nav">
-  <a href="index.html" class="nav-item">
-    <span class="nav-icon">📊</span>
-    <span>儲蓄試算</span>
-  </a>
-  <a href="stock.html" class="nav-item active">
-    <span class="nav-icon">📈</span>
-    <span>資產淨值</span>
-  </a>
+  <a href="index.html" class="nav-item">儲蓄試算</a>
+  <a href="stock.html" class="nav-item active">資產淨值</a>
 </nav>
 
 <script>
@@ -195,7 +187,6 @@
     const total = stock + cash + house;
     document.getElementById('total-net-worth').innerText = total.toLocaleString('en-US');
 
-    // 自動記錄數據至手機內部記憶體
     localStorage.setItem('nw_stock', stock);
     localStorage.setItem('sav_cash', cash);
     localStorage.setItem('nw_house', house);
