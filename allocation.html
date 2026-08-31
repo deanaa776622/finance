@@ -16,6 +16,7 @@
       --text-color: #f8fafc;
       --sub-text: #94a3b8;
       --border-color: #334155;
+      --warning-color: #f43f5e;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -23,7 +24,6 @@
       color: var(--text-color);
       margin: 0;
       padding: 20px;
-      padding-bottom: 70px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -50,6 +50,9 @@
       font-weight: bold;
       color: var(--accent-color);
       margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .input-group {
       margin-bottom: 15px;
@@ -59,6 +62,11 @@
       font-size: 0.85rem;
       color: var(--sub-text);
       margin-bottom: 5px;
+    }
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
     }
     input {
       width: 100%;
@@ -74,10 +82,29 @@
       outline: none;
       border-color: var(--accent-color);
     }
+    .unit-suffix {
+      position: absolute;
+      right: 12px;
+      color: var(--sub-text);
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+    .input-wrapper input.has-suffix {
+      padding-right: 30px;
+    }
     .chart-container {
       position: relative;
       width: 100%;
       height: 250px;
+    }
+    .total-hint {
+      font-size: 0.85rem;
+      color: var(--sub-text);
+      text-align: right;
+    }
+    .total-hint.error {
+      color: var(--warning-color);
+      font-weight: bold;
     }
   </style>
 </head>
@@ -88,33 +115,61 @@
 
   <!-- 配置圓餅圖卡片 -->
   <div class="card">
-    <div class="card-title">當前配置比例</div>
+    <div class="card-title">當前與目標配置比較</div>
     <div class="chart-container">
       <canvas id="allocationChart"></canvas>
     </div>
   </div>
 
-  <!-- 資產輸入卡片 (框架) -->
+  <!-- 新增區塊：目標比例設定 -->
   <div class="card">
-    <div class="card-title">資產類別市值 (元)</div>
-    <div class="input-group">
-      <label>台灣股票</label>
-      <input type="text" id="asset_tw" value="1,000,000" oninput="formatAndCalculate(this)">
+    <div class="card-title">
+      <span>目標比例設定</span>
+      <span id="target-total-hint" class="total-hint">總計: 100%</span>
     </div>
     <div class="input-group">
-      <label>美國股票</label>
-      <input type="text" id="asset_us" value="1,000,000" oninput="formatAndCalculate(this)">
+      <label>原型 ETF / 股票 (%)</label>
+      <div class="input-wrapper">
+        <input type="number" id="target_original" value="60" step="1" min="0" max="100" class="has-suffix" oninput="updateTargetAllocation()">
+        <span class="unit-suffix">%</span>
+      </div>
     </div>
     <div class="input-group">
-      <label>債券</label>
-      <input type="text" id="asset_bond" value="500,000" oninput="formatAndCalculate(this)">
+      <label>槓桿型商品 (%)</label>
+      <div class="input-wrapper">
+        <input type="number" id="target_leverage" value="20" step="1" min="0" max="100" class="has-suffix" oninput="updateTargetAllocation()">
+        <span class="unit-suffix">%</span>
+      </div>
     </div>
     <div class="input-group">
-      <label>現金</label>
-      <input type="text" id="asset_cash" value="500,000" oninput="formatAndCalculate(this)">
+      <label>現金 / 保留金 (%)</label>
+      <div class="input-wrapper">
+        <input type="number" id="target_cash" value="20" step="1" min="0" max="100" class="has-suffix" oninput="updateTargetAllocation()">
+        <span class="unit-suffix">%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 資產輸入卡片 -->
+  <div class="card">
+    <div class="card-title">當前資產市值 (元)</div>
+    <div class="input-group">
+      <label>原型 ETF / 股票</label>
+      <input type="text" id="asset_original" value="1,200,000" oninput="formatAndCalculate(this)">
+    </div>
+    <div class="input-group">
+      <label>槓桿型商品</label>
+      <input type="text" id="asset_leverage" value="400,000" oninput="formatAndCalculate(this)">
+    </div>
+    <div class="input-group">
+      <label>現金 / 保留金</label>
+      <input type="text" id="asset_cash" value="400,000" oninput="formatAndCalculate(this)">
     </div>
   </div>
 </div>
+
+<!-- 引入統一管理的導覽列腳本 -->
+<script src="nav.js"></script>
 
 <script>
   let allocationChart = null;
@@ -131,67 +186,105 @@
     updateAllocation();
   }
 
-  function updateAllocation() {
-    const tw = parseNumber(document.getElementById('asset_tw').value);
-    const us = parseNumber(document.getElementById('asset_us').value);
-    const bond = parseNumber(document.getElementById('asset_bond').value);
-    const cash = parseNumber(document.getElementById('asset_cash').value);
+  function updateTargetAllocation() {
+    const orig = parseFloat(document.getElementById('target_original').value) || 0;
+    const lev = parseFloat(document.getElementById('target_leverage').value) || 0;
+    const cash = parseFloat(document.getElementById('target_cash').value) || 0;
 
-    const total = tw + us + bond + cash;
-    
-    // 將數據記錄至記憶體
-    localStorage.setItem('alloc_tw', tw);
-    localStorage.setItem('alloc_us', us);
-    localStorage.setItem('alloc_bond', bond);
-    localStorage.setItem('alloc_cash', cash);
+    const total = orig + lev + cash;
+    const hintEl = document.getElementById('target-total-hint');
 
-    updateChart(tw, us, bond, cash, total);
+    hintEl.innerText = `總計: ${total}%`;
+    if (Math.abs(total - 100) > 0.01) {
+      hintEl.classList.add('error');
+    } else {
+      hintEl.classList.remove('error');
+    }
+
+    localStorage.setItem('target_original', orig);
+    localStorage.setItem('target_leverage', lev);
+    localStorage.setItem('target_cash', cash);
+
+    updateAllocation();
   }
 
-  function updateChart(tw, us, bond, cash, total) {
+  function updateAllocation() {
+    const orig = parseNumber(document.getElementById('asset_original').value);
+    const lev = parseNumber(document.getElementById('asset_leverage').value);
+    const cash = parseNumber(document.getElementById('asset_cash').value);
+
+    const total = orig + lev + cash;
+    
+    localStorage.setItem('alloc_original', orig);
+    localStorage.setItem('alloc_leverage', lev);
+    localStorage.setItem('alloc_cash', cash);
+
+    const targetOrig = parseFloat(document.getElementById('target_original').value) || 0;
+    const targetLev = parseFloat(document.getElementById('target_leverage').value) || 0;
+    const targetCash = parseFloat(document.getElementById('target_cash').value) || 0;
+
+    updateChart(orig, lev, cash, total, targetOrig, targetLev, targetCash);
+  }
+
+  function updateChart(orig, lev, cash, total, tOrig, tLev, tCash) {
     const ctx = document.getElementById('allocationChart').getContext('2d');
     
     if (allocationChart) {
       allocationChart.destroy();
     }
 
-    if (total === 0) return;
+    const currentPercent = [
+      total > 0 ? ((orig / total) * 100).toFixed(1) : 0,
+      total > 0 ? ((lev / total) * 100).toFixed(1) : 0,
+      total > 0 ? ((cash / total) * 100).toFixed(1) : 0
+    ];
 
     allocationChart = new Chart(ctx, {
-      type: 'doughnut', // 使用甜甜圈圖
+      type: 'bar',
       data: {
-        labels: ['台股', '美股', '債券', '現金'],
-        datasets: [{
-          data: [tw, us, bond, cash],
-          backgroundColor: [
-            '#38bdf8', // accent-color (台股)
-            '#fb923c', // orange (美股)
-            '#a78bfa', // purple (債券)
-            '#4ade80'  // green (現金)
-          ],
-          borderWidth: 1,
-          borderColor: '#1e293b' // card-bg
-        }]
+        labels: ['原型', '槓桿', '現金'],
+        datasets: [
+          {
+            label: '當前比例 (%)',
+            data: currentPercent,
+            backgroundColor: '#38bdf8',
+            borderRadius: 6
+          },
+          {
+            label: '目標比例 (%)',
+            data: [tOrig, tLev, tCash],
+            backgroundColor: '#334155',
+            borderColor: '#94a3b8',
+            borderWidth: 1,
+            borderRadius: 6
+          }
+        ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            position: 'right',
-            labels: {
-              color: '#94a3b8',
-              font: { size: 12 }
-            }
+            position: 'top',
+            labels: { color: '#94a3b8', font: { size: 12 } }
           },
           tooltip: {
             callbacks: {
               label: function(context) {
-                const value = context.raw;
-                const percent = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                return ` ${context.label}: ${percent}% ($${value.toLocaleString('en-US')})`;
+                return ` ${context.dataset.label}: ${context.raw}%`;
               }
             }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'transparent' },
+            ticks: { color: '#f8fafc', font: { size: 12 } }
+          },
+          y: {
+            grid: { color: '#334155' },
+            ticks: { color: '#94a3b8', callback: v => v + '%' },
+            max: 100
           }
         }
       }
@@ -199,16 +292,19 @@
   }
 
   window.onload = function() {
-    // 讀取紀錄
-    if (localStorage.getItem('alloc_tw')) document.getElementById('asset_tw').value = parseNumber(localStorage.getItem('alloc_tw')).toLocaleString('en-US');
-    if (localStorage.getItem('alloc_us')) document.getElementById('asset_us').value = parseNumber(localStorage.getItem('alloc_us')).toLocaleString('en-US');
-    if (localStorage.getItem('alloc_bond')) document.getElementById('asset_bond').value = parseNumber(localStorage.getItem('alloc_bond')).toLocaleString('en-US');
+    // 讀取目標比例設定
+    if (localStorage.getItem('target_original')) document.getElementById('target_original').value = localStorage.getItem('target_original');
+    if (localStorage.getItem('target_leverage')) document.getElementById('target_leverage').value = localStorage.getItem('target_leverage');
+    if (localStorage.getItem('target_cash')) document.getElementById('target_cash').value = localStorage.getItem('target_cash');
+
+    // 讀取資產市值
+    if (localStorage.getItem('alloc_original')) document.getElementById('asset_original').value = parseNumber(localStorage.getItem('alloc_original')).toLocaleString('en-US');
+    if (localStorage.getItem('alloc_leverage')) document.getElementById('asset_leverage').value = parseNumber(localStorage.getItem('alloc_leverage')).toLocaleString('en-US');
     if (localStorage.getItem('alloc_cash')) document.getElementById('asset_cash').value = parseNumber(localStorage.getItem('alloc_cash')).toLocaleString('en-US');
     
-    updateAllocation();
+    updateTargetAllocation();
   };
 </script>
-<!-- 引入統一管理的導覽列腳本 -->
-<script src="nav.js"></script>
+
 </body>
 </html>
