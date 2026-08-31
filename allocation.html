@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>資產配置試算</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- 導入 Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent-color: #38bdf8;
+      --text-color: #f8fafc;
+      --sub-text: #94a3b8;
+      --border-color: #334155;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 20px;
+      padding-bottom: 70px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 420px;
+    }
+    h2 {
+      text-align: center;
+      color: var(--accent-color);
+      margin-bottom: 20px;
+    }
+    .card {
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      border: 1px solid var(--border-color);
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--accent-color);
+      margin-bottom: 15px;
+    }
+    .input-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--sub-text);
+      margin-bottom: 5px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background-color: #0f172a;
+      color: var(--text-color);
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--accent-color);
+    }
+    .chart-container {
+      position: relative;
+      width: 100%;
+      height: 250px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>資產配置</h2>
+
+  <!-- 配置圓餅圖卡片 -->
+  <div class="card">
+    <div class="card-title">當前配置比例</div>
+    <div class="chart-container">
+      <canvas id="allocationChart"></canvas>
+    </div>
+  </div>
+
+  <!-- 資產輸入卡片 (框架) -->
+  <div class="card">
+    <div class="card-title">資產類別市值 (元)</div>
+    <div class="input-group">
+      <label>台灣股票</label>
+      <input type="text" id="asset_tw" value="1,000,000" oninput="formatAndCalculate(this)">
+    </div>
+    <div class="input-group">
+      <label>美國股票</label>
+      <input type="text" id="asset_us" value="1,000,000" oninput="formatAndCalculate(this)">
+    </div>
+    <div class="input-group">
+      <label>債券</label>
+      <input type="text" id="asset_bond" value="500,000" oninput="formatAndCalculate(this)">
+    </div>
+    <div class="input-group">
+      <label>現金</label>
+      <input type="text" id="asset_cash" value="500,000" oninput="formatAndCalculate(this)">
+    </div>
+  </div>
+</div>
+
+<script>
+  let allocationChart = null;
+
+  function parseNumber(formattedStr) {
+    if (!formattedStr) return 0;
+    return parseFloat(formattedStr.toString().replace(/,/g, '')) || 0;
+  }
+
+  function formatAndCalculate(input) {
+    let rawValue = parseNumber(input.value);
+    if (rawValue > 999999999999999) rawValue = 999999999999999; 
+    input.value = rawValue ? rawValue.toLocaleString('en-US') : (input.value === '0' ? '0' : '');
+    updateAllocation();
+  }
+
+  function updateAllocation() {
+    const tw = parseNumber(document.getElementById('asset_tw').value);
+    const us = parseNumber(document.getElementById('asset_us').value);
+    const bond = parseNumber(document.getElementById('asset_bond').value);
+    const cash = parseNumber(document.getElementById('asset_cash').value);
+
+    const total = tw + us + bond + cash;
+    
+    // 將數據記錄至記憶體
+    localStorage.setItem('alloc_tw', tw);
+    localStorage.setItem('alloc_us', us);
+    localStorage.setItem('alloc_bond', bond);
+    localStorage.setItem('alloc_cash', cash);
+
+    updateChart(tw, us, bond, cash, total);
+  }
+
+  function updateChart(tw, us, bond, cash, total) {
+    const ctx = document.getElementById('allocationChart').getContext('2d');
+    
+    if (allocationChart) {
+      allocationChart.destroy();
+    }
+
+    if (total === 0) return;
+
+    allocationChart = new Chart(ctx, {
+      type: 'doughnut', // 使用甜甜圈圖
+      data: {
+        labels: ['台股', '美股', '債券', '現金'],
+        datasets: [{
+          data: [tw, us, bond, cash],
+          backgroundColor: [
+            '#38bdf8', // accent-color (台股)
+            '#fb923c', // orange (美股)
+            '#a78bfa', // purple (債券)
+            '#4ade80'  // green (現金)
+          ],
+          borderWidth: 1,
+          borderColor: '#1e293b' // card-bg
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              color: '#94a3b8',
+              font: { size: 12 }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const value = context.raw;
+                const percent = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                return ` ${context.label}: ${percent}% ($${value.toLocaleString('en-US')})`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  window.onload = function() {
+    // 讀取紀錄
+    if (localStorage.getItem('alloc_tw')) document.getElementById('asset_tw').value = parseNumber(localStorage.getItem('alloc_tw')).toLocaleString('en-US');
+    if (localStorage.getItem('alloc_us')) document.getElementById('asset_us').value = parseNumber(localStorage.getItem('alloc_us')).toLocaleString('en-US');
+    if (localStorage.getItem('alloc_bond')) document.getElementById('asset_bond').value = parseNumber(localStorage.getItem('alloc_bond')).toLocaleString('en-US');
+    if (localStorage.getItem('alloc_cash')) document.getElementById('asset_cash').value = parseNumber(localStorage.getItem('alloc_cash')).toLocaleString('en-US');
+    
+    updateAllocation();
+  };
+</script>
+<!-- 引入統一管理的導覽列腳本 -->
+<script src="nav.js"></script>
+</body>
+</html>
