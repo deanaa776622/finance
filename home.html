@@ -86,7 +86,7 @@
       100% { transform: rotate(360deg) translate(0vw, 25vh) rotate(-360deg) scale(0.95); }
     }
 
-    /* 中央極簡狀態顯示層 */
+    /* 中央極簡純文字顯示層 */
     .status-overlay {
       position: absolute;
       top: 0;
@@ -100,54 +100,13 @@
       pointer-events: none;
     }
 
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 24px;
-      background: rgba(15, 23, 42, 0.45);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 30px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      transition: background-color 0.5s ease, box-shadow 0.5s ease;
-    }
-
-    .status-dot.balanced {
-      background-color: #4ade80;
-      box-shadow: 0 0 10px #4ade80;
-      animation: pulseGreen 2s infinite ease-in-out;
-    }
-
-    .status-dot.attention {
-      background-color: #f43f5e;
-      box-shadow: 0 0 10px #f43f5e;
-      animation: pulseRed 1.5s infinite ease-in-out;
-    }
-
     .status-text {
-      font-size: 0.95rem;
+      font-size: 1.1rem;
       font-weight: 600;
-      letter-spacing: 0.15em;
+      letter-spacing: 0.2em;
       color: #f8fafc;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
       transition: color 0.5s ease;
-    }
-
-    @keyframes pulseGreen {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.85); }
-    }
-
-    @keyframes pulseRed {
-      0%, 100% { opacity: 1; transform: scale(1.1); }
-      50% { opacity: 0.4; transform: scale(0.9); }
     }
   </style>
 </head>
@@ -160,12 +119,9 @@
     <div id="blob-cash" class="blob blob-cash"></div>
   </div>
 
-  <!-- 中央極簡狀態顯示層 -->
+  <!-- 中央極簡純文字顯示層 -->
   <div class="status-overlay">
-    <div class="status-badge">
-      <div id="status-dot" class="status-dot balanced"></div>
-      <span id="status-text" class="status-text">BALANCED</span>
-    </div>
+    <span id="status-text" class="status-text">BALANCED</span>
   </div>
 
   <!-- 引入統一管理的導覽列腳本 -->
@@ -219,16 +175,13 @@
       // 找出最大偏離值
       const maxDiff = Math.max(diffOrig, diffLev, diffCash);
 
-      // 5. 更新中央文字與狀態點
-      const statusDot = document.getElementById('status-dot');
+      // 5. 更新中央狀態文字
       const statusText = document.getElementById('status-text');
 
       if (maxDiff >= 10) {
         statusText.innerText = 'ATTENTION';
-        statusDot.className = 'status-dot attention';
       } else {
         statusText.innerText = 'BALANCED';
-        statusDot.className = 'status-dot balanced';
       }
 
       // 6. 計算光暈漸變顏色
