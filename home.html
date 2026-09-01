@@ -20,28 +20,104 @@
       background-color: #0f172a;
     }
 
-    /* 滿版漸層光暈背景層 */
-    .glow-background {
+    /* 滿版背景容器 */
+    .glow-container {
       position: absolute;
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
-      /* 三等份面積的柔和光暈配置：左上藍、右上綠、底部中央黃 */
-      background: 
-        radial-gradient(circle at 20% 30%, rgba(56, 189, 248, 0.85) 0%, rgba(56, 189, 248, 0) 60%),
-        radial-gradient(circle at 80% 30%, rgba(74, 222, 128, 0.85) 0%, rgba(74, 222, 128, 0) 60%),
-        radial-gradient(circle at 50% 80%, rgba(250, 204, 21, 0.85) 0%, rgba(250, 204, 21, 0) 60%);
-      /* 高度模糊讓交界處呈光暈般自然暈染 */
-      filter: blur(40px);
-      transform: scale(1.1); /* 避免模糊邊緣露出黑邊 */
+      overflow: hidden;
+    }
+
+    /* 藍、綠、黃三個流動光暈球體球的共通樣式 */
+    .blob {
+      position: absolute;
+      width: 80vw;
+      height: 80vw;
+      max-width: 500px;
+      max-height: 500px;
+      border-radius: 50%;
+      filter: blur(60px); /* 高度模糊產生無縫光暈 */
+      opacity: 0.85;
+      mix-blend-mode: screen; /* 讓色彩重疊時產生自然的和諧光感 */
+      animation-iteration-count: infinite;
+      animation-timing-function: ease-in-out;
+      animation-direction: alternate;
+    }
+
+    /* 藍色光暈 */
+    .blob-blue {
+      background: radial-gradient(circle, rgba(56, 189, 248, 1) 0%, rgba(56, 189, 248, 0) 70%);
+      top: -10%;
+      left: -10%;
+      animation: floatBlue 14s infinite;
+    }
+
+    /* 綠色光暈 */
+    .blob-green {
+      background: radial-gradient(circle, rgba(74, 222, 128, 1) 0%, rgba(74, 222, 128, 0) 70%);
+      top: -10%;
+      right: -10%;
+      animation: floatGreen 16s infinite;
+    }
+
+    /* 黃色光暈 */
+    .blob-yellow {
+      background: radial-gradient(circle, rgba(250, 204, 21, 1) 0%, rgba(250, 204, 21, 0) 70%);
+      bottom: -10%;
+      left: 10%;
+      animation: floatYellow 18s infinite;
+    }
+
+    /* 藍色流動軌跡 */
+    @keyframes floatBlue {
+      0% {
+        transform: translate(0px, 0px) scale(1);
+      }
+      50% {
+        transform: translate(30vw, 25vh) scale(1.2);
+      }
+      100% {
+        transform: translate(10vw, 40vh) scale(0.9);
+      }
+    }
+
+    /* 綠色流動軌跡 */
+    @keyframes floatGreen {
+      0% {
+        transform: translate(0px, 0px) scale(1);
+      }
+      50% {
+        transform: translate(-35vw, 30vh) scale(0.85);
+      }
+      100% {
+        transform: translate(-15vw, 45vh) scale(1.15);
+      }
+    }
+
+    /* 黃色流動軌跡 */
+    @keyframes floatYellow {
+      0% {
+        transform: translate(0px, 0px) scale(1);
+      }
+      50% {
+        transform: translate(-20vw, -30vh) scale(1.1);
+      }
+      100% {
+        transform: translate(25vw, -25vh) scale(0.95);
+      }
     }
   </style>
 </head>
 <body>
 
-  <!-- 光暈背景 (無任何文字與卡片) -->
-  <div class="glow-background"></div>
+  <!-- 流動光暈容器 -->
+  <div class="glow-container">
+    <div class="blob blob-blue"></div>
+    <div class="blob blob-green"></div>
+    <div class="blob blob-yellow"></div>
+  </div>
 
   <!-- 引入統一管理的導覽列腳本 -->
   <script src="nav.js"></script>
