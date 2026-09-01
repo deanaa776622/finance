@@ -38,8 +38,8 @@ document.head.appendChild(navStyle);
 
 // 2. 在這裡統一設定你的所有選單項目 (未來要增減選項，只改這裡即可！)
 const navItems = [
-  { name: '首頁', url: 'index.html' },
-  { name: '儲蓄試算', url: 'saving.html' },
+  { name: '首頁', url: 'home.html' },
+  { name: '儲蓄試算', url: 'index.html' },
   { name: '資產淨值', url: 'stock.html' },
   { name: '資產配置', url: 'allocation.html' }
 ];
