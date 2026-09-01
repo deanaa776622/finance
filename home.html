@@ -30,82 +30,79 @@
       overflow: hidden;
     }
 
-    /* 藍、綠、黃三個流動光暈球體球的共通樣式 */
+    /* 藍、綠、黃三個流動光暈球體 */
     .blob {
       position: absolute;
-      width: 80vw;
-      height: 80vw;
-      max-width: 500px;
-      max-height: 500px;
+      width: 90vw;
+      height: 90vw;
+      max-width: 600px;
+      max-height: 600px;
       border-radius: 50%;
-      filter: blur(60px); /* 高度模糊產生無縫光暈 */
-      opacity: 0.85;
-      mix-blend-mode: screen; /* 讓色彩重疊時產生自然的和諧光感 */
-      animation-iteration-count: infinite;
-      animation-timing-function: ease-in-out;
-      animation-direction: alternate;
+      filter: blur(70px); /* 增加模糊度，讓過渡極致柔和 */
+      opacity: 0.8;
+      mix-blend-mode: screen; /* 色彩和諧混合 */
     }
 
-    /* 藍色光暈 */
+    /* 藍色光暈：左上方順時針圓形軌跡 */
     .blob-blue {
       background: radial-gradient(circle, rgba(56, 189, 248, 1) 0%, rgba(56, 189, 248, 0) 70%);
-      top: -10%;
-      left: -10%;
-      animation: floatBlue 14s infinite;
+      top: 10%;
+      left: 10%;
+      animation: smoothRotateBlue 22s linear infinite;
     }
 
-    /* 綠色光暈 */
+    /* 綠色光暈：右上方逆時針圓形軌跡 */
     .blob-green {
       background: radial-gradient(circle, rgba(74, 222, 128, 1) 0%, rgba(74, 222, 128, 0) 70%);
-      top: -10%;
-      right: -10%;
-      animation: floatGreen 16s infinite;
+      top: 10%;
+      right: 10%;
+      animation: smoothRotateGreen 28s linear infinite;
     }
 
-    /* 黃色光暈 */
+    /* 黃色光暈：下方順時針大圓弧軌跡 */
     .blob-yellow {
       background: radial-gradient(circle, rgba(250, 204, 21, 1) 0%, rgba(250, 204, 21, 0) 70%);
-      bottom: -10%;
-      left: 10%;
-      animation: floatYellow 18s infinite;
+      bottom: 0%;
+      left: 20%;
+      animation: smoothRotateYellow 25s linear infinite;
     }
 
-    /* 藍色流動軌跡 */
-    @keyframes floatBlue {
+    /* 100% 無縫接軌的無限順時針旋轉軌跡 */
+    @keyframes smoothRotateBlue {
       0% {
-        transform: translate(0px, 0px) scale(1);
+        transform: rotate(0deg) translate(-20vw, -15vh) rotate(0deg) scale(1);
       }
       50% {
-        transform: translate(30vw, 25vh) scale(1.2);
+        transform: rotate(180deg) translate(-20vw, -15vh) rotate(-180deg) scale(1.2);
       }
       100% {
-        transform: translate(10vw, 40vh) scale(0.9);
-      }
-    }
-
-    /* 綠色流動軌跡 */
-    @keyframes floatGreen {
-      0% {
-        transform: translate(0px, 0px) scale(1);
-      }
-      50% {
-        transform: translate(-35vw, 30vh) scale(0.85);
-      }
-      100% {
-        transform: translate(-15vw, 45vh) scale(1.15);
+        transform: rotate(360deg) translate(-20vw, -15vh) rotate(-360deg) scale(1);
       }
     }
 
-    /* 黃色流動軌跡 */
-    @keyframes floatYellow {
+    /* 100% 無縫接軌的無限逆時針旋轉軌跡 */
+    @keyframes smoothRotateGreen {
       0% {
-        transform: translate(0px, 0px) scale(1);
+        transform: rotate(0deg) translate(25vw, -10vh) rotate(0deg) scale(1.1);
       }
       50% {
-        transform: translate(-20vw, -30vh) scale(1.1);
+        transform: rotate(-180deg) translate(25vw, -10vh) rotate(180deg) scale(0.9);
       }
       100% {
-        transform: translate(25vw, -25vh) scale(0.95);
+        transform: rotate(-360deg) translate(25vw, -10vh) rotate(360deg) scale(1.1);
+      }
+    }
+
+    /* 100% 無縫接軌的無限橢圓旋轉軌跡 */
+    @keyframes smoothRotateYellow {
+      0% {
+        transform: rotate(0deg) translate(0vw, 25vh) rotate(0deg) scale(0.95);
+      }
+      50% {
+        transform: rotate(180deg) translate(0vw, 25vh) rotate(-180deg) scale(1.15);
+      }
+      100% {
+        transform: rotate(360deg) translate(0vw, 25vh) rotate(-360deg) scale(0.95);
       }
     }
   </style>
