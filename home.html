@@ -38,37 +38,35 @@
       max-width: 600px;
       max-height: 600px;
       border-radius: 50%;
-      filter: blur(70px); /* 增加模糊度，讓過渡極致柔和 */
-      opacity: 0.8;
-      mix-blend-mode: screen; /* 色彩和諧混合 */
+      filter: blur(70px);
+      opacity: 0.85;
+      mix-blend-mode: screen;
+      transition: background 0.8s ease; /* 顏色漸變時的滑順過渡 */
     }
 
-    /* 藍色光暈：左上方順時針圓形軌跡 */
-    .blob-blue {
-      background: radial-gradient(circle, rgba(56, 189, 248, 1) 0%, rgba(56, 189, 248, 0) 70%);
+    /* 原型 (預設藍) - 左上方順時針圓形軌跡 */
+    .blob-original {
       top: 10%;
       left: 10%;
-      animation: smoothRotateBlue 22s linear infinite;
+      animation: smoothRotateOriginal 22s linear infinite;
     }
 
-    /* 綠色光暈：右上方逆時針圓形軌跡 */
-    .blob-green {
-      background: radial-gradient(circle, rgba(74, 222, 128, 1) 0%, rgba(74, 222, 128, 0) 70%);
+    /* 槓桿 (預設綠) - 右上方逆時針圓形軌跡 */
+    .blob-leverage {
       top: 10%;
       right: 10%;
-      animation: smoothRotateGreen 28s linear infinite;
+      animation: smoothRotateLeverage 28s linear infinite;
     }
 
-    /* 黃色光暈：下方順時針大圓弧軌跡 */
-    .blob-yellow {
-      background: radial-gradient(circle, rgba(250, 204, 21, 1) 0%, rgba(250, 204, 21, 0) 70%);
+    /* 現金 (預設黃) - 下方順時針大圓弧軌跡 */
+    .blob-cash {
       bottom: 0%;
       left: 20%;
-      animation: smoothRotateYellow 25s linear infinite;
+      animation: smoothRotateCash 25s linear infinite;
     }
 
-    /* 100% 無縫接軌的無限順時針旋轉軌跡 */
-    @keyframes smoothRotateBlue {
+    /* 100% 無縫接軌的無限旋轉軌跡 */
+    @keyframes smoothRotateOriginal {
       0% {
         transform: rotate(0deg) translate(-20vw, -15vh) rotate(0deg) scale(1);
       }
@@ -80,8 +78,7 @@
       }
     }
 
-    /* 100% 無縫接軌的無限逆時針旋轉軌跡 */
-    @keyframes smoothRotateGreen {
+    @keyframes smoothRotateLeverage {
       0% {
         transform: rotate(0deg) translate(25vw, -10vh) rotate(0deg) scale(1.1);
       }
@@ -93,8 +90,7 @@
       }
     }
 
-    /* 100% 無縫接軌的無限橢圓旋轉軌跡 */
-    @keyframes smoothRotateYellow {
+    @keyframes smoothRotateCash {
       0% {
         transform: rotate(0deg) translate(0vw, 25vh) rotate(0deg) scale(0.95);
       }
@@ -111,13 +107,88 @@
 
   <!-- 流動光暈容器 -->
   <div class="glow-container">
-    <div class="blob blob-blue"></div>
-    <div class="blob blob-green"></div>
-    <div class="blob blob-yellow"></div>
+    <div id="blob-original" class="blob blob-original"></div>
+    <div id="blob-leverage" class="blob blob-leverage"></div>
+    <div id="blob-cash" class="blob blob-cash"></div>
   </div>
 
   <!-- 引入統一管理的導覽列腳本 -->
   <script src="nav.js"></script>
+
+  <script>
+    // 預設標準色彩 (RGB)
+    const COLOR_ORIGINAL = { r: 56,  g: 189, b: 248 }; // 天空藍 #38bdf8
+    const COLOR_LEVERAGE = { r: 74,  g: 222, b: 128 }; // 翡翠綠 #4ade80
+    const COLOR_CASH     = { r: 250, g: 204, b: 21  }; // 暖陽黃 #facc15
+    const COLOR_RED      = { r: 244, g: 63,  b: 94  }; // 警示紅 #f43f5e
+
+    function parseNumber(formattedStr) {
+      if (!formattedStr) return 0;
+      return parseFloat(formattedStr.toString().replace(/,/g, '')) || 0;
+    }
+
+    // 根據偏離幅度 (0% ~ 10%) 計算 RGB 色彩插值
+    function interpolateColor(baseColor, targetColor, factor) {
+      // 限制 factor 在 0 到 1 之間
+      const f = Math.min(Math.max(factor, 0), 1);
+      const r = Math.round(baseColor.r + f * (targetColor.r - baseColor.r));
+      const g = Math.round(baseColor.g + f * (targetColor.g - baseColor.g));
+      const b = Math.round(baseColor.b + f * (targetColor.b - baseColor.b));
+      return `rgba(${r}, ${g}, ${b}, 1)`;
+    }
+
+    function updateBlobColors() {
+      // 1. 讀取「資產配置頁面」儲存的目標比例 (%)
+      const tOrig = parseFloat(localStorage.getItem('target_original')) || 60;
+      const tLev  = parseFloat(localStorage.getItem('target_leverage')) || 20;
+      const tCash = parseFloat(localStorage.getItem('target_cash')) || 20;
+
+      // 2. 讀取當前各項資產市值 (元)
+      const aOrig = parseNumber(localStorage.getItem('alloc_original')) || 0;
+      const aLev  = parseNumber(localStorage.getItem('alloc_leverage')) || 0;
+      const aCash = parseNumber(localStorage.getItem('alloc_cash')) || 0;
+
+      const total = aOrig + aLev + aCash;
+
+      // 3. 計算當前實際比例 (%)
+      let cOrig = 0, cLev = 0, cCash = 0;
+      if (total > 0) {
+        cOrig = (aOrig / total) * 100;
+        cLev  = (aLev / total) * 100;
+        cCash = (aCash / total) * 100;
+      }
+
+      // 4. 計算偏離幅度 (絕對值)
+      const diffOrig = Math.abs(cOrig - tOrig);
+      const diffLev  = Math.abs(cLev - tLev);
+      const diffCash = Math.abs(cCash - tCash);
+
+      // 5. 偏離 0% = 0, 偏離 10% 以上 = 1 (最高警示)
+      const factorOrig = diffOrig / 10;
+      const factorLev  = diffLev / 10;
+      const factorCash = diffCash / 10;
+
+      // 6. 計算漸變後的新顏色
+      const colorOrigStr = interpolateColor(COLOR_ORIGINAL, COLOR_RED, factorOrig);
+      const colorLevStr  = interpolateColor(COLOR_LEVERAGE, COLOR_RED, factorLev);
+      const colorCashStr = interpolateColor(COLOR_CASH, COLOR_RED, factorCash);
+
+      // 7. 套用至 CSS 徑向漸層背景
+      document.getElementById('blob-original').style.background = 
+        `radial-gradient(circle, ${colorOrigStr} 0%, rgba(0,0,0,0) 70%)`;
+      
+      document.getElementById('blob-leverage').style.background = 
+        `radial-gradient(circle, ${colorLevStr} 0%, rgba(0,0,0,0) 70%)`;
+
+      document.getElementById('blob-cash').style.background = 
+        `radial-gradient(circle, ${colorCashStr} 0%, rgba(0,0,0,0) 70%)`;
+    }
+
+    // 頁面載入時自動讀取 LocalStorage 計算顏色
+    window.onload = function() {
+      updateBlobColors();
+    };
+  </script>
 
 </body>
 </html>
