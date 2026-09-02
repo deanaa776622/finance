@@ -11,14 +11,11 @@
   <style>
     :root {
       --bg-color: #0f172a;
-      /* 微光玻璃質感背景：半透明深色 + 邊框 */
-      --card-bg: rgba(30, 41, 59, 0.55);
-      --input-bg: rgba(15, 23, 42, 0.6);
+      --card-bg: rgba(30, 41, 59, 0.45);
       --accent-color: #38bdf8;
       --text-color: #f8fafc;
-      --sub-text: #94a3b8;
-      --border-color: rgba(255, 255, 255, 0.12);
-      --disabled-bg: rgba(11, 17, 32, 0.5);
+      --sub-text: #64748b;
+      --border-color: rgba(255, 255, 255, 0.08);
     }
 
     * {
@@ -35,10 +32,9 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* 內容視窗與半透明玻璃卡片 */
     body {
       padding: 20px;
-      padding-bottom: 85px !important;
+      padding-bottom: 90px !important;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -46,184 +42,226 @@
 
     .container {
       width: 100%;
-      max-width: 420px;
+      max-width: 400px;
       position: relative;
       z-index: 1;
     }
 
-    h2 {
-      text-align: center;
-      color: var(--accent-color);
-      margin-bottom: 20px;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    }
-
-    /* 玻璃擬物卡片核心樣式 */
-    .card {
+    /* 調音盤玻璃卡片 */
+    .tuner-card {
       background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 28px;
+      padding: 28px 24px 20px 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
       border: 1px solid var(--border-color);
-      margin-bottom: 20px;
     }
 
-    .input-group {
-      margin-bottom: 15px;
+    /* 中央主角：巨大時間顯示 */
+    .hero-time {
+      text-align: center;
+      margin-bottom: 28px;
     }
 
-    label {
-      display: block;
+    .hero-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      color: var(--sub-text);
+      text-transform: uppercase;
+    }
+
+    .hero-value {
+      font-size: 3.2rem;
+      font-weight: 700;
+      color: var(--accent-color);
+      text-shadow: 0 0 24px rgba(56, 189, 248, 0.45);
+      margin: 4px 0;
+      line-height: 1.1;
+    }
+
+    .hero-unit {
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin-left: 4px;
+    }
+
+    .hero-detail {
       font-size: 0.85rem;
       color: var(--sub-text);
-      margin-bottom: 5px;
     }
 
-    input[type="text"], input[type="number"] {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border-color);
-      background-color: var(--input-bg);
-      color: var(--text-color);
-      font-size: 1rem;
-      box-sizing: border-box;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      transition: border-color 0.2s, box-shadow 0.2s;
+    /* 控制項區域 */
+    .control-row {
+      margin-bottom: 22px;
     }
 
-    input:focus {
-      outline: none;
-      border-color: var(--accent-color);
-      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
-    }
-
-    input:disabled {
-      background-color: var(--disabled-bg);
-      color: var(--sub-text);
-      cursor: not-allowed;
-      border-style: dashed;
-    }
-
-    /* 滑桿控制樣式 */
-    .slider-wrapper {
+    .row-header {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 10px;
-      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+
+    .row-title {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--sub-text);
+      letter-spacing: 0.05em;
+    }
+
+    /* 去邊框無痕輸入框 */
+    .seamless-input {
+      background: transparent;
+      border: none;
+      color: var(--text-color);
+      font-size: 1.15rem;
+      font-weight: 600;
+      text-align: right;
+      width: 140px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .seamless-input:focus {
+      color: var(--accent-color);
+      text-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+    }
+
+    .seamless-input:disabled {
+      color: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    /* 流線極簡滑桿 */
+    .slider-wrapper {
+      width: 100%;
     }
 
     input[type="range"] {
       -webkit-appearance: none;
       appearance: none;
       width: 100%;
-      height: 6px;
-      border-radius: 3px;
-      background: rgba(255, 255, 255, 0.15);
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.12);
       outline: none;
     }
 
     input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
       background: var(--accent-color);
       cursor: pointer;
-      box-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
+      box-shadow: 0 0 12px var(--accent-color);
+      transition: transform 0.1s ease;
     }
 
-    .result-box {
-      margin-top: 20px;
-      padding-top: 15px;
-      border-top: 1px solid var(--border-color);
-      text-align: center;
+    input[type="range"]::-webkit-slider-thumb:active {
+      transform: scale(1.25);
     }
 
-    .result-title {
-      font-size: 0.9rem;
-      color: var(--sub-text);
-    }
-
-    .result-value {
-      font-size: 2.2rem;
-      font-weight: bold;
-      color: var(--accent-color);
-      margin: 5px 0;
-      text-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
-    }
-
-    .result-detail {
-      font-size: 0.85rem;
-      color: var(--sub-text);
-    }
-
-    .chart-container {
-      position: relative;
+    /* 純淨極簡圖表容器 */
+    .chart-box {
+      height: 110px;
       width: 100%;
-      height: 260px;
+      margin-top: 15px;
+      position: relative;
+    }
+
+    /* 次要指標收納區 */
+    .secondary-info {
+      display: flex;
+      justify-content: space-between;
+      padding-top: 16px;
       margin-top: 10px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .info-label {
+      font-size: 0.72rem;
+      color: var(--sub-text);
+      margin-bottom: 2px;
+    }
+
+    .info-value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #cbd5e1;
     }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h2>退休儲蓄目標試算</h2>
-    
-    <!-- 輸入卡片 -->
-    <div class="card">
-      <div class="input-group">
-        <label>預期退休年生活費 (元)</label>
-        <input type="text" id="annual_cost" value="1,440,000" oninput="syncCostFromInput(this)">
+    <div class="tuner-card">
+      
+      <!-- 核心主角：退休時間 -->
+      <div class="hero-time">
+        <div class="hero-label">TIME TO TARGET</div>
+        <div class="hero-value" id="result-years">-- <span class="hero-unit">YEARS</span></div>
+        <div class="hero-detail" id="result-months">-- 個月</div>
+      </div>
+
+      <!-- 調音盤 1: 生活費 -->
+      <div class="control-row">
+        <div class="row-header">
+          <span class="row-title">ANNUAL COST (元)</span>
+          <input type="text" id="annual_cost" class="seamless-input" value="1,440,000" oninput="syncCostFromInput(this)">
+        </div>
         <div class="slider-wrapper">
           <input type="range" id="annual_cost_slider" min="0" max="10000000" step="10000" value="1440000" oninput="syncCostFromSlider(this)">
         </div>
       </div>
 
-      <div class="input-group">
-        <label>預期年化報酬率 (%) <span style="font-size:0.7rem;">(支援小數後兩位)</span></label>
-        <input type="number" step="0.01" id="rate" value="7.00" oninput="syncRateFromInput(this)" onblur="formatRate(this)">
+      <!-- 調音盤 2: 年化報酬率 -->
+      <div class="control-row">
+        <div class="row-header">
+          <span class="row-title">EXPECTED RETURN (%)</span>
+          <input type="number" step="0.01" id="rate" class="seamless-input" value="7.00" oninput="syncRateFromInput(this)" onblur="formatRate(this)">
+        </div>
         <div class="slider-wrapper">
           <input type="range" id="rate_slider" min="0" max="50" step="0.1" value="7.00" oninput="syncRateFromSlider(this)">
         </div>
       </div>
 
-      <div class="input-group">
-        <label>未來目標金額 (元) <span style="font-size:0.7rem;">(公式自動計算)</span></label>
-        <input type="text" id="fv" value="20,571,429" disabled>
-      </div>
-
-      <div class="input-group">
-        <label>目前持有金額 (元) <span style="font-size:0.7rem;">(來自資產配置總和)</span></label>
-        <input type="text" id="pv" value="0" disabled>
-      </div>
-      
-      <div class="input-group">
-        <label>每月定期存入金額 (元)</label>
-        <input type="text" id="pmt" value="13,500" oninput="syncPmtFromInput(this)">
+      <!-- 調音盤 3: 每月存入 -->
+      <div class="control-row">
+        <div class="row-header">
+          <span class="row-title">MONTHLY SAVING (元)</span>
+          <input type="text" id="pmt" class="seamless-input" value="13,500" oninput="syncPmtFromInput(this)">
+        </div>
         <div class="slider-wrapper">
           <input type="range" id="pmt_slider" min="0" max="1000000" step="1000" value="13500" oninput="syncPmtFromSlider(this)">
         </div>
       </div>
-      
-      <div class="result-box">
-        <div class="result-title">預計達成目標時間</div>
-        <div class="result-value" id="result-years">-- 年</div>
-        <div class="result-detail" id="result-months">-- 個月</div>
-      </div>
-    </div>
 
-    <!-- 資產成長曲線圖卡片 -->
-    <div class="card">
-      <div class="result-title" style="text-align: left; margin-bottom: 10px;">預估資產累積曲線</div>
-      <div class="chart-container">
+      <!-- 極簡無邊框流動圖表 -->
+      <div class="chart-box">
         <canvas id="assetChart"></canvas>
       </div>
+
+      <!-- 次要自動鎖定指標 -->
+      <div class="secondary-info">
+        <div class="info-item">
+          <span class="info-label">TARGET TOTAL</span>
+          <span class="info-value" id="fv_display">$0</span>
+        </div>
+        <div class="info-item" style="text-align: right;">
+          <span class="info-label">CURRENT ASSET</span>
+          <span class="info-value" id="pv_display">$0</span>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -231,7 +269,7 @@
     let assetChart = null;
 
     function formatNumber(num) {
-      if (num === null || num === undefined || isNaN(num)) return '';
+      if (num === null || num === undefined || isNaN(num)) return '0';
       return Number(Math.round(num)).toLocaleString('en-US');
     }
 
@@ -299,7 +337,7 @@
       const aCash = parseNumber(localStorage.getItem('alloc_cash')) || 0;
       const totalPV = aOrig + aLev + aCash;
 
-      document.getElementById('pv').value = formatNumber(totalPV);
+      document.getElementById('pv_display').innerText = '$' + formatNumber(totalPV);
       return totalPV;
     }
 
@@ -323,15 +361,14 @@
         fv = Infinity; 
       }
       
-      const fvInput = document.getElementById('fv');
+      const fvDisplay = document.getElementById('fv_display');
       if (fv === Infinity) {
-          fvInput.value = "需正報酬率才能反推";
+        fvDisplay.innerText = "需正報酬率";
       } else {
-          fvInput.value = formatNumber(fv);
-          localStorage.setItem('sav_target_total', fv);
+        fvDisplay.innerText = '$' + formatNumber(fv);
+        localStorage.setItem('sav_target_total', fv);
       }
 
-      // 呼叫 glow.js 統一方法驅動背景
       if (typeof updateGlowBackground === 'function') {
         updateGlowBackground(fv === Infinity ? 0 : fv);
       }
@@ -350,29 +387,26 @@
 
       let targetYearsNumber = 0;
 
-      if (fv === Infinity || fvInput.value === "需正報酬率才能反推") {
-          resultYears.innerText = "無法計算";
-          resultMonths.innerText = "請設定正的報酬率";
-          updateChart([], [], fv);
-          return;
+      if (fv === Infinity || fvDisplay.innerText === "需正報酬率") {
+        resultYears.innerHTML = `-- <span class="hero-unit">YEARS</span>`;
+        resultMonths.innerText = "請設定正的報酬率";
+        updateChart([], []);
+        return;
       } else if (isNaN(totalMonths) || totalMonths <= 0) {
         if (Math.abs(pv) >= fv && fv > 0) {
-          resultYears.innerText = "已達成目標！";
-          resultYears.style.fontSize = "1.8rem";
-          resultMonths.innerText = "目前資產已足夠支應退休生活";
+          resultYears.innerHTML = `0 <span class="hero-unit">YEARS</span>`;
+          resultMonths.innerText = "已達成目標！";
           targetYearsNumber = 0;
         } else {
-          resultYears.innerText = "無法達成";
-          resultYears.style.fontSize = "2.2rem";
-          resultMonths.innerText = "請增加每月存入金額或預期報酬率";
-          updateChart([], [], fv);
+          resultYears.innerHTML = `N/A <span class="hero-unit">YEARS</span>`;
+          resultMonths.innerText = "請增加每月存入或報酬率";
+          updateChart([], []);
           return;
         }
       } else {
-        resultYears.style.fontSize = "2.2rem";
-        const years = (totalMonths / 12).toFixed(2);
+        const years = (totalMonths / 12).toFixed(1);
         const months = Math.ceil(totalMonths);
-        resultYears.innerText = `${years} 年`;
+        resultYears.innerHTML = `${years} <span class="hero-unit">YEARS</span>`;
         resultMonths.innerText = `約 ${months} 個月`;
         targetYearsNumber = parseFloat(years);
 
@@ -381,20 +415,19 @@
         localStorage.setItem('sav_pmt', Math.abs(pmtVal));
       }
 
-      generateChartData(pvVal, pmtVal, annualRate, targetYearsNumber, fv);
+      generateChartData(pvVal, pmtVal, annualRate, targetYearsNumber);
     }
 
-    function generateChartData(initialPv, monthlyPmt, annualRate, yearsTarget, fv) {
+    function generateChartData(initialPv, monthlyPmt, annualRate, yearsTarget) {
       const labels = [];
       const assetData = [];
-      
       const maxYears = Math.max(Math.ceil(yearsTarget) + 1, 5);
       const monthlyRate = annualRate / 12;
 
       let currentAsset = initialPv;
 
       for (let yr = 0; yr <= maxYears; yr++) {
-        labels.push(`第 ${yr} 年`);
+        labels.push(yr);
         assetData.push(Math.round(currentAsset));
 
         for (let m = 0; m < 12; m++) {
@@ -402,10 +435,11 @@
         }
       }
 
-      updateChart(labels, assetData, fv);
+      updateChart(labels, assetData);
     }
 
-    function updateChart(labels, data, fvTarget) {
+    /* 無網格極簡曲線圖 */
+    function updateChart(labels, data) {
       const ctx = document.getElementById('assetChart').getContext('2d');
 
       if (assetChart) {
@@ -419,14 +453,20 @@
         data: {
           labels: labels,
           datasets: [{
-            label: '預估總資產 (元)',
             data: data,
             borderColor: '#38bdf8',
-            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+            borderWidth: 2,
+            backgroundColor: (context) => {
+              const bgCtx = context.chart.ctx;
+              const gradient = bgCtx.createLinearGradient(0, 0, 0, 100);
+              gradient.addColorStop(0, 'rgba(56, 189, 248, 0.25)');
+              gradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+              return gradient;
+            },
             fill: true,
-            tension: 0.3,
-            pointRadius: 3,
-            pointHoverRadius: 6
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 4
           }]
         },
         options: {
@@ -435,30 +475,15 @@
           plugins: {
             legend: { display: false },
             tooltip: {
+              enabled: true,
               callbacks: {
-                label: function(context) {
-                  return ` 資產: $${formatNumber(context.raw)}`;
-                }
+                label: (context) => `$${formatNumber(context.raw)}`
               }
             }
           },
           scales: {
-            x: {
-              grid: { color: 'rgba(255, 255, 255, 0.1)' },
-              ticks: { color: '#94a3b8', font: { size: 10 } }
-            },
-            y: {
-              grid: { color: 'rgba(255, 255, 255, 0.1)' },
-              ticks: { 
-                color: '#94a3b8',
-                font: { size: 10 },
-                callback: function(value) {
-                  if (value >= 100000000) return (value / 100000000).toFixed(1) + '億';
-                  if (value >= 10000) return (value / 10000).toFixed(0) + '萬';
-                  return value;
-                }
-              }
-            }
+            x: { display: false },
+            y: { display: false }
           }
         }
       });
