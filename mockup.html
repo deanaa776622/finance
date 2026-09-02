@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>目標調音器概念原型</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex; justify-content: center; padding: 20px;
+    }
+    .tuner-card {
+      width: 100%; max-width: 400px;
+      background: rgba(30, 41, 59, 0.4);
+      backdrop-filter: blur(20px);
+      border-radius: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 28px 24px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+    /* 中央核心：巨大化時間標籤 */
+    .hero-time {
+      text-align: center; margin-bottom: 32px;
+    }
+    .hero-label {
+      font-size: 0.75rem; letter-spacing: 0.2em; color: #94a3b8; text-transform: uppercase;
+    }
+    .hero-value {
+      font-size: 3.2rem; font-weight: 700; color: #38bdf8;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+      margin: 4px 0;
+    }
+    /*去邊框化極簡調音欄位 */
+    .control-row {
+      margin-bottom: 24px;
+    }
+    .row-header {
+      display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;
+    }
+    .row-title { font-size: 0.85rem; color: #64748b; }
+    .row-num { font-size: 1.2rem; font-weight: 600; color: #f8fafc; }
+    input[type="range"] {
+      -webkit-appearance: none; width: 100%; height: 4px;
+      background: rgba(255, 255, 255, 0.1); border-radius: 2px; outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+      background: #38bdf8; box-shadow: 0 0 12px #38bdf8; cursor: pointer;
+    }
+    /* 發光流線意象（模擬圖表區） */
+    .sparkline-box {
+      height: 80px; width: 100%; margin-top: 12px;
+      background: linear-gradient(180deg, rgba(56, 189, 248, 0.15) 0%, rgba(0,0,0,0) 100%);
+      border-top: 2px solid #38bdf8;
+      box-shadow: 0 -4px 12px rgba(56, 189, 248, 0.3);
+      border-radius: 4px;
+      position: relative;
+    }
+    .endpoint {
+      position: absolute; right: 0; top: -5px; width: 8px; height: 8px;
+      background: #38bdf8; border-radius: 50%; box-shadow: 0 0 10px #38bdf8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="tuner-card">
+    <div class="hero-time">
+      <div class="hero-label">TIME TO TARGET</div>
+      <div class="hero-value">12.5 <span style="font-size: 1.2rem;">YEARS</span></div>
+    </div>
+
+    <div class="control-row">
+      <div class="row-header">
+        <span class="row-title">ANNUAL COST</span>
+        <span class="row-num">$1,440,000</span>
+      </div>
+      <input type="range" value="60">
+    </div>
+
+    <div class="control-row">
+      <div class="row-header">
+        <span class="row-title">EXPECTED RETURN</span>
+        <span class="row-num">7.00%</span>
+      </div>
+      <input type="range" value="30">
+    </div>
+
+    <div class="control-row">
+      <div class="row-header">
+        <span class="row-title">MONTHLY SAVING</span>
+        <span class="row-num">$13,500</span>
+      </div>
+      <input type="range" value="40">
+    </div>
+
+    <div class="sparkline-box">
+      <div class="endpoint"></div>
+    </div>
+  </div>
+
+</body>
+</html>
