@@ -101,11 +101,9 @@
       margin-top: 10px;
     }
 
-/* 確保頁面底部不被導覽列遮擋 */
-body {
-  padding-bottom: 70px !important;
-}
-
+    body {
+      padding-bottom: 70px !important;
+    }
   </style>
 </head>
 <body>
@@ -131,8 +129,9 @@ body {
     </div>
 
     <div class="input-group">
-      <label>目前持有金額 (元)</label>
-      <input type="text" id="pv" value="11,622,880" oninput="formatAndCalculate(this)">
+      <label>目前持有金額 (元) <span style="font-size:0.7rem;">(來自資產配置總和)</span></label>
+      <!-- 改為 disabled 停用手動修改 -->
+      <input type="text" id="pv" value="0" disabled>
     </div>
     
     <div class="input-group">
@@ -147,7 +146,7 @@ body {
     </div>
   </div>
 
-  <!-- 新增：資產成長曲線圖卡片 -->
+  <!-- 資產成長曲線圖卡片 -->
   <div class="card">
     <div class="result-title" style="text-align: left; margin-bottom: 10px;">預估資產累積曲線</div>
     <div class="chart-container">
@@ -157,7 +156,7 @@ body {
 </div>
 
 <script>
-  let assetChart = null; // 儲存圖表實例
+  let assetChart = null;
 
   function formatNumber(num) {
     if (num === null || num === undefined || isNaN(num)) return '';
@@ -181,6 +180,17 @@ body {
     if (!isNaN(value)) {
       input.value = value.toFixed(2);
     }
+  }
+
+  // 從 localStorage 讀取資產配置頁面的三項市值並動態加總
+  function loadAndSyncPV() {
+    const aOrig = parseNumber(localStorage.getItem('alloc_original')) || 0;
+    const aLev  = parseNumber(localStorage.getItem('alloc_leverage')) || 0;
+    const aCash = parseNumber(localStorage.getItem('alloc_cash')) || 0;
+    const totalPV = aOrig + aLev + aCash;
+
+    document.getElementById('pv').value = formatNumber(totalPV);
+    return totalPV;
   }
 
   function calculateNPER(rate, pmt, pv, fv) {
@@ -208,11 +218,11 @@ body {
         fvInput.value = "需正報酬率才能反推";
     } else {
         fvInput.value = formatNumber(fv);
-        // 將計算出的「未來目標金額」儲存至 localStorage，供首頁計算累積進度與光暈面積
         localStorage.setItem('sav_target_total', fv);
     }
 
-    const pvVal = parseNumber(document.getElementById('pv').value);
+    // 自動讀取資產配置頁面的市值總和
+    const pvVal = loadAndSyncPV();
     const pmtVal = parseNumber(document.getElementById('pmt').value);
     const monthlyRate = annualRate / 12;
 
@@ -254,20 +264,16 @@ body {
 
       localStorage.setItem('sav_annual_cost', annualCost);
       localStorage.setItem('sav_rate', (annualRate * 100).toFixed(2));
-      localStorage.setItem('sav_pv', Math.abs(pv));
       localStorage.setItem('sav_pmt', Math.abs(pmt));
     }
 
-    // 計算每年預估資產，用於繪製曲線圖
     generateChartData(pvVal, pmtVal, annualRate, targetYearsNumber, fv);
   }
 
-  // 逐年模擬資產成長並繪製圖表
   function generateChartData(initialPv, monthlyPmt, annualRate, yearsTarget, fv) {
     const labels = [];
     const assetData = [];
     
-    // 最多預測至達成年數的 1.2 倍或至少 5 年
     const maxYears = Math.max(Math.ceil(yearsTarget) + 1, 5);
     const monthlyRate = annualRate / 12;
 
@@ -277,7 +283,6 @@ body {
       labels.push(`第 ${yr} 年`);
       assetData.push(Math.round(currentAsset));
 
-      // 模擬下一年的 12 個月複利及投入
       for (let m = 0; m < 12; m++) {
         currentAsset = (currentAsset + monthlyPmt) * (1 + monthlyRate);
       }
@@ -286,12 +291,11 @@ body {
     updateChart(labels, assetData, fv);
   }
 
-  // 更新或創建 Chart.js 折線圖
   function updateChart(labels, data, fvTarget) {
     const ctx = document.getElementById('assetChart').getContext('2d');
 
     if (assetChart) {
-      assetChart.destroy(); // 銷毀舊圖表以供重繪
+      assetChart.destroy();
     }
 
     if (labels.length === 0) return;
@@ -306,7 +310,7 @@ body {
           borderColor: '#38bdf8',
           backgroundColor: 'rgba(56, 189, 248, 0.1)',
           fill: true,
-          tension: 0.3, // 曲線平滑度
+          tension: 0.3,
           pointRadius: 3,
           pointHoverRadius: 6
         }]
@@ -353,15 +357,13 @@ body {
     if (localStorage.getItem('sav_rate')) {
       document.getElementById('rate').value = localStorage.getItem('sav_rate');
     }
-    if (localStorage.getItem('sav_pv')) {
-      document.getElementById('pv').value = formatNumber(localStorage.getItem('sav_pv'));
-    }
     if (localStorage.getItem('sav_pmt')) {
       document.getElementById('pmt').value = formatNumber(localStorage.getItem('sav_pmt'));
     }
     calculate();
   };
 </script>
+
 <!-- 引入統一管理的導覽列腳本 -->
 <script src="nav.js"></script>
 
