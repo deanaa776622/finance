@@ -32,15 +32,13 @@
       z-index: 1;
     }
 
-    /* 藍、綠、黃三個流動光暈球體 */
+    /* 藍、綠、黃三個流動光暈球體 (加大覆蓋範圍) */
     .blob {
       position: absolute;
-      width: 90vw;
-      height: 90vw;
-      max-width: 600px;
-      max-height: 600px;
+      width: 160vw;
+      height: 160vw;
       border-radius: 50%;
-      filter: blur(70px);
+      filter: blur(80px);
       opacity: 0.85;
       mix-blend-mode: screen;
       transition: background 0.8s ease;
@@ -48,42 +46,42 @@
 
     /* 原型 (預設藍) */
     .blob-original {
-      top: 10%;
-      left: 10%;
+      top: -20vh;
+      left: -20vw;
       animation: smoothRotateOriginal 22s linear infinite;
     }
 
     /* 槓桿 (預設綠) */
     .blob-leverage {
-      top: 10%;
-      right: 10%;
+      top: -20vh;
+      right: -20vw;
       animation: smoothRotateLeverage 28s linear infinite;
     }
 
     /* 現金 (預設黃) */
     .blob-cash {
-      bottom: 0%;
-      left: 20%;
+      bottom: -30vh;
+      left: -10vw;
       animation: smoothRotateCash 25s linear infinite;
     }
 
-    /* 無縫旋轉軌跡 */
+    /* 無縫旋轉軌跡 (配合大尺寸微調偏移量) */
     @keyframes smoothRotateOriginal {
-      0% { transform: rotate(0deg) translate(-20vw, -15vh) rotate(0deg) scale(1); }
-      50% { transform: rotate(180deg) translate(-20vw, -15vh) rotate(-180deg) scale(1.2); }
-      100% { transform: rotate(360deg) translate(-20vw, -15vh) rotate(-360deg) scale(1); }
+      0% { transform: rotate(0deg) translate(-10vw, -10vh) rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) translate(-10vw, -10vh) rotate(-180deg) scale(1.15); }
+      100% { transform: rotate(360deg) translate(-10vw, -10vh) rotate(-360deg) scale(1); }
     }
 
     @keyframes smoothRotateLeverage {
-      0% { transform: rotate(0deg) translate(25vw, -10vh) rotate(0deg) scale(1.1); }
-      50% { transform: rotate(-180deg) translate(25vw, -10vh) rotate(180deg) scale(0.9); }
-      100% { transform: rotate(-360deg) translate(25vw, -10vh) rotate(-360deg) scale(1.1); }
+      0% { transform: rotate(0deg) translate(12vw, -8vh) rotate(0deg) scale(1.1); }
+      50% { transform: rotate(-180deg) translate(12vw, -8vh) rotate(180deg) scale(0.9); }
+      100% { transform: rotate(-360deg) translate(12vw, -8vh) rotate(-360deg) scale(1.1); }
     }
 
     @keyframes smoothRotateCash {
-      0% { transform: rotate(0deg) translate(0vw, 25vh) rotate(0deg) scale(0.95); }
-      50% { transform: rotate(180deg) translate(0vw, 25vh) rotate(-180deg) scale(1.15); }
-      100% { transform: rotate(360deg) translate(0vw, 25vh) rotate(-360deg) scale(0.95); }
+      0% { transform: rotate(0deg) translate(0vw, 15vh) rotate(0deg) scale(0.95); }
+      50% { transform: rotate(180deg) translate(0vw, 15vh) rotate(-180deg) scale(1.1); }
+      100% { transform: rotate(360deg) translate(0vw, 15vh) rotate(-360deg) scale(0.95); }
     }
 
     /* 中央極簡純文字顯示層 */
