@@ -13,6 +13,13 @@
       padding: 0;
     }
     
+    :root {
+      /* 預設面積倍率為 1 (滿版)，由 JS 動態覆寫 */
+      --s-orig: 1;
+      --s-lev: 1;
+      --s-cash: 1;
+    }
+    
     html, body {
       width: 100%;
       height: 100%;
@@ -21,7 +28,6 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* 滿版背景容器 */
     .glow-container {
       position: absolute;
       top: 0;
@@ -32,7 +38,6 @@
       z-index: 1;
     }
 
-    /* 藍、綠、黃三個流動光暈球體 (加大覆蓋範圍) */
     .blob {
       position: absolute;
       width: 160vw;
@@ -42,49 +47,46 @@
       opacity: 0.85;
       mix-blend-mode: screen;
       transition: background 0.8s ease;
+      transform-origin: center center;
     }
 
-    /* 原型 (預設藍) */
     .blob-original {
       top: -20vh;
       left: -20vw;
       animation: smoothRotateOriginal 22s linear infinite;
     }
 
-    /* 槓桿 (預設綠) */
     .blob-leverage {
       top: -20vh;
       right: -20vw;
       animation: smoothRotateLeverage 28s linear infinite;
     }
 
-    /* 現金 (預設黃) */
     .blob-cash {
       bottom: -30vh;
       left: -10vw;
       animation: smoothRotateCash 25s linear infinite;
     }
 
-    /* 無縫旋轉軌跡 (配合大尺寸微調偏移量) */
+    /* 將 JS 計算的面積倍率 (--s) 無縫注入 CSS 動畫中 */
     @keyframes smoothRotateOriginal {
-      0% { transform: rotate(0deg) translate(-10vw, -10vh) rotate(0deg) scale(1); }
-      50% { transform: rotate(180deg) translate(-10vw, -10vh) rotate(-180deg) scale(1.15); }
-      100% { transform: rotate(360deg) translate(-10vw, -10vh) rotate(-360deg) scale(1); }
+      0% { transform: rotate(0deg) translate(-10vw, -10vh) rotate(0deg) scale(var(--s-orig)); }
+      50% { transform: rotate(180deg) translate(-10vw, -10vh) rotate(-180deg) scale(calc(var(--s-orig) * 1.15)); }
+      100% { transform: rotate(360deg) translate(-10vw, -10vh) rotate(-360deg) scale(var(--s-orig)); }
     }
 
     @keyframes smoothRotateLeverage {
-      0% { transform: rotate(0deg) translate(12vw, -8vh) rotate(0deg) scale(1.1); }
-      50% { transform: rotate(-180deg) translate(12vw, -8vh) rotate(180deg) scale(0.9); }
-      100% { transform: rotate(-360deg) translate(12vw, -8vh) rotate(-360deg) scale(1.1); }
+      0% { transform: rotate(0deg) translate(12vw, -8vh) rotate(0deg) scale(var(--s-lev)); }
+      50% { transform: rotate(-180deg) translate(12vw, -8vh) rotate(180deg) scale(calc(var(--s-lev) * 0.9)); }
+      100% { transform: rotate(-360deg) translate(12vw, -8vh) rotate(-360deg) scale(var(--s-lev)); }
     }
 
     @keyframes smoothRotateCash {
-      0% { transform: rotate(0deg) translate(0vw, 15vh) rotate(0deg) scale(0.95); }
-      50% { transform: rotate(180deg) translate(0vw, 15vh) rotate(-180deg) scale(1.1); }
-      100% { transform: rotate(360deg) translate(0vw, 15vh) rotate(-360deg) scale(0.95); }
+      0% { transform: rotate(0deg) translate(0vw, 15vh) rotate(0deg) scale(calc(var(--s-cash) * 0.95)); }
+      50% { transform: rotate(180deg) translate(0vw, 15vh) rotate(-180deg) scale(calc(var(--s-cash) * 1.1)); }
+      100% { transform: rotate(360deg) translate(0vw, 15vh) rotate(-360deg) scale(calc(var(--s-cash) * 0.95)); }
     }
 
-    /* 中央極簡純文字顯示層 */
     .status-overlay {
       position: absolute;
       top: 0;
@@ -110,19 +112,16 @@
 </head>
 <body>
 
-  <!-- 流動光暈容器 -->
   <div class="glow-container">
     <div id="blob-original" class="blob blob-original"></div>
     <div id="blob-leverage" class="blob blob-leverage"></div>
     <div id="blob-cash" class="blob blob-cash"></div>
   </div>
 
-  <!-- 中央極簡純文字顯示層 -->
   <div class="status-overlay">
     <span id="status-text" class="status-text">BALANCED</span>
   </div>
 
-  <!-- 引入統一管理的導覽列腳本 -->
   <script src="nav.js"></script>
 
   <script>
@@ -145,19 +144,38 @@
     }
 
     function updateDashboard() {
-      // 1. 讀取目標比例 (%)
+      // 1. 讀取儲蓄試算的「未來目標總金額」(假設你在儲蓄試算頁面存的 key 是 'sav_target_total')
+      // 若尚未設定，預設為 10,000,000 以利畫面預覽
+      const futureTotalTarget = parseFloat(localStorage.getItem('sav_target_total')) || 10000000;
+
+      // 2. 讀取目標比例 (%)
       const tOrig = parseFloat(localStorage.getItem('target_original')) || 60;
       const tLev  = parseFloat(localStorage.getItem('target_leverage')) || 20;
       const tCash = parseFloat(localStorage.getItem('target_cash')) || 20;
 
-      // 2. 讀取當前市值 (元)
+      // 3. 讀取當前市值 (元)
       const aOrig = parseNumber(localStorage.getItem('alloc_original')) || 0;
       const aLev  = parseNumber(localStorage.getItem('alloc_leverage')) || 0;
       const aCash = parseNumber(localStorage.getItem('alloc_cash')) || 0;
 
-      const total = aOrig + aLev + aCash;
+      // === 新增：計算各項資產的絕對目標金額 ===
+      const targetAmtOrig = futureTotalTarget * (tOrig / 100);
+      const targetAmtLev  = futureTotalTarget * (tLev / 100);
+      const targetAmtCash = futureTotalTarget * (tCash / 100);
 
-      // 3. 計算當前比例 (%)
+      // === 新增：計算面積倍率 (達成率開根號) ===
+      // 最低為 0，最高封頂為 1 (滿版)
+      const scaleOrig = targetAmtOrig > 0 ? Math.min(Math.sqrt(aOrig / targetAmtOrig), 1) : (aOrig > 0 ? 1 : 0);
+      const scaleLev  = targetAmtLev > 0 ? Math.min(Math.sqrt(aLev / targetAmtLev), 1) : (aLev > 0 ? 1 : 0);
+      const scaleCash = targetAmtCash > 0 ? Math.min(Math.sqrt(aCash / targetAmtCash), 1) : (aCash > 0 ? 1 : 0);
+
+      // 注入 CSS 變數，即時調整光暈大小
+      document.documentElement.style.setProperty('--s-orig', scaleOrig);
+      document.documentElement.style.setProperty('--s-lev', scaleLev);
+      document.documentElement.style.setProperty('--s-cash', scaleCash);
+
+      // === 以下維持原有的顏色警示與文字邏輯 ===
+      const total = aOrig + aLev + aCash;
       let cOrig = 0, cLev = 0, cCash = 0;
       if (total > 0) {
         cOrig = (aOrig / total) * 100;
@@ -165,24 +183,18 @@
         cCash = (aCash / total) * 100;
       }
 
-      // 4. 計算偏離幅度 (絕對值)
       const diffOrig = Math.abs(cOrig - tOrig);
       const diffLev  = Math.abs(cLev - tLev);
       const diffCash = Math.abs(cCash - tCash);
-
-      // 找出最大偏離值
       const maxDiff = Math.max(diffOrig, diffLev, diffCash);
 
-      // 5. 更新中央狀態文字
       const statusText = document.getElementById('status-text');
-
       if (maxDiff >= 10) {
         statusText.innerText = 'ATTENTION';
       } else {
         statusText.innerText = 'BALANCED';
       }
 
-      // 6. 計算光暈漸變顏色
       const factorOrig = diffOrig / 10;
       const factorLev  = diffLev / 10;
       const factorCash = diffCash / 10;
@@ -193,10 +205,8 @@
 
       document.getElementById('blob-original').style.background = 
         `radial-gradient(circle, ${colorOrigStr} 0%, rgba(0,0,0,0) 70%)`;
-      
       document.getElementById('blob-leverage').style.background = 
         `radial-gradient(circle, ${colorLevStr} 0%, rgba(0,0,0,0) 70%)`;
-
       document.getElementById('blob-cash').style.background = 
         `radial-gradient(circle, ${colorCashStr} 0%, rgba(0,0,0,0) 70%)`;
     }
@@ -205,6 +215,5 @@
       updateDashboard();
     };
   </script>
-
 </body>
 </html>
