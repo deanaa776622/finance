@@ -169,7 +169,10 @@
     
     <div class="input-group">
       <label>每月定期存入金額 (元)</label>
-      <input type="text" id="pmt" value="13,500" oninput="formatAndCalculate(this)">
+      <input type="text" id="pmt" value="13,500" oninput="syncPmtFromInput(this)">
+      <div class="slider-wrapper">
+        <input type="range" id="pmt_slider" min="0" max="1000000" step="1000" value="13500" oninput="syncPmtFromSlider(this)">
+      </div>
     </div>
     
     <div class="result-box">
@@ -236,10 +239,19 @@
     calculate();
   }
 
-  function formatAndCalculate(input) {
+  // 每月定期存入金額：從輸入框同步拉霸
+  function syncPmtFromInput(input) {
     let rawValue = parseNumber(input.value);
-    if (rawValue > 999999999999999) rawValue = 999999999999999; 
+    if (rawValue > 1000000) rawValue = 1000000;
     input.value = rawValue ? rawValue.toLocaleString('en-US') : (input.value === '0' ? '0' : '');
+    document.getElementById('pmt_slider').value = rawValue;
+    calculate();
+  }
+
+  // 每月定期存入金額：從拉霸同步輸入框
+  function syncPmtFromSlider(slider) {
+    const val = parseFloat(slider.value) || 0;
+    document.getElementById('pmt').value = formatNumber(val);
     calculate();
   }
 
@@ -316,7 +328,7 @@
         targetYearsNumber = 0;
       } else {
         resultYears.innerText = "無法達成";
-        resultMonths.style.fontSize = "2.2rem";
+        resultYears.style.fontSize = "2.2rem";
         resultMonths.innerText = "請增加每月存入金額或預期報酬率";
         updateChart([], [], fv);
         return;
@@ -331,7 +343,7 @@
 
       localStorage.setItem('sav_annual_cost', annualCost);
       localStorage.setItem('sav_rate', (annualRate * 100).toFixed(2));
-      localStorage.setItem('sav_pmt', Math.abs(pmt));
+      localStorage.setItem('sav_pmt', Math.abs(pmtVal));
     }
 
     generateChartData(pvVal, pmtVal, annualRate, targetYearsNumber, fv);
@@ -429,7 +441,9 @@
       document.getElementById('rate_slider').value = savedRate;
     }
     if (localStorage.getItem('sav_pmt')) {
-      document.getElementById('pmt').value = formatNumber(localStorage.getItem('sav_pmt'));
+      const savedPmt = parseNumber(localStorage.getItem('sav_pmt'));
+      document.getElementById('pmt').value = formatNumber(savedPmt);
+      document.getElementById('pmt_slider').value = savedPmt;
     }
     calculate();
   };
