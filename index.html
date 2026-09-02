@@ -208,6 +208,8 @@ body {
         fvInput.value = "需正報酬率才能反推";
     } else {
         fvInput.value = formatNumber(fv);
+        // 將計算出的「未來目標金額」儲存至 localStorage，供首頁計算累積進度與光暈面積
+        localStorage.setItem('sav_target_total', fv);
     }
 
     const pvVal = parseNumber(document.getElementById('pv').value);
