@@ -160,7 +160,6 @@
 
     .asset-val-box { text-align: right; }
     .asset-val { font-size: 1.05rem; font-weight: 600; color: #f8fafc; }
-    .asset-val-sub { font-size: 0.72rem; color: var(--sub-text); margin-top: 1px; }
 
     .sheet-overlay {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -449,12 +448,10 @@
           twdVal = rawVal * fxRate;
           totalCashTWD += twdVal;
 
-          const subText = curr === 'USD' ? `$${formatNumber(rawVal)} USD (匯率 ${fxRate})` : '';
           html = `
             <div class="asset-capsule" onclick="openEditSheet(${item.id})">
               <div class="asset-info">
                 <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
-                ${subText ? `<div class="asset-detail">${subText}</div>` : ''}
               </div>
               <div class="asset-val-box">
                 <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
@@ -471,7 +468,7 @@
               <div class="asset-capsule" onclick="openEditSheet(${item.id})">
                 <div class="asset-info">
                   <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
-                  <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price} ${curr === 'USD' ? `(折合 NT$${formatNumber(twdVal)})` : ''}</div>
+                  <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
                 </div>
                 <div class="asset-val-box">
                   <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
@@ -484,7 +481,7 @@
               <div class="asset-capsule" onclick="openEditSheet(${item.id})">
                 <div class="asset-info">
                   <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span> <span class="badge-lev">${item.multiple || 2}X</span></div>
-                  <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price} ${curr === 'USD' ? `(折合 NT$${formatNumber(twdVal)})` : ''}</div>
+                  <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
                 </div>
                 <div class="asset-val-box">
                   <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
