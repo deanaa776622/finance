@@ -40,6 +40,7 @@
       position: relative; z-index: 1;
     }
 
+    /* 頂部總覽卡片 */
     .summary-card {
       background: var(--card-bg);
       backdrop-filter: blur(20px);
@@ -50,6 +51,14 @@
       border: 1px solid var(--border-color);
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
       margin-bottom: 20px;
+      position: relative;
+    }
+
+    .summary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
     }
 
     .summary-label {
@@ -58,11 +67,38 @@
       text-transform: uppercase;
     }
 
+    /* 批次刷新按鈕 */
+    .refresh-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--accent-color);
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s;
+      font-size: 0.9rem;
+    }
+    .refresh-btn:active { transform: scale(0.9); }
+    .refresh-btn.spinning {
+      animation: spin 1s linear infinite;
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    .refresh-status {
+      font-size: 0.72rem; color: var(--accent-color);
+      margin-top: 4px; min-height: 18px; display: none;
+    }
+
     .summary-value {
       font-size: 2.8rem; font-weight: 700;
       color: var(--accent-color);
       text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
-      margin: 6px 0;
+      margin: 4px 0;
     }
 
     .summary-sub {
@@ -70,6 +106,7 @@
       display: flex; justify-content: center; gap: 12px;
     }
 
+    /* 分組卡片 */
     .section-card {
       background: var(--card-bg);
       backdrop-filter: blur(20px);
@@ -239,10 +276,14 @@
 
   <div class="container">
     
-    <!-- 頂部總淨值彙總 (以 TWD 為核心計價單位) -->
+    <!-- 頂部總覽卡片 -->
     <div class="summary-card">
-      <div class="summary-label">NET WORTH (TWD)</div>
+      <div class="summary-header">
+        <div class="summary-label">NET WORTH (TWD)</div>
+        <button class="refresh-btn" id="btn-refresh-all" onclick="refreshAllPrices()" title="一鍵更新股價與匯率">↻</button>
+      </div>
       <div class="summary-value" id="total-net-worth">$0</div>
+      <div class="refresh-status" id="refresh-status">⚡ 正在更新最新即時股價...</div>
       <div class="summary-sub">
         <span>原 <strong id="pct-orig">0%</strong></span>
         <span>槓 <strong id="pct-lev">0%</strong></span>
@@ -388,7 +429,7 @@
     let currentType = 'original';
     let currentCurrency = 'TWD';
     let currentLevMultiple = 2;
-    let currentCashMode = 'total'; // 'total' 或 'shares'
+    let currentCashMode = 'total';
     let editingAssetId = null;
 
     function formatNumber(num) {
@@ -404,6 +445,49 @@
       } else {
         body.classList.add('open'); arrow.classList.add('open');
       }
+    }
+
+    // 批次更新所有股票/ETF 股價與即時匯率
+    async function refreshAllPrices() {
+      const btn = document.getElementById('btn-refresh-all');
+      const statusText = document.getElementById('refresh-status');
+
+      if (!GAS_API_URL || GAS_API_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") return;
+
+      btn.classList.add('spinning');
+      statusText.style.display = 'block';
+      statusText.innerText = '⚡ 正在更新最新即時股價...';
+
+      let updateCount = 0;
+
+      for (let i = 0; i < assets.length; i++) {
+        const item = assets[i];
+        // 僅針對股票/ETF項目發送更新請求
+        if (item.type !== 'cash' || item.isSharesMode) {
+          if (item.symbol) {
+            try {
+              const res = await fetch(`${GAS_API_URL}?symbol=${encodeURIComponent(item.symbol)}`);
+              const data = await res.json();
+              if (data.status === 'success' && data.price) {
+                assets[i].price = parseFloat(data.price);
+                if (data.currency) assets[i].currency = data.currency;
+                if (data.usdtwd && data.currency === 'USD') assets[i].rate = parseFloat(data.usdtwd);
+                updateCount++;
+              }
+            } catch (e) {
+              console.error(`更新 ${item.symbol} 失敗:`, e);
+            }
+          }
+        }
+      }
+
+      renderAssets();
+      btn.classList.remove('spinning');
+      statusText.innerText = `✓ 已更新 ${updateCount} 筆股票與最新匯率`;
+
+      setTimeout(() => {
+        statusText.style.display = 'none';
+      }, 3000);
     }
 
     async function fetchStockPrice() {
