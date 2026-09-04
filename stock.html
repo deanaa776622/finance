@@ -267,6 +267,23 @@
       width: 100%; padding: 12px 16px; border-radius: 12px;
       border: 1px solid var(--border-color); background: var(--input-bg);
       color: #f8fafc; font-size: 1rem; outline: none;
+      transition: opacity 0.2s, background 0.2s;
+    }
+
+    /* 停用 (Disabled) 狀態之 CSS 呈現 */
+    .form-group.disabled {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+    .form-input:disabled {
+      background: rgba(15, 23, 42, 0.3);
+      color: var(--sub-text);
+      cursor: not-allowed;
+    }
+    .type-btn.disabled, .lev-btn.disabled, .curr-btn.disabled, .mode-btn.disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      pointer-events: none;
     }
 
     .price-hint {
@@ -378,12 +395,13 @@
 
   </div>
 
-  <!-- 底部滑出抽屜 -->
+  <!-- 底部滑出抽屜 (全控制項固定保持，防高度跳動) -->
   <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
   <div class="bottom-sheet" id="bottom-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title" id="sheet-title">新增資產</div>
 
+    <!-- 1. 資產類別 -->
     <div class="form-group">
       <label class="form-label">資產類別</label>
       <div class="type-selector">
@@ -393,20 +411,23 @@
       </div>
     </div>
 
-    <div class="form-group" id="group-cash-mode" style="display: none;">
+    <!-- 2. 輸入方式 (現金/房屋可切換；原型與槓桿預設為「股數單價」並鎖定) -->
+    <div class="form-group" id="group-cash-mode">
       <label class="form-label">輸入方式</label>
       <div class="mode-selector">
-        <div class="mode-btn active" id="mode-total" onclick="setCashMode('total')">總金額 (存款/房產)</div>
-        <div class="mode-btn" id="mode-shares" onclick="setCashMode('shares')">股數與單價 (股票/ETF)</div>
+        <div class="mode-btn" id="mode-total" onclick="setCashMode('total')">總金額 (存款/房產)</div>
+        <div class="mode-btn active" id="mode-shares" onclick="setCashMode('shares')">股數與單價 (股票/ETF)</div>
       </div>
     </div>
 
+    <!-- 3. 標的代號 / 名稱 -->
     <div class="form-group" id="group-symbol">
-      <label class="form-label">標的代號 / 名稱 (支援台股如 0050、美股如 VT)</label>
+      <label class="form-label" id="label-symbol">標的代號 / 名稱 (支援台股如 0050、美股如 VT)</label>
       <input type="text" id="input-symbol" class="form-input" placeholder="例如：0050, 00631L, VT" onblur="fetchStockPrice()">
       <div class="price-hint" id="price-hint">正在連線抓取最新股價...</div>
     </div>
 
+    <!-- 4. 計價幣別與匯率 -->
     <div class="form-group">
       <label class="form-label">計價幣別</label>
       <div class="currency-selector">
@@ -415,12 +436,13 @@
       </div>
     </div>
 
-    <div class="form-group" id="group-rate" style="display: none;">
+    <div class="form-group" id="group-rate">
       <label class="form-label">換算匯率 (USD ➔ TWD)</label>
       <input type="number" id="input-rate" class="form-input" placeholder="例如：32.2" value="32.0">
     </div>
 
-    <div class="form-group" id="group-lev-multiple" style="display: none;">
+    <!-- 5. 槓桿倍數 (僅槓桿資產啟用) -->
+    <div class="form-group" id="group-lev-multiple">
       <label class="form-label">槓桿倍數</label>
       <div class="lev-selector">
         <div class="lev-btn" id="lev-1.5" onclick="setLev(1.5)">1.5X</div>
@@ -429,6 +451,7 @@
       </div>
     </div>
 
+    <!-- 6. 股數與單價 -->
     <div class="form-group" id="group-shares">
       <label class="form-label">持有股數</label>
       <input type="number" id="input-shares" class="form-input" placeholder="例如：1000">
@@ -439,11 +462,13 @@
       <input type="number" id="input-price" class="form-input" placeholder="代號輸入後自動抓取，亦可手動修正">
     </div>
 
-    <div class="form-group" id="group-total-val" style="display: none;">
+    <!-- 7. 總金額 (僅「現金/房屋 - 總金額模式」啟用) -->
+    <div class="form-group" id="group-total-val">
       <label class="form-label">總金額</label>
       <input type="number" id="input-total-val" class="form-input" placeholder="例如：500000">
     </div>
 
+    <!-- 按鈕組 -->
     <div class="action-btn-group">
       <button class="delete-btn" id="btn-delete" onclick="executeDeleteAsset()">刪除</button>
       <button class="submit-btn" id="btn-submit" onclick="saveAsset()">儲存資產</button>
@@ -462,7 +487,7 @@
     let currentType = 'original';
     let currentCurrency = 'TWD';
     let currentLevMultiple = 2;
-    let currentCashMode = 'total';
+    let currentCashMode = 'shares';
     let editingAssetId = null;
 
     function formatNumber(num) {
@@ -600,7 +625,6 @@
         const pct = categoryTotal > 0 ? (twdVal / categoryTotal) * 100 : 0;
         const pctFormatted = pct.toFixed(1) + '%';
 
-        // 微型進度條 DOM 結構
         const progressBarHtml = `
           <div class="capsule-progress-track">
             <div class="capsule-progress-fill ${fillClass}" style="width: ${pct.toFixed(1)}%;"></div>
@@ -699,7 +723,9 @@
       
       setType(type);
       setCurrency('TWD');
-      setCashMode('total');
+      if (type === 'cash') setCashMode('total');
+      else setCashMode('shares');
+
       document.getElementById('sheet-overlay').classList.add('active');
       document.getElementById('bottom-sheet').classList.add('active');
     }
@@ -729,6 +755,7 @@
           document.getElementById('input-total-val').value = item.val || '';
         }
       } else {
+        setCashMode('shares');
         document.getElementById('input-shares').value = item.shares || '';
         document.getElementById('input-price').value = item.price || '';
         if (item.type === 'leverage') {
@@ -751,27 +778,35 @@
       editingAssetId = null;
     }
 
+    // 重構：統一欄位狀態 (Disable/Enable) 控制邏輯
     function setType(type) {
       currentType = type;
       document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('active'));
-      
-      const groupCashMode = document.getElementById('group-cash-mode');
-      const groupLev = document.getElementById('group-lev-multiple');
+      document.getElementById(`type-${type === 'original' ? 'orig' : type === 'leverage' ? 'lev' : 'cash'}`).classList.add('active');
 
-      if (type === 'original') {
-        document.getElementById('type-orig').classList.add('active');
-        groupCashMode.style.display = 'none';
-        groupLev.style.display = 'none';
-        updateFormVisibility(false);
-      } else if (type === 'leverage') {
-        document.getElementById('type-lev').classList.add('active');
-        groupCashMode.style.display = 'none';
-        groupLev.style.display = 'block';
-        updateFormVisibility(false);
+      const modeGroup = document.getElementById('group-cash-mode');
+      const levGroup = document.getElementById('group-lev-multiple');
+      const btnModeTotal = document.getElementById('mode-total');
+      const btnModeShares = document.getElementById('mode-shares');
+
+      if (type === 'original' || type === 'leverage') {
+        // 原型與槓桿：強制切換至「股數單價」模式並鎖定切換按鈕
+        setCashMode('shares');
+        modeGroup.classList.add('disabled');
+        btnModeTotal.classList.add('disabled');
+        btnModeShares.classList.remove('disabled');
+
+        if (type === 'leverage') {
+          levGroup.classList.remove('disabled');
+        } else {
+          levGroup.classList.add('disabled');
+        }
       } else {
-        document.getElementById('type-cash').classList.add('active');
-        groupCashMode.style.display = 'block';
-        groupLev.style.display = 'none';
+        // 現金與房屋：解鎖輸入模式按鈕，停用槓桿倍數
+        modeGroup.classList.remove('disabled');
+        btnModeTotal.classList.remove('disabled');
+        btnModeShares.classList.remove('disabled');
+        levGroup.classList.add('disabled');
         setCashMode(currentCashMode);
       }
     }
@@ -780,22 +815,32 @@
       currentCashMode = mode;
       document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById(`mode-${mode}`).classList.add('active');
-      updateFormVisibility(mode === 'total');
-    }
 
-    function updateFormVisibility(isTotalValOnly) {
       const groupShares = document.getElementById('group-shares');
       const groupPrice = document.getElementById('group-price');
       const groupTotal = document.getElementById('group-total-val');
+      const inputShares = document.getElementById('input-shares');
+      const inputPrice = document.getElementById('input-price');
+      const inputTotal = document.getElementById('input-total-val');
 
-      if (isTotalValOnly) {
-        groupShares.style.display = 'none';
-        groupPrice.style.display = 'none';
-        groupTotal.style.display = 'block';
+      if (mode === 'total' && currentType === 'cash') {
+        // 總金額模式：停用股數與單價欄位
+        groupShares.classList.add('disabled');
+        groupPrice.classList.add('disabled');
+        inputShares.disabled = true;
+        inputPrice.disabled = true;
+
+        groupTotal.classList.remove('disabled');
+        inputTotal.disabled = false;
       } else {
-        groupShares.style.display = 'block';
-        groupPrice.style.display = 'block';
-        groupTotal.style.display = 'none';
+        // 股數與單價模式：停用總金額欄位
+        groupShares.classList.remove('disabled');
+        groupPrice.classList.remove('disabled');
+        inputShares.disabled = false;
+        inputPrice.disabled = false;
+
+        groupTotal.classList.add('disabled');
+        inputTotal.disabled = true;
       }
     }
 
@@ -803,7 +848,17 @@
       currentCurrency = curr;
       document.querySelectorAll('.curr-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById(`curr-${curr}`).classList.add('active');
-      document.getElementById('group-rate').style.display = (curr === 'USD') ? 'block' : 'none';
+      
+      const groupRate = document.getElementById('group-rate');
+      const inputRate = document.getElementById('input-rate');
+
+      if (curr === 'USD') {
+        groupRate.classList.remove('disabled');
+        inputRate.disabled = false;
+      } else {
+        groupRate.classList.add('disabled');
+        inputRate.disabled = true;
+      }
     }
 
     function setLev(mult) {
