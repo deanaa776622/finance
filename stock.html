@@ -82,9 +82,11 @@
       margin-bottom: 16px;
     }
 
+    /* 可折疊卡片標題 */
     .section-header {
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 14px;
+      cursor: pointer;
+      user-select: none;
     }
 
     .section-title {
@@ -100,6 +102,27 @@
     .section-total {
       font-size: 0.85rem; font-weight: 600;
       color: #94a3b8;
+    }
+
+    /* 展開/收合旋轉箭頭 */
+    .arrow-icon {
+      font-size: 0.75rem;
+      color: var(--sub-text);
+      transition: transform 0.3s ease;
+      display: inline-block;
+    }
+    .arrow-icon.open {
+      transform: rotate(180deg);
+    }
+
+    /* 可折疊明細容器：預設隱藏 */
+    .section-body {
+      display: none;
+      margin-top: 14px;
+      padding-top: 4px;
+    }
+    .section-body.open {
+      display: block;
     }
 
     .dot {
@@ -255,38 +278,53 @@
 
     <!-- 1. 原型資產 -->
     <div class="section-card">
-      <div class="section-header">
-        <span class="section-title"><div class="dot dot-orig"></div> 原型股票</span>
+      <div class="section-header" onclick="toggleSection('orig')">
+        <span class="section-title">
+          <div class="dot dot-orig"></div> 原型股票
+          <span class="arrow-icon" id="arrow-orig">▼</span>
+        </span>
         <div class="section-action">
           <span class="section-total" id="total-orig-val">$0</span>
-          <button class="add-btn" onclick="openSheet('original')">+ 新增</button>
+          <button class="add-btn" onclick="openSheet('original', event)">+ 新增</button>
         </div>
       </div>
-      <div id="list-original"></div>
+      <div class="section-body" id="body-orig">
+        <div id="list-original"></div>
+      </div>
     </div>
 
     <!-- 2. 槓桿資產 -->
     <div class="section-card">
-      <div class="section-header">
-        <span class="section-title"><div class="dot dot-lev"></div> 槓桿資產</span>
+      <div class="section-header" onclick="toggleSection('lev')">
+        <span class="section-title">
+          <div class="dot dot-lev"></div> 槓桿資產
+          <span class="arrow-icon" id="arrow-lev">▼</span>
+        </span>
         <div class="section-action">
           <span class="section-total" id="total-lev-val">$0</span>
-          <button class="add-btn" onclick="openSheet('leverage')">+ 新增</button>
+          <button class="add-btn" onclick="openSheet('leverage', event)">+ 新增</button>
         </div>
       </div>
-      <div id="list-leverage"></div>
+      <div class="section-body" id="body-lev">
+        <div id="list-leverage"></div>
+      </div>
     </div>
 
     <!-- 3. 現金與房屋 -->
     <div class="section-card">
-      <div class="section-header">
-        <span class="section-title"><div class="dot dot-cash"></div> 現金與房屋</span>
+      <div class="section-header" onclick="toggleSection('cash')">
+        <span class="section-title">
+          <div class="dot dot-cash"></div> 現金與房屋
+          <span class="arrow-icon" id="arrow-cash">▼</span>
+        </span>
         <div class="section-action">
           <span class="section-total" id="total-cash-val">$0</span>
-          <button class="add-btn" onclick="openSheet('cash')">+ 新增</button>
+          <button class="add-btn" onclick="openSheet('cash', event)">+ 新增</button>
         </div>
       </div>
-      <div id="list-cash"></div>
+      <div class="section-body" id="body-cash">
+        <div id="list-cash"></div>
+      </div>
     </div>
 
   </div>
@@ -358,6 +396,20 @@
     function formatNumber(num) {
       if (!num || isNaN(num)) return '0';
       return Number(Math.round(num)).toLocaleString('en-US');
+    }
+
+    // 控制區塊展開與收合
+    function toggleSection(sectionKey) {
+      const body = document.getElementById(`body-${sectionKey}`);
+      const arrow = document.getElementById(`arrow-${sectionKey}`);
+
+      if (body.classList.contains('open')) {
+        body.classList.remove('open');
+        arrow.classList.remove('open');
+      } else {
+        body.classList.add('open');
+        arrow.classList.add('open');
+      }
     }
 
     async function fetchStockPrice() {
@@ -464,7 +516,9 @@
       }
     }
 
-    function openSheet(type) {
+    function openSheet(type, evt) {
+      if (evt) evt.stopPropagation(); // 阻止點擊新增按鈕時觸發標題折疊/展開
+
       editingAssetId = null;
       document.getElementById('sheet-title').innerText = "新增資產";
       document.getElementById('btn-submit').innerText = "儲存資產";
@@ -580,6 +634,18 @@
 
       renderAssets();
       closeSheet();
+
+      // 新增或更新後自動展開該類別，提升視覺反饋
+      const keyMap = { original: 'orig', leverage: 'lev', cash: 'cash' };
+      const targetKey = keyMap[currentType];
+      if (targetKey) {
+        const body = document.getElementById(`body-${targetKey}`);
+        const arrow = document.getElementById(`arrow-${targetKey}`);
+        if (body && !body.classList.contains('open')) {
+          body.classList.add('open');
+          if (arrow) arrow.classList.add('open');
+        }
+      }
     }
 
     function executeDeleteAsset() {
