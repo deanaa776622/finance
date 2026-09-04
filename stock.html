@@ -162,19 +162,19 @@
     }
     .add-btn:active { transform: scale(0.95); }
 
-    /* 資產膠囊列表 (含方案 B 半透明漸層背景填充) */
+    /* 資產膠囊列表 (含微型進度條 Track & Fill) */
     .asset-capsule {
       display: flex; justify-content: space-between; align-items: center;
-      background-color: rgba(15, 23, 42, 0.5);
+      background: rgba(15, 23, 42, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.05);
       padding: 12px 16px; border-radius: 16px;
-      margin-bottom: 10px; transition: transform 0.15s, background 0.3s ease;
+      margin-bottom: 10px; transition: transform 0.15s, background 0.2s;
       cursor: pointer;
       position: relative;
       overflow: hidden;
     }
     .asset-capsule:active {
-      transform: scale(0.98);
+      transform: scale(0.98); background: rgba(30, 41, 59, 0.8);
     }
     .asset-capsule:last-child { margin-bottom: 0; }
 
@@ -201,6 +201,35 @@
     .asset-val-box { text-align: right; z-index: 1; }
     .asset-val { font-size: 1.05rem; font-weight: 600; color: #f8fafc; }
     .asset-pct-text { font-size: 0.72rem; color: #94a3b8; margin-top: 2px; font-weight: 600; }
+
+    /* 底部微型進度條 CSS */
+    .capsule-progress-track {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.05);
+      z-index: 0;
+    }
+
+    .capsule-progress-fill {
+      height: 100%;
+      border-radius: 0 2px 2px 0;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .capsule-progress-fill.orig {
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.4), #38bdf8);
+      box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);
+    }
+    .capsule-progress-fill.lev {
+      background: linear-gradient(90deg, rgba(74, 222, 128, 0.4), #4ade80);
+      box-shadow: 0 0 6px rgba(74, 222, 128, 0.6);
+    }
+    .capsule-progress-fill.cash {
+      background: linear-gradient(90deg, rgba(250, 204, 21, 0.4), #facc15);
+      box-shadow: 0 0 6px rgba(250, 204, 21, 0.6);
+    }
 
     /* 底部滑出抽屜 */
     .sheet-overlay {
@@ -545,7 +574,7 @@
         else if (item.type === 'cash') totalCashTWD += twdVal;
       });
 
-      // 第二階段：計算佔比與渲染膠囊 (方案 B 半透明漸層)
+      // 第二階段：計算佔比與渲染膠囊 (微型進度條)
       assets.forEach(item => {
         const curr = item.currency || 'TWD';
         const fxRate = curr === 'USD' ? (item.rate || 32.0) : 1;
@@ -555,31 +584,34 @@
         let twdVal = rawVal * fxRate;
 
         let categoryTotal = 0;
-        let colorRgb = '56, 189, 248'; // 預設原型 (天藍)
+        let fillClass = 'orig';
 
         if (item.type === 'original') {
           categoryTotal = totalOrigTWD;
-          colorRgb = '56, 189, 248';
+          fillClass = 'orig';
         } else if (item.type === 'leverage') {
           categoryTotal = totalLevTWD;
-          colorRgb = '74, 222, 128';
+          fillClass = 'lev';
         } else {
           categoryTotal = totalCashTWD;
-          colorRgb = '250, 204, 21';
+          fillClass = 'cash';
         }
 
         const pct = categoryTotal > 0 ? (twdVal / categoryTotal) * 100 : 0;
         const pctFormatted = pct.toFixed(1) + '%';
 
-        // 方案 B 漸層背景款式
-        const bgStyle = `background: linear-gradient(90deg, rgba(${colorRgb}, 0.22) 0%, rgba(${colorRgb}, 0.15) ${pct.toFixed(1)}%, rgba(15, 23, 42, 0.5) ${pct.toFixed(1)}%);`;
+        // 微型進度條 DOM 結構
+        const progressBarHtml = `
+          <div class="capsule-progress-track">
+            <div class="capsule-progress-fill ${fillClass}" style="width: ${pct.toFixed(1)}%;"></div>
+          </div>`;
 
         let html = '';
 
         if (item.type === 'cash') {
           if (item.isSharesMode) {
             html = `
-              <div class="asset-capsule" style="${bgStyle}" onclick="openEditSheet(${item.id})">
+              <div class="asset-capsule" onclick="openEditSheet(${item.id})">
                 <div class="asset-info">
                   <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
                   <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
@@ -588,10 +620,11 @@
                   <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
                   <div class="asset-pct-text">${pctFormatted}</div>
                 </div>
+                ${progressBarHtml}
               </div>`;
           } else {
             html = `
-              <div class="asset-capsule" style="${bgStyle}" onclick="openEditSheet(${item.id})">
+              <div class="asset-capsule" onclick="openEditSheet(${item.id})">
                 <div class="asset-info">
                   <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
                 </div>
@@ -599,12 +632,13 @@
                   <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
                   <div class="asset-pct-text">${pctFormatted}</div>
                 </div>
+                ${progressBarHtml}
               </div>`;
           }
           listCash.innerHTML += html;
         } else if (item.type === 'original') {
           html = `
-            <div class="asset-capsule" style="${bgStyle}" onclick="openEditSheet(${item.id})">
+            <div class="asset-capsule" onclick="openEditSheet(${item.id})">
               <div class="asset-info">
                 <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
                 <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
@@ -613,11 +647,12 @@
                 <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
                 <div class="asset-pct-text">${pctFormatted}</div>
               </div>
+              ${progressBarHtml}
             </div>`;
           listOrig.innerHTML += html;
         } else {
           html = `
-            <div class="asset-capsule" style="${bgStyle}" onclick="openEditSheet(${item.id})">
+            <div class="asset-capsule" onclick="openEditSheet(${item.id})">
               <div class="asset-info">
                 <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span> <span class="badge-lev">${item.multiple || 2}X</span></div>
                 <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
@@ -626,6 +661,7 @@
                 <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
                 <div class="asset-pct-text">${pctFormatted}</div>
               </div>
+              ${progressBarHtml}
             </div>`;
           listLev.innerHTML += html;
         }
