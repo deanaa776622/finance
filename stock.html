@@ -436,7 +436,7 @@
       </div>
     </div>
 
-    <!-- 2. 輸入方式 (現金/房屋可切換；原型與槓桿預設為「股數單價」並鎖定) -->
+    <!-- 2. 輸入方式 -->
     <div class="form-group" id="group-cash-mode">
       <label class="form-label">輸入方式</label>
       <div class="mode-selector">
@@ -466,7 +466,7 @@
       <input type="number" id="input-rate" class="form-input" placeholder="例如：32.2" value="32.0">
     </div>
 
-    <!-- 5. 槓桿倍數 (僅槓桿資產啟用) -->
+    <!-- 5. 槓桿倍數 (僅槓桿資產啟用並顯示選取高亮) -->
     <div class="form-group" id="group-lev-multiple">
       <label class="form-label">槓桿倍數</label>
       <div class="lev-selector">
@@ -487,7 +487,7 @@
       <input type="number" id="input-price" class="form-input" placeholder="代號輸入後自動抓取，亦可手動修正">
     </div>
 
-    <!-- 7. 總金額 (僅「現金/房屋 - 總金額模式」啟用) -->
+    <!-- 7. 總金額 -->
     <div class="form-group" id="group-total-val">
       <label class="form-label">總金額</label>
       <input type="number" id="input-total-val" class="form-input" placeholder="例如：500000">
@@ -803,7 +803,7 @@
       editingAssetId = null;
     }
 
-    // 重構：類別切換與動態主題配色控制
+    // 重構：類別切換時動態處理槓桿按鈕的高亮 (Active) 狀態
     function setType(type) {
       currentType = type;
       document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('active'));
@@ -811,7 +811,6 @@
 
       const root = document.documentElement;
 
-      // 切換 Bottom Sheet 動態 CSS 變數
       if (type === 'original') {
         root.style.setProperty('--active-theme-color', '#38bdf8');
         root.style.setProperty('--active-theme-rgb', '56, 189, 248');
@@ -836,14 +835,17 @@
 
         if (type === 'leverage') {
           levGroup.classList.remove('disabled');
+          setLev(currentLevMultiple); // 恢復選取高亮
         } else {
           levGroup.classList.add('disabled');
+          document.querySelectorAll('.lev-btn').forEach(btn => btn.classList.remove('active')); // 清除高亮
         }
       } else {
         modeGroup.classList.remove('disabled');
         btnModeTotal.classList.remove('disabled');
         btnModeShares.classList.remove('disabled');
         levGroup.classList.add('disabled');
+        document.querySelectorAll('.lev-btn').forEach(btn => btn.classList.remove('active')); // 清除高亮
         setCashMode(currentCashMode);
       }
     }
