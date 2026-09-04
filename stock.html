@@ -109,7 +109,7 @@
     }
     .add-btn:active { transform: scale(0.95); }
 
-    /* 資產膠囊膠囊列表 */
+    /* 資產膠囊列表 */
     .asset-capsule {
       display: flex; justify-content: space-between; align-items: center;
       background: rgba(15, 23, 42, 0.5);
@@ -142,42 +142,32 @@
     .sheet-overlay {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);
-      z-index: 10; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+      z-index: 9998; opacity: 0; pointer-events: none; transition: opacity 0.3s;
     }
     .sheet-overlay.active { opacity: 1; pointer-events: auto; }
 
     .bottom-sheet {
-      position: fixed; bottom: -100%; left: 0; width: 100vw;
-      background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(25px);
-      border-top-left-radius: 28px; border-top-right-radius: 28px;
+      position: fixed;
+      bottom: -100%;
+      left: 0;
+      width: 100vw;
+      background: rgba(30, 41, 59, 0.98);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border-top-left-radius: 28px;
+      border-top-right-radius: 28px;
       border-top: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 24px; z-index: 11; transition: bottom 0.35s cubic-bezier(0.1, 0.9, 0.2, 1);
-      display: flex; flex-direction: column; align-items: center;
+      padding: 24px;
+      padding-bottom: 90px !important;
+      z-index: 9999;
+      transition: bottom 0.35s cubic-bezier(0.1, 0.9, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-height: 85vh;
+      overflow-y: auto;
     }
-    .bottom-sheet {
-  position: fixed;
-  bottom: -100%;
-  left: 0;
-  width: 100vw;
-  background: rgba(30, 41, 59, 0.98);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border-top-left-radius: 28px;
-  border-top-right-radius: 28px;
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 24px;
-  /* 增加底部留白，預留 80px 給 Toolbar 避讓 */
-  padding-bottom: 90px !important;
-  /* 提升層級，確保完全覆蓋並浮於 Toolbar 之上 */
-  z-index: 9999;
-  transition: bottom 0.35s cubic-bezier(0.1, 0.9, 0.2, 1);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  /* 當手機螢幕較矮時，支援內部捲動，避免按鈕被擠出螢幕外 */
-  max-height: 85vh;
-  overflow-y: auto;
-}
+    .bottom-sheet.active { bottom: 0; }
 
     .sheet-handle {
       width: 36px; height: 4px; background: rgba(255, 255, 255, 0.2);
