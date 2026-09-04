@@ -116,6 +116,7 @@
       border: 1px solid rgba(255, 255, 255, 0.05);
       padding: 12px 16px; border-radius: 16px;
       margin-bottom: 10px; transition: transform 0.15s;
+      cursor: pointer;
     }
     .asset-capsule:last-child { margin-bottom: 0; }
 
@@ -184,6 +185,10 @@
       width: 100%; padding: 12px 16px; border-radius: 12px;
       border: 1px solid var(--border-color); background: var(--input-bg);
       color: #f8fafc; font-size: 1rem; outline: none;
+    }
+
+    .price-hint {
+      font-size: 0.72rem; color: var(--accent-color); margin-top: 4px; display: none;
     }
 
     .type-selector, .lev-selector {
@@ -267,8 +272,9 @@
     </div>
 
     <div class="form-group" id="group-symbol">
-      <label class="form-label">標的代號 / 名稱</label>
-      <input type="text" id="input-symbol" class="form-input" placeholder="例如：0050, 00631L">
+      <label class="form-label">標的代號 / 名稱 (支援台股如 0050、美股如 VT)</label>
+      <input type="text" id="input-symbol" class="form-input" placeholder="例如：0050, 00631L, VT" onblur="fetchStockPrice()">
+      <div class="price-hint" id="price-hint">正在連線抓取最新股價...</div>
     </div>
 
     <div class="form-group" id="group-lev-multiple" style="display: none;">
@@ -287,7 +293,7 @@
 
     <div class="form-group" id="group-price">
       <label class="form-label">估算單價 / 現值 (元)</label>
-      <input type="number" id="input-price" class="form-input" placeholder="例如：150">
+      <input type="number" id="input-price" class="form-input" placeholder="代號輸入後自動抓取，亦可手動修正">
     </div>
 
     <div class="form-group" id="group-total-val" style="display: none;">
@@ -299,7 +305,9 @@
   </div>
 
   <script>
-    // 預設示範資產資料庫 (若 localStorage 無資料時初始化)
+    // ⚠️ 請填入你部署好的 Google Apps Script 網址
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbydO1G5uaoLlFgCC6lEBFEOeT0vwS5cycdMZ40Q20mxk9p-fNNws13cvBg3iqanpgqheQ/exec";
+
     let assets = JSON.parse(localStorage.getItem('user_assets')) || [
       { id: 1, type: 'original', symbol: '0050', shares: 20000, price: 190 },
       { id: 2, type: 'leverage', symbol: '00631L', shares: 15000, price: 210, multiple: 2 },
@@ -312,6 +320,37 @@
     function formatNumber(num) {
       if (!num || isNaN(num)) return '0';
       return Number(Math.round(num)).toLocaleString('en-US');
+    }
+
+    // 自動抓取股價邏輯
+    async function fetchStockPrice() {
+      const symbolInput = document.getElementById('input-symbol').value.trim();
+      const hint = document.getElementById('price-hint');
+      const priceInput = document.getElementById('input-price');
+
+      if (!symbolInput || currentType === 'cash') return;
+      if (!GAS_API_URL || GAS_API_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") {
+        console.warn("請設定有效的 GAS_API_URL");
+        return;
+      }
+
+      hint.innerText = "⚡ 正在查詢即時股價...";
+      hint.style.display = "block";
+
+      try {
+        const response = await fetch(`${GAS_API_URL}?symbol=${encodeURIComponent(symbolInput)}`);
+        const data = await response.json();
+
+        if (data.status === 'success' && data.price) {
+          priceInput.value = parseFloat(data.price).toFixed(2);
+          hint.innerText = `✓ 已更新最新現值：$${data.price}`;
+        } else {
+          hint.innerText = "✕ 未查得自動股價，請手動輸入";
+        }
+      } catch (err) {
+        console.error(err);
+        hint.innerText = "✕ 網路查詢失敗，請手動輸入股價";
+      }
     }
 
     function renderAssets() {
@@ -375,13 +414,11 @@
         document.getElementById('pct-cash').innerText = Math.round((totalCash / totalNetWorth) * 100) + '%';
       }
 
-      // 同步全站 localStorage 鍵值
       localStorage.setItem('user_assets', JSON.stringify(assets));
       localStorage.setItem('alloc_original', totalOrig);
       localStorage.setItem('alloc_leverage', totalLev);
       localStorage.setItem('alloc_cash', totalCash);
 
-      // 驅動背景光暈
       if (typeof updateGlowBackground === 'function') {
         updateGlowBackground();
       }
@@ -400,6 +437,7 @@
       document.getElementById('input-shares').value = '';
       document.getElementById('input-price').value = '';
       document.getElementById('input-total-val').value = '';
+      document.getElementById('price-hint').style.display = 'none';
     }
 
     function setType(type) {
