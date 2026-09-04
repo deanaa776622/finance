@@ -162,20 +162,23 @@
     }
     .add-btn:active { transform: scale(0.95); }
 
+    /* 資產膠囊列表 (含方案 B 半透明漸層背景填充) */
     .asset-capsule {
       display: flex; justify-content: space-between; align-items: center;
-      background: rgba(15, 23, 42, 0.5);
+      background-color: rgba(15, 23, 42, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.05);
       padding: 12px 16px; border-radius: 16px;
-      margin-bottom: 10px; transition: transform 0.15s, background 0.2s;
+      margin-bottom: 10px; transition: transform 0.15s, background 0.3s ease;
       cursor: pointer;
+      position: relative;
+      overflow: hidden;
     }
     .asset-capsule:active {
-      transform: scale(0.98); background: rgba(30, 41, 59, 0.8);
+      transform: scale(0.98);
     }
     .asset-capsule:last-child { margin-bottom: 0; }
 
-    .asset-info { display: flex; flex-direction: column; }
+    .asset-info { display: flex; flex-direction: column; z-index: 1; }
     .asset-symbol {
       font-size: 1rem; font-weight: 600; color: #f8fafc;
       display: flex; align-items: center; gap: 6px;
@@ -195,9 +198,11 @@
 
     .asset-detail { font-size: 0.75rem; color: var(--sub-text); margin-top: 2px; }
 
-    .asset-val-box { text-align: right; }
+    .asset-val-box { text-align: right; z-index: 1; }
     .asset-val { font-size: 1.05rem; font-weight: 600; color: #f8fafc; }
+    .asset-pct-text { font-size: 0.72rem; color: #94a3b8; margin-top: 2px; font-weight: 600; }
 
+    /* 底部滑出抽屜 */
     .sheet-overlay {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);
@@ -359,7 +364,6 @@
       </div>
     </div>
 
-    <!-- 現金/房屋專用：計算模式切換 -->
     <div class="form-group" id="group-cash-mode" style="display: none;">
       <label class="form-label">輸入方式</label>
       <div class="mode-selector">
@@ -447,7 +451,6 @@
       }
     }
 
-    // 批次更新所有股票/ETF 股價與即時匯率
     async function refreshAllPrices() {
       const btn = document.getElementById('btn-refresh-all');
       const statusText = document.getElementById('refresh-status');
@@ -462,7 +465,6 @@
 
       for (let i = 0; i < assets.length; i++) {
         const item = assets[i];
-        // 僅針對股票/ETF項目發送更新請求
         if (item.type !== 'cash' || item.isSharesMode) {
           if (item.symbol) {
             try {
@@ -529,77 +531,103 @@
 
       let totalOrigTWD = 0, totalLevTWD = 0, totalCashTWD = 0;
 
+      // 第一階段：計算各類別總額
       assets.forEach(item => {
         const curr = item.currency || 'TWD';
         const fxRate = curr === 'USD' ? (item.rate || 32.0) : 1;
+        let rawVal = item.type === 'cash' && !item.isSharesMode 
+          ? (item.val || 0) 
+          : ((item.shares || 0) * (item.price || 0));
+        let twdVal = rawVal * fxRate;
 
-        let rawVal = 0;
-        let twdVal = 0;
+        if (item.type === 'original') totalOrigTWD += twdVal;
+        else if (item.type === 'leverage') totalLevTWD += twdVal;
+        else if (item.type === 'cash') totalCashTWD += twdVal;
+      });
+
+      // 第二階段：計算佔比與渲染膠囊 (方案 B 半透明漸層)
+      assets.forEach(item => {
+        const curr = item.currency || 'TWD';
+        const fxRate = curr === 'USD' ? (item.rate || 32.0) : 1;
+        let rawVal = item.type === 'cash' && !item.isSharesMode 
+          ? (item.val || 0) 
+          : ((item.shares || 0) * (item.price || 0));
+        let twdVal = rawVal * fxRate;
+
+        let categoryTotal = 0;
+        let colorRgb = '56, 189, 248'; // 預設原型 (天藍)
+
+        if (item.type === 'original') {
+          categoryTotal = totalOrigTWD;
+          colorRgb = '56, 189, 248';
+        } else if (item.type === 'leverage') {
+          categoryTotal = totalLevTWD;
+          colorRgb = '74, 222, 128';
+        } else {
+          categoryTotal = totalCashTWD;
+          colorRgb = '250, 204, 21';
+        }
+
+        const pct = categoryTotal > 0 ? (twdVal / categoryTotal) * 100 : 0;
+        const pctFormatted = pct.toFixed(1) + '%';
+
+        // 方案 B 漸層背景款式
+        const bgStyle = `background: linear-gradient(90deg, rgba(${colorRgb}, 0.22) 0%, rgba(${colorRgb}, 0.15) ${pct.toFixed(1)}%, rgba(15, 23, 42, 0.5) ${pct.toFixed(1)}%);`;
+
         let html = '';
 
         if (item.type === 'cash') {
           if (item.isSharesMode) {
-            rawVal = (item.shares || 0) * (item.price || 0);
-            twdVal = rawVal * fxRate;
-            totalCashTWD += twdVal;
-
             html = `
-              <div class="asset-capsule" onclick="openEditSheet(${item.id})">
+              <div class="asset-capsule" style="${bgStyle}" onclick="openEditSheet(${item.id})">
                 <div class="asset-info">
                   <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
                   <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
                 </div>
                 <div class="asset-val-box">
                   <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
+                  <div class="asset-pct-text">${pctFormatted}</div>
                 </div>
               </div>`;
           } else {
-            rawVal = item.val || 0;
-            twdVal = rawVal * fxRate;
-            totalCashTWD += twdVal;
-
             html = `
-              <div class="asset-capsule" onclick="openEditSheet(${item.id})">
+              <div class="asset-capsule" style="${bgStyle}" onclick="openEditSheet(${item.id})">
                 <div class="asset-info">
                   <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
                 </div>
                 <div class="asset-val-box">
                   <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
+                  <div class="asset-pct-text">${pctFormatted}</div>
                 </div>
               </div>`;
           }
           listCash.innerHTML += html;
+        } else if (item.type === 'original') {
+          html = `
+            <div class="asset-capsule" style="${bgStyle}" onclick="openEditSheet(${item.id})">
+              <div class="asset-info">
+                <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
+                <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
+              </div>
+              <div class="asset-val-box">
+                <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
+                <div class="asset-pct-text">${pctFormatted}</div>
+              </div>
+            </div>`;
+          listOrig.innerHTML += html;
         } else {
-          rawVal = (item.shares || 0) * (item.price || 0);
-          twdVal = rawVal * fxRate;
-
-          if (item.type === 'original') {
-            totalOrigTWD += twdVal;
-            html = `
-              <div class="asset-capsule" onclick="openEditSheet(${item.id})">
-                <div class="asset-info">
-                  <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
-                  <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
-                </div>
-                <div class="asset-val-box">
-                  <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
-                </div>
-              </div>`;
-            listOrig.innerHTML += html;
-          } else {
-            totalLevTWD += twdVal;
-            html = `
-              <div class="asset-capsule" onclick="openEditSheet(${item.id})">
-                <div class="asset-info">
-                  <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span> <span class="badge-lev">${item.multiple || 2}X</span></div>
-                  <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
-                </div>
-                <div class="asset-val-box">
-                  <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
-                </div>
-              </div>`;
-            listLev.innerHTML += html;
-          }
+          html = `
+            <div class="asset-capsule" style="${bgStyle}" onclick="openEditSheet(${item.id})">
+              <div class="asset-info">
+                <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span> <span class="badge-lev">${item.multiple || 2}X</span></div>
+                <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
+              </div>
+              <div class="asset-val-box">
+                <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
+                <div class="asset-pct-text">${pctFormatted}</div>
+              </div>
+            </div>`;
+          listLev.innerHTML += html;
         }
       });
 
