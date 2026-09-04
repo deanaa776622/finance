@@ -40,7 +40,6 @@
       position: relative; z-index: 1;
     }
 
-    /* 頂部總覽卡片 */
     .summary-card {
       background: var(--card-bg);
       backdrop-filter: blur(20px);
@@ -71,7 +70,6 @@
       display: flex; justify-content: center; gap: 12px;
     }
 
-    /* 分組卡片 */
     .section-card {
       background: var(--card-bg);
       backdrop-filter: blur(20px);
@@ -82,11 +80,9 @@
       margin-bottom: 16px;
     }
 
-    /* 可折疊卡片標題 */
     .section-header {
       display: flex; justify-content: space-between; align-items: center;
-      cursor: pointer;
-      user-select: none;
+      cursor: pointer; user-select: none;
     }
 
     .section-title {
@@ -100,34 +96,21 @@
     }
 
     .section-total {
-      font-size: 0.85rem; font-weight: 600;
-      color: #94a3b8;
+      font-size: 0.85rem; font-weight: 600; color: #94a3b8;
     }
 
-    /* 展開/收合旋轉箭頭 */
     .arrow-icon {
-      font-size: 0.75rem;
-      color: var(--sub-text);
-      transition: transform 0.3s ease;
-      display: inline-block;
+      font-size: 0.75rem; color: var(--sub-text);
+      transition: transform 0.3s ease; display: inline-block;
     }
-    .arrow-icon.open {
-      transform: rotate(180deg);
-    }
+    .arrow-icon.open { transform: rotate(180deg); }
 
-    /* 可折疊明細容器：預設隱藏 */
     .section-body {
-      display: none;
-      margin-top: 14px;
-      padding-top: 4px;
+      display: none; margin-top: 14px; padding-top: 4px;
     }
-    .section-body.open {
-      display: block;
-    }
+    .section-body.open { display: block; }
 
-    .dot {
-      width: 8px; height: 8px; border-radius: 50%;
-    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
     .dot-orig { background: var(--accent-color); box-shadow: 0 0 8px var(--accent-color); }
     .dot-lev { background: var(--leverage-color); box-shadow: 0 0 8px var(--leverage-color); }
     .dot-cash { background: var(--cash-color); box-shadow: 0 0 8px var(--cash-color); }
@@ -142,7 +125,6 @@
     }
     .add-btn:active { transform: scale(0.95); }
 
-    /* 資產膠囊列表 */
     .asset-capsule {
       display: flex; justify-content: space-between; align-items: center;
       background: rgba(15, 23, 42, 0.5);
@@ -152,8 +134,7 @@
       cursor: pointer;
     }
     .asset-capsule:active {
-      transform: scale(0.98);
-      background: rgba(30, 41, 59, 0.8);
+      transform: scale(0.98); background: rgba(30, 41, 59, 0.8);
     }
     .asset-capsule:last-child { margin-bottom: 0; }
 
@@ -161,6 +142,12 @@
     .asset-symbol {
       font-size: 1rem; font-weight: 600; color: #f8fafc;
       display: flex; align-items: center; gap: 6px;
+    }
+
+    .badge-currency {
+      font-size: 0.65rem; padding: 2px 5px; border-radius: 4px;
+      background: rgba(56, 189, 248, 0.15); color: var(--accent-color);
+      border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 600;
     }
 
     .badge-lev {
@@ -171,12 +158,10 @@
 
     .asset-detail { font-size: 0.75rem; color: var(--sub-text); margin-top: 2px; }
 
-    .asset-val {
-      font-size: 1.05rem; font-weight: 600; color: #f8fafc;
-      text-align: right;
-    }
+    .asset-val-box { text-align: right; }
+    .asset-val { font-size: 1.05rem; font-weight: 600; color: #f8fafc; }
+    .asset-val-sub { font-size: 0.72rem; color: var(--sub-text); margin-top: 1px; }
 
-    /* 底部滑出抽屜 (Bottom Sheet) */
     .sheet-overlay {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);
@@ -185,25 +170,15 @@
     .sheet-overlay.active { opacity: 1; pointer-events: auto; }
 
     .bottom-sheet {
-      position: fixed;
-      bottom: -100%;
-      left: 0;
-      width: 100vw;
-      background: rgba(30, 41, 59, 0.98);
-      backdrop-filter: blur(25px);
+      position: fixed; bottom: -100%; left: 0; width: 100vw;
+      background: rgba(30, 41, 59, 0.98); backdrop-filter: blur(25px);
       -webkit-backdrop-filter: blur(25px);
-      border-top-left-radius: 28px;
-      border-top-right-radius: 28px;
+      border-top-left-radius: 28px; border-top-right-radius: 28px;
       border-top: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 24px;
-      padding-bottom: 90px !important;
-      z-index: 9999;
-      transition: bottom 0.35s cubic-bezier(0.1, 0.9, 0.2, 1);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      max-height: 85vh;
-      overflow-y: auto;
+      padding: 24px; padding-bottom: 90px !important;
+      z-index: 9999; transition: bottom 0.35s cubic-bezier(0.1, 0.9, 0.2, 1);
+      display: flex; flex-direction: column; align-items: center;
+      max-height: 85vh; overflow-y: auto;
     }
     .bottom-sheet.active { bottom: 0; }
 
@@ -228,16 +203,16 @@
       font-size: 0.72rem; color: var(--accent-color); margin-top: 4px; display: none;
     }
 
-    .type-selector, .lev-selector {
+    .type-selector, .lev-selector, .currency-selector {
       display: flex; gap: 8px; width: 100%; max-width: 360px;
     }
-    .type-btn, .lev-btn {
+    .type-btn, .lev-btn, .curr-btn {
       flex: 1; padding: 10px; border-radius: 12px;
       border: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.4);
       color: var(--sub-text); font-size: 0.85rem; font-weight: 600;
       cursor: pointer; text-align: center; transition: all 0.2s;
     }
-    .type-btn.active, .lev-btn.active {
+    .type-btn.active, .lev-btn.active, .curr-btn.active {
       background: rgba(56, 189, 248, 0.2); border-color: var(--accent-color); color: #f8fafc;
     }
 
@@ -246,9 +221,9 @@
     }
 
     .submit-btn {
-      flex: 1; padding: 14px;
-      border-radius: 14px; border: none; background: var(--accent-color);
-      color: #0f172a; font-size: 1rem; font-weight: 700; cursor: pointer;
+      flex: 1; padding: 14px; border-radius: 14px; border: none;
+      background: var(--accent-color); color: #0f172a;
+      font-size: 1rem; font-weight: 700; cursor: pointer;
       box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
     }
 
@@ -265,9 +240,9 @@
 
   <div class="container">
     
-    <!-- 頂部總淨值彙總 -->
+    <!-- 頂部總淨值彙總 (以 TWD 為核心計價單位) -->
     <div class="summary-card">
-      <div class="summary-label">NET WORTH</div>
+      <div class="summary-label">NET WORTH (TWD)</div>
       <div class="summary-value" id="total-net-worth">$0</div>
       <div class="summary-sub">
         <span>原 <strong id="pct-orig">0%</strong></span>
@@ -284,7 +259,7 @@
           <span class="arrow-icon" id="arrow-orig">▼</span>
         </span>
         <div class="section-action">
-          <span class="section-total" id="total-orig-val">$0</span>
+          <span class="section-total" id="total-orig-val">NT$0</span>
           <button class="add-btn" onclick="openSheet('original', event)">+ 新增</button>
         </div>
       </div>
@@ -301,7 +276,7 @@
           <span class="arrow-icon" id="arrow-lev">▼</span>
         </span>
         <div class="section-action">
-          <span class="section-total" id="total-lev-val">$0</span>
+          <span class="section-total" id="total-lev-val">NT$0</span>
           <button class="add-btn" onclick="openSheet('leverage', event)">+ 新增</button>
         </div>
       </div>
@@ -318,7 +293,7 @@
           <span class="arrow-icon" id="arrow-cash">▼</span>
         </span>
         <div class="section-action">
-          <span class="section-total" id="total-cash-val">$0</span>
+          <span class="section-total" id="total-cash-val">NT$0</span>
           <button class="add-btn" onclick="openSheet('cash', event)">+ 新增</button>
         </div>
       </div>
@@ -350,6 +325,19 @@
       <div class="price-hint" id="price-hint">正在連線抓取最新股價...</div>
     </div>
 
+    <div class="form-group">
+      <label class="form-label">計價幣別</label>
+      <div class="currency-selector">
+        <div class="curr-btn active" id="curr-TWD" onclick="setCurrency('TWD')">TWD (新台幣)</div>
+        <div class="curr-btn" id="curr-USD" onclick="setCurrency('USD')">USD (美金)</div>
+      </div>
+    </div>
+
+    <div class="form-group" id="group-rate" style="display: none;">
+      <label class="form-label">換算匯率 (USD ➔ TWD)</label>
+      <input type="number" id="input-rate" class="form-input" placeholder="例如：32.2" value="32.0">
+    </div>
+
     <div class="form-group" id="group-lev-multiple" style="display: none;">
       <label class="form-label">槓桿倍數</label>
       <div class="lev-selector">
@@ -365,12 +353,12 @@
     </div>
 
     <div class="form-group" id="group-price">
-      <label class="form-label">估算單價 / 現值 (元)</label>
+      <label class="form-label">估算單價 / 現值</label>
       <input type="number" id="input-price" class="form-input" placeholder="代號輸入後自動抓取，亦可手動修正">
     </div>
 
     <div class="form-group" id="group-total-val" style="display: none;">
-      <label class="form-label">總金額 (元)</label>
+      <label class="form-label">總金額</label>
       <input type="number" id="input-total-val" class="form-input" placeholder="例如：500000">
     </div>
 
@@ -384,12 +372,13 @@
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbydO1G5uaoLlFgCC6lEBFEOeT0vwS5cycdMZ40Q20mxk9p-fNNws13cvBg3iqanpgqheQ/exec";
 
     let assets = JSON.parse(localStorage.getItem('user_assets')) || [
-      { id: 1, type: 'original', symbol: '0050', shares: 20000, price: 190 },
-      { id: 2, type: 'leverage', symbol: '00631L', shares: 15000, price: 210, multiple: 2 },
-      { id: 3, type: 'cash', symbol: '銀行活存', val: 1200000 }
+      { id: 1, type: 'original', symbol: '0050', shares: 20000, price: 190, currency: 'TWD', rate: 1 },
+      { id: 2, type: 'leverage', symbol: '00631L', shares: 15000, price: 210, multiple: 2, currency: 'TWD', rate: 1 },
+      { id: 3, type: 'cash', symbol: '銀行活存', val: 1200000, currency: 'TWD', rate: 1 }
     ];
 
     let currentType = 'original';
+    let currentCurrency = 'TWD';
     let currentLevMultiple = 2;
     let editingAssetId = null;
 
@@ -398,17 +387,13 @@
       return Number(Math.round(num)).toLocaleString('en-US');
     }
 
-    // 控制區塊展開與收合
     function toggleSection(sectionKey) {
       const body = document.getElementById(`body-${sectionKey}`);
       const arrow = document.getElementById(`arrow-${sectionKey}`);
-
       if (body.classList.contains('open')) {
-        body.classList.remove('open');
-        arrow.classList.remove('open');
+        body.classList.remove('open'); arrow.classList.remove('open');
       } else {
-        body.classList.add('open');
-        arrow.classList.add('open');
+        body.classList.add('open'); arrow.classList.add('open');
       }
     }
 
@@ -416,11 +401,12 @@
       const symbolInput = document.getElementById('input-symbol').value.trim();
       const hint = document.getElementById('price-hint');
       const priceInput = document.getElementById('input-price');
+      const rateInput = document.getElementById('input-rate');
 
       if (!symbolInput || currentType === 'cash') return;
       if (!GAS_API_URL || GAS_API_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") return;
 
-      hint.innerText = "⚡ 正在查詢即時股價...";
+      hint.innerText = "⚡ 正在查詢即時股價與匯率...";
       hint.style.display = "block";
 
       try {
@@ -429,7 +415,9 @@
 
         if (data.status === 'success' && data.price) {
           priceInput.value = parseFloat(data.price).toFixed(2);
-          hint.innerText = `✓ 已更新最新現值：$${data.price}`;
+          if (data.currency) setCurrency(data.currency);
+          if (data.usdtwd) rateInput.value = parseFloat(data.usdtwd).toFixed(2);
+          hint.innerText = `✓ 已更新最新股價 (${data.currency})：$${data.price}`;
         } else {
           hint.innerText = "✕ 未查得自動股價，請手動輸入";
         }
@@ -446,70 +434,87 @@
 
       listOrig.innerHTML = ''; listLev.innerHTML = ''; listCash.innerHTML = '';
 
-      let totalOrig = 0, totalLev = 0, totalCash = 0;
+      let totalOrigTWD = 0, totalLevTWD = 0, totalCashTWD = 0;
 
       assets.forEach(item => {
-        let itemVal = 0;
+        const curr = item.currency || 'TWD';
+        const fxRate = curr === 'USD' ? (item.rate || 32.0) : 1;
+
+        let rawVal = 0;
+        let twdVal = 0;
         let html = '';
 
         if (item.type === 'cash') {
-          itemVal = item.val || 0;
-          totalCash += itemVal;
+          rawVal = item.val || 0;
+          twdVal = rawVal * fxRate;
+          totalCashTWD += twdVal;
+
+          const subText = curr === 'USD' ? `$${formatNumber(rawVal)} USD (匯率 ${fxRate})` : '';
           html = `
             <div class="asset-capsule" onclick="openEditSheet(${item.id})">
               <div class="asset-info">
-                <div class="asset-symbol">${item.symbol}</div>
+                <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
+                ${subText ? `<div class="asset-detail">${subText}</div>` : ''}
               </div>
-              <div class="asset-val">$${formatNumber(itemVal)}</div>
+              <div class="asset-val-box">
+                <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
+              </div>
             </div>`;
           listCash.innerHTML += html;
         } else {
-          itemVal = (item.shares || 0) * (item.price || 0);
+          rawVal = (item.shares || 0) * (item.price || 0);
+          twdVal = rawVal * fxRate;
+
           if (item.type === 'original') {
-            totalOrig += itemVal;
+            totalOrigTWD += twdVal;
             html = `
               <div class="asset-capsule" onclick="openEditSheet(${item.id})">
                 <div class="asset-info">
-                  <div class="asset-symbol">${item.symbol}</div>
-                  <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
+                  <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
+                  <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price} ${curr === 'USD' ? `(折合 NT$${formatNumber(twdVal)})` : ''}</div>
                 </div>
-                <div class="asset-val">$${formatNumber(itemVal)}</div>
+                <div class="asset-val-box">
+                  <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
+                </div>
               </div>`;
             listOrig.innerHTML += html;
           } else {
-            totalLev += itemVal;
+            totalLevTWD += twdVal;
             html = `
               <div class="asset-capsule" onclick="openEditSheet(${item.id})">
                 <div class="asset-info">
-                  <div class="asset-symbol">${item.symbol} <span class="badge-lev">${item.multiple || 2}X</span></div>
-                  <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
+                  <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span> <span class="badge-lev">${item.multiple || 2}X</span></div>
+                  <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price} ${curr === 'USD' ? `(折合 NT$${formatNumber(twdVal)})` : ''}</div>
                 </div>
-                <div class="asset-val">$${formatNumber(itemVal)}</div>
+                <div class="asset-val-box">
+                  <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
+                </div>
               </div>`;
             listLev.innerHTML += html;
           }
         }
       });
 
-      // 更新各卡片標題旁的分類資產總和
-      document.getElementById('total-orig-val').innerText = '$' + formatNumber(totalOrig);
-      document.getElementById('total-lev-val').innerText = '$' + formatNumber(totalLev);
-      document.getElementById('total-cash-val').innerText = '$' + formatNumber(totalCash);
+      // 更新各卡片分類總和 (新台幣)
+      document.getElementById('total-orig-val').innerText = 'NT$ ' + formatNumber(totalOrigTWD);
+      document.getElementById('total-lev-val').innerText = 'NT$ ' + formatNumber(totalLevTWD);
+      document.getElementById('total-cash-val').innerText = 'NT$ ' + formatNumber(totalCashTWD);
 
-      // 更新頂部總金額與佔比
-      const totalNetWorth = totalOrig + totalLev + totalCash;
-      document.getElementById('total-net-worth').innerText = '$' + formatNumber(totalNetWorth);
+      // 更新頂部總金額 (新台幣) 與佔比
+      const totalNetWorthTWD = totalOrigTWD + totalLevTWD + totalCashTWD;
+      document.getElementById('total-net-worth').innerText = '$' + formatNumber(totalNetWorthTWD);
 
-      if (totalNetWorth > 0) {
-        document.getElementById('pct-orig').innerText = Math.round((totalOrig / totalNetWorth) * 100) + '%';
-        document.getElementById('pct-lev').innerText = Math.round((totalLev / totalNetWorth) * 100) + '%';
-        document.getElementById('pct-cash').innerText = Math.round((totalCash / totalNetWorth) * 100) + '%';
+      if (totalNetWorthTWD > 0) {
+        document.getElementById('pct-orig').innerText = Math.round((totalOrigTWD / totalNetWorthTWD) * 100) + '%';
+        document.getElementById('pct-lev').innerText = Math.round((totalLevTWD / totalNetWorthTWD) * 100) + '%';
+        document.getElementById('pct-cash').innerText = Math.round((totalCashTWD / totalNetWorthTWD) * 100) + '%';
       }
 
+      // 同步新台幣總計至 localStorage 供全站讀取
       localStorage.setItem('user_assets', JSON.stringify(assets));
-      localStorage.setItem('alloc_original', totalOrig);
-      localStorage.setItem('alloc_leverage', totalLev);
-      localStorage.setItem('alloc_cash', totalCash);
+      localStorage.setItem('alloc_original', totalOrigTWD);
+      localStorage.setItem('alloc_leverage', totalLevTWD);
+      localStorage.setItem('alloc_cash', totalCashTWD);
 
       if (typeof updateGlowBackground === 'function') {
         updateGlowBackground();
@@ -517,14 +522,14 @@
     }
 
     function openSheet(type, evt) {
-      if (evt) evt.stopPropagation(); // 阻止點擊新增按鈕時觸發標題折疊/展開
-
+      if (evt) evt.stopPropagation();
       editingAssetId = null;
       document.getElementById('sheet-title').innerText = "新增資產";
       document.getElementById('btn-submit').innerText = "儲存資產";
       document.getElementById('btn-delete').style.display = "none";
       
       setType(type);
+      setCurrency('TWD');
       document.getElementById('sheet-overlay').classList.add('active');
       document.getElementById('bottom-sheet').classList.add('active');
     }
@@ -539,6 +544,9 @@
       document.getElementById('btn-delete').style.display = "block";
 
       setType(item.type);
+      setCurrency(item.currency || 'TWD');
+      if (item.rate) document.getElementById('input-rate').value = item.rate;
+
       document.getElementById('input-symbol').value = item.symbol || '';
 
       if (item.type === 'cash') {
@@ -596,24 +604,28 @@
       }
     }
 
+    function setCurrency(curr) {
+      currentCurrency = curr;
+      document.querySelectorAll('.curr-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`curr-${curr}`).classList.add('active');
+      document.getElementById('group-rate').style.display = (curr === 'USD') ? 'block' : 'none';
+    }
+
     function setLev(mult) {
       currentLevMultiple = mult;
       document.querySelectorAll('.lev-btn').forEach(btn => btn.classList.remove('active'));
       const activeBtn = document.getElementById(`lev-${mult}`);
-      if (activeBtn) {
-        activeBtn.classList.add('active');
-      } else if (event && event.target && event.target.classList) {
-        event.target.classList.add('active');
-      }
+      if (activeBtn) activeBtn.classList.add('active');
     }
 
     function saveAsset() {
       const symbol = document.getElementById('input-symbol').value.trim() || '未命名資產';
+      const rate = currentCurrency === 'USD' ? (parseFloat(document.getElementById('input-rate').value) || 32.0) : 1;
 
       let newData = {};
       if (currentType === 'cash') {
         const val = parseFloat(document.getElementById('input-total-val').value) || 0;
-        newData = { type: 'cash', symbol: symbol, val: val };
+        newData = { type: 'cash', symbol: symbol, val: val, currency: currentCurrency, rate: rate };
       } else {
         const shares = parseFloat(document.getElementById('input-shares').value) || 0;
         const price = parseFloat(document.getElementById('input-price').value) || 0;
@@ -622,6 +634,8 @@
           symbol: symbol,
           shares: shares,
           price: price,
+          currency: currentCurrency,
+          rate: rate,
           multiple: currentType === 'leverage' ? currentLevMultiple : undefined
         };
       }
@@ -635,7 +649,6 @@
       renderAssets();
       closeSheet();
 
-      // 新增或更新後自動展開該類別，提升視覺反饋
       const keyMap = { original: 'orig', leverage: 'lev', cash: 'cash' };
       const targetKey = keyMap[currentType];
       if (targetKey) {
