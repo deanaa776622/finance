@@ -18,6 +18,10 @@
       --sub-text: #64748b;
       --border-color: rgba(255, 255, 255, 0.08);
       --danger-color: #f43f5e;
+
+      /* Bottom Sheet 動態主題色變數 (預設原型天藍) */
+      --active-theme-color: #38bdf8;
+      --active-theme-rgb: 56, 189, 248;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -162,7 +166,7 @@
     }
     .add-btn:active { transform: scale(0.95); }
 
-    /* 資產膠囊列表 (含微型進度條 Track & Fill) */
+    /* 資產膠囊列表 */
     .asset-capsule {
       display: flex; justify-content: space-between; align-items: center;
       background: rgba(15, 23, 42, 0.5);
@@ -267,7 +271,10 @@
       width: 100%; padding: 12px 16px; border-radius: 12px;
       border: 1px solid var(--border-color); background: var(--input-bg);
       color: #f8fafc; font-size: 1rem; outline: none;
-      transition: opacity 0.2s, background 0.2s;
+      transition: opacity 0.2s, background 0.2s, border-color 0.3s;
+    }
+    .form-input:focus {
+      border-color: var(--active-theme-color);
     }
 
     /* 停用 (Disabled) 狀態之 CSS 呈現 */
@@ -287,7 +294,8 @@
     }
 
     .price-hint {
-      font-size: 0.72rem; color: var(--accent-color); margin-top: 4px; display: none;
+      font-size: 0.72rem; color: var(--active-theme-color); margin-top: 4px; display: none;
+      transition: color 0.3s;
     }
 
     .type-selector, .lev-selector, .currency-selector, .mode-selector {
@@ -297,21 +305,38 @@
       flex: 1; padding: 10px; border-radius: 12px;
       border: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.4);
       color: var(--sub-text); font-size: 0.85rem; font-weight: 600;
-      cursor: pointer; text-align: center; transition: all 0.2s;
+      cursor: pointer; text-align: center; transition: all 0.3s ease;
     }
-    .type-btn.active, .lev-btn.active, .curr-btn.active, .mode-btn.active {
-      background: rgba(56, 189, 248, 0.2); border-color: var(--accent-color); color: #f8fafc;
+
+    /* 1. 資產類別專屬選屬狀態 (藍、綠、黃) */
+    .type-btn#type-orig.active {
+      background: rgba(56, 189, 248, 0.2); border-color: var(--accent-color); color: var(--accent-color);
+    }
+    .type-btn#type-lev.active {
+      background: rgba(74, 222, 128, 0.2); border-color: var(--leverage-color); color: var(--leverage-color);
+    }
+    .type-btn#type-cash.active {
+      background: rgba(250, 204, 21, 0.2); border-color: var(--cash-color); color: var(--cash-color);
+    }
+
+    /* 2. 動態連動主調色 (其他按鈕如：輸入模式、幣別、槓桿倍數) */
+    .lev-btn.active, .curr-btn.active, .mode-btn.active {
+      background: rgba(var(--active-theme-rgb), 0.2);
+      border-color: var(--active-theme-color);
+      color: var(--active-theme-color);
     }
 
     .action-btn-group {
       width: 100%; max-width: 360px; display: flex; gap: 10px; margin-top: 10px;
     }
 
+    /* 3. 動態主題色儲存按鈕 */
     .submit-btn {
       flex: 1; padding: 14px; border-radius: 14px; border: none;
-      background: var(--accent-color); color: #0f172a;
+      background: var(--active-theme-color); color: #0f172a;
       font-size: 1rem; font-weight: 700; cursor: pointer;
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+      box-shadow: 0 0 15px rgba(var(--active-theme-rgb), 0.4);
+      transition: background 0.3s ease, box-shadow 0.3s ease;
     }
 
     .delete-btn {
@@ -778,11 +803,25 @@
       editingAssetId = null;
     }
 
-    // 重構：統一欄位狀態 (Disable/Enable) 控制邏輯
+    // 重構：類別切換與動態主題配色控制
     function setType(type) {
       currentType = type;
       document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('active'));
       document.getElementById(`type-${type === 'original' ? 'orig' : type === 'leverage' ? 'lev' : 'cash'}`).classList.add('active');
+
+      const root = document.documentElement;
+
+      // 切換 Bottom Sheet 動態 CSS 變數
+      if (type === 'original') {
+        root.style.setProperty('--active-theme-color', '#38bdf8');
+        root.style.setProperty('--active-theme-rgb', '56, 189, 248');
+      } else if (type === 'leverage') {
+        root.style.setProperty('--active-theme-color', '#4ade80');
+        root.style.setProperty('--active-theme-rgb', '74, 222, 128');
+      } else {
+        root.style.setProperty('--active-theme-color', '#facc15');
+        root.style.setProperty('--active-theme-rgb', '250, 204, 21');
+      }
 
       const modeGroup = document.getElementById('group-cash-mode');
       const levGroup = document.getElementById('group-lev-multiple');
@@ -790,7 +829,6 @@
       const btnModeShares = document.getElementById('mode-shares');
 
       if (type === 'original' || type === 'leverage') {
-        // 原型與槓桿：強制切換至「股數單價」模式並鎖定切換按鈕
         setCashMode('shares');
         modeGroup.classList.add('disabled');
         btnModeTotal.classList.add('disabled');
@@ -802,7 +840,6 @@
           levGroup.classList.add('disabled');
         }
       } else {
-        // 現金與房屋：解鎖輸入模式按鈕，停用槓桿倍數
         modeGroup.classList.remove('disabled');
         btnModeTotal.classList.remove('disabled');
         btnModeShares.classList.remove('disabled');
@@ -824,7 +861,6 @@
       const inputTotal = document.getElementById('input-total-val');
 
       if (mode === 'total' && currentType === 'cash') {
-        // 總金額模式：停用股數與單價欄位
         groupShares.classList.add('disabled');
         groupPrice.classList.add('disabled');
         inputShares.disabled = true;
@@ -833,7 +869,6 @@
         groupTotal.classList.remove('disabled');
         inputTotal.disabled = false;
       } else {
-        // 股數與單價模式：停用總金額欄位
         groupShares.classList.remove('disabled');
         groupPrice.classList.remove('disabled');
         inputShares.disabled = false;
