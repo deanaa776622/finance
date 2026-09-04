@@ -17,6 +17,7 @@
       --text-color: #f8fafc;
       --sub-text: #64748b;
       --border-color: rgba(255, 255, 255, 0.08);
+      --danger-color: #f43f5e;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -115,8 +116,12 @@
       background: rgba(15, 23, 42, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.05);
       padding: 12px 16px; border-radius: 16px;
-      margin-bottom: 10px; transition: transform 0.15s;
+      margin-bottom: 10px; transition: transform 0.15s, background 0.2s;
       cursor: pointer;
+    }
+    .asset-capsule:active {
+      transform: scale(0.98);
+      background: rgba(30, 41, 59, 0.8);
     }
     .asset-capsule:last-child { margin-bottom: 0; }
 
@@ -204,12 +209,24 @@
       background: rgba(56, 189, 248, 0.2); border-color: var(--accent-color); color: #f8fafc;
     }
 
+    .action-btn-group {
+      width: 100%; max-width: 360px; display: flex; gap: 10px; margin-top: 10px;
+    }
+
     .submit-btn {
-      width: 100%; max-width: 360px; padding: 14px; margin-top: 10px;
+      flex: 1; padding: 14px;
       border-radius: 14px; border: none; background: var(--accent-color);
       color: #0f172a; font-size: 1rem; font-weight: 700; cursor: pointer;
       box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
     }
+
+    .delete-btn {
+      padding: 14px 20px; border-radius: 14px; border: 1px solid rgba(244, 63, 94, 0.3);
+      background: rgba(244, 63, 94, 0.15); color: var(--danger-color);
+      font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+      display: none;
+    }
+    .delete-btn:active { transform: scale(0.95); }
   </style>
 </head>
 <body>
@@ -280,9 +297,9 @@
     <div class="form-group" id="group-lev-multiple" style="display: none;">
       <label class="form-label">槓桿倍數</label>
       <div class="lev-selector">
-        <div class="lev-btn" onclick="setLev(1.5)">1.5X</div>
+        <div class="lev-btn" id="lev-1.5" onclick="setLev(1.5)">1.5X</div>
         <div class="lev-btn active" id="lev-2" onclick="setLev(2)">2.0X</div>
-        <div class="lev-btn" onclick="setLev(3)">3.0X</div>
+        <div class="lev-btn" id="lev-3" onclick="setLev(3)">3.0X</div>
       </div>
     </div>
 
@@ -301,11 +318,13 @@
       <input type="number" id="input-total-val" class="form-input" placeholder="例如：500000">
     </div>
 
-    <button class="submit-btn" onclick="saveAsset()">儲存資產</button>
+    <div class="action-btn-group">
+      <button class="delete-btn" id="btn-delete" onclick="executeDeleteAsset()">刪除</button>
+      <button class="submit-btn" id="btn-submit" onclick="saveAsset()">儲存資產</button>
+    </div>
   </div>
 
   <script>
-    // ⚠️ 請填入你部署好的 Google Apps Script 網址
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbydO1G5uaoLlFgCC6lEBFEOeT0vwS5cycdMZ40Q20mxk9p-fNNws13cvBg3iqanpgqheQ/exec";
 
     let assets = JSON.parse(localStorage.getItem('user_assets')) || [
@@ -316,23 +335,20 @@
 
     let currentType = 'original';
     let currentLevMultiple = 2;
+    let editingAssetId = null;
 
     function formatNumber(num) {
       if (!num || isNaN(num)) return '0';
       return Number(Math.round(num)).toLocaleString('en-US');
     }
 
-    // 自動抓取股價邏輯
     async function fetchStockPrice() {
       const symbolInput = document.getElementById('input-symbol').value.trim();
       const hint = document.getElementById('price-hint');
       const priceInput = document.getElementById('input-price');
 
       if (!symbolInput || currentType === 'cash') return;
-      if (!GAS_API_URL || GAS_API_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") {
-        console.warn("請設定有效的 GAS_API_URL");
-        return;
-      }
+      if (!GAS_API_URL || GAS_API_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") return;
 
       hint.innerText = "⚡ 正在查詢即時股價...";
       hint.style.display = "block";
@@ -370,7 +386,7 @@
           itemVal = item.val || 0;
           totalCash += itemVal;
           html = `
-            <div class="asset-capsule" onclick="deleteAsset(${item.id})">
+            <div class="asset-capsule" onclick="openEditSheet(${item.id})">
               <div class="asset-info">
                 <div class="asset-symbol">${item.symbol}</div>
               </div>
@@ -382,7 +398,7 @@
           if (item.type === 'original') {
             totalOrig += itemVal;
             html = `
-              <div class="asset-capsule" onclick="deleteAsset(${item.id})">
+              <div class="asset-capsule" onclick="openEditSheet(${item.id})">
                 <div class="asset-info">
                   <div class="asset-symbol">${item.symbol}</div>
                   <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
@@ -393,7 +409,7 @@
           } else {
             totalLev += itemVal;
             html = `
-              <div class="asset-capsule" onclick="deleteAsset(${item.id})">
+              <div class="asset-capsule" onclick="openEditSheet(${item.id})">
                 <div class="asset-info">
                   <div class="asset-symbol">${item.symbol} <span class="badge-lev">${item.multiple || 2}X</span></div>
                   <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
@@ -425,7 +441,38 @@
     }
 
     function openSheet(type) {
+      editingAssetId = null;
+      document.getElementById('sheet-title').innerText = "新增資產";
+      document.getElementById('btn-submit').innerText = "儲存資產";
+      document.getElementById('btn-delete').style.display = "none";
+      
       setType(type);
+      document.getElementById('sheet-overlay').classList.add('active');
+      document.getElementById('bottom-sheet').classList.add('active');
+    }
+
+    function openEditSheet(id) {
+      const item = assets.find(a => a.id === id);
+      if (!item) return;
+
+      editingAssetId = id;
+      document.getElementById('sheet-title').innerText = "編輯資產";
+      document.getElementById('btn-submit').innerText = "更新資料";
+      document.getElementById('btn-delete').style.display = "block";
+
+      setType(item.type);
+      document.getElementById('input-symbol').value = item.symbol || '';
+
+      if (item.type === 'cash') {
+        document.getElementById('input-total-val').value = item.val || '';
+      } else {
+        document.getElementById('input-shares').value = item.shares || '';
+        document.getElementById('input-price').value = item.price || '';
+        if (item.type === 'leverage') {
+          setLev(item.multiple || 2);
+        }
+      }
+
       document.getElementById('sheet-overlay').classList.add('active');
       document.getElementById('bottom-sheet').classList.add('active');
     }
@@ -438,6 +485,7 @@
       document.getElementById('input-price').value = '';
       document.getElementById('input-total-val').value = '';
       document.getElementById('price-hint').style.display = 'none';
+      editingAssetId = null;
     }
 
     function setType(type) {
@@ -473,36 +521,48 @@
     function setLev(mult) {
       currentLevMultiple = mult;
       document.querySelectorAll('.lev-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
+      const activeBtn = document.getElementById(`lev-${mult}`);
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+      } else if (event && event.target && event.target.classList) {
+        event.target.classList.add('active');
+      }
     }
 
     function saveAsset() {
-      const symbol = document.getElementById('input-symbol').value || '未命名資產';
+      const symbol = document.getElementById('input-symbol').value.trim() || '未命名資產';
 
+      let newData = {};
       if (currentType === 'cash') {
         const val = parseFloat(document.getElementById('input-total-val').value) || 0;
-        assets.push({ id: Date.now(), type: 'cash', symbol: symbol, val: val });
+        newData = { type: 'cash', symbol: symbol, val: val };
       } else {
         const shares = parseFloat(document.getElementById('input-shares').value) || 0;
         const price = parseFloat(document.getElementById('input-price').value) || 0;
-        assets.push({
-          id: Date.now(),
+        newData = {
           type: currentType,
           symbol: symbol,
           shares: shares,
           price: price,
           multiple: currentType === 'leverage' ? currentLevMultiple : undefined
-        });
+        };
+      }
+
+      if (editingAssetId !== null) {
+        assets = assets.map(a => a.id === editingAssetId ? { ...a, ...newData } : a);
+      } else {
+        assets.push({ id: Date.now(), ...newData });
       }
 
       renderAssets();
       closeSheet();
     }
 
-    function deleteAsset(id) {
-      if (confirm('確定要刪除此筆資產嗎？')) {
-        assets = assets.filter(a => a.id !== id);
+    function executeDeleteAsset() {
+      if (editingAssetId !== null) {
+        assets = assets.filter(a => a.id !== editingAssetId);
         renderAssets();
+        closeSheet();
       }
     }
 
