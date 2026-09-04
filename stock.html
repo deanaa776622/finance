@@ -3,172 +3,466 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>資產淨值試算</title>
+  <title>資產清單與淨值</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style>
     :root {
       --bg-color: #0f172a;
-      --card-bg: #1e293b;
+      --card-bg: rgba(30, 41, 59, 0.45);
+      --input-bg: rgba(15, 23, 42, 0.6);
       --accent-color: #38bdf8;
+      --leverage-color: #4ade80;
+      --cash-color: #facc15;
       --text-color: #f8fafc;
-      --sub-text: #94a3b8;
-      --border-color: #334155;
+      --sub-text: #64748b;
+      --border-color: rgba(255, 255, 255, 0.08);
     }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%; min-height: 100%;
       background-color: var(--bg-color);
       color: var(--text-color);
-      margin: 0;
-      padding: 20px;
-      padding-bottom: 70px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
+
+    body {
+      padding: 20px;
+      padding-bottom: 90px !important;
+      display: flex; flex-direction: column; align-items: center;
+    }
+
     .container {
-      width: 100%;
-      max-width: 420px;
+      width: 100%; max-width: 400px;
+      position: relative; z-index: 1;
     }
-    h2 {
+
+    /* 頂部總覽卡片 */
+    .summary-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 28px;
+      padding: 24px;
       text-align: center;
-      color: var(--accent-color);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
       margin-bottom: 20px;
     }
-    .card {
-      background-color: var(--card-bg);
-      border-radius: 16px;
+
+    .summary-label {
+      font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.2em; color: var(--sub-text);
+      text-transform: uppercase;
+    }
+
+    .summary-value {
+      font-size: 2.8rem; font-weight: 700;
+      color: var(--accent-color);
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+      margin: 6px 0;
+    }
+
+    .summary-sub {
+      font-size: 0.8rem; color: #94a3b8;
+      display: flex; justify-content: center; gap: 12px;
+    }
+
+    /* 分組卡片 */
+    .section-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
       padding: 20px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
       border: 1px solid var(--border-color);
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
-    .card-title {
-      font-size: 1.1rem;
-      font-weight: bold;
+
+    .section-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: 0.9rem; font-weight: 600;
+      letter-spacing: 0.1em; color: #cbd5e1;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    .dot-orig { background: var(--accent-color); box-shadow: 0 0 8px var(--accent-color); }
+    .dot-lev { background: var(--leverage-color); box-shadow: 0 0 8px var(--leverage-color); }
+    .dot-cash { background: var(--cash-color); box-shadow: 0 0 8px var(--cash-color); }
+
+    .add-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       color: var(--accent-color);
-      margin-bottom: 15px;
+      padding: 6px 12px; border-radius: 20px;
+      font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
     }
-    .input-group {
-      margin-bottom: 15px;
+    .add-btn:active { transform: scale(0.95); }
+
+    /* 資產膠囊膠囊列表 */
+    .asset-capsule {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 12px 16px; border-radius: 16px;
+      margin-bottom: 10px; transition: transform 0.15s;
     }
-    label {
-      display: block;
-      font-size: 0.85rem;
-      color: var(--sub-text);
-      margin-bottom: 5px;
+    .asset-capsule:last-child { margin-bottom: 0; }
+
+    .asset-info { display: flex; flex-direction: column; }
+    .asset-symbol {
+      font-size: 1rem; font-weight: 600; color: #f8fafc;
+      display: flex; align-items: center; gap: 6px;
     }
-    input {
-      width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-      background-color: #0f172a;
-      color: var(--text-color);
-      font-size: 1rem;
-      box-sizing: border-box;
+
+    .badge-lev {
+      font-size: 0.65rem; padding: 2px 6px; border-radius: 6px;
+      background: rgba(74, 222, 128, 0.15); color: var(--leverage-color);
+      border: 1px solid rgba(74, 222, 128, 0.3); font-weight: 700;
     }
-    input:focus {
-      outline: none;
-      border-color: var(--accent-color);
+
+    .asset-detail { font-size: 0.75rem; color: var(--sub-text); margin-top: 2px; }
+
+    .asset-val {
+      font-size: 1.05rem; font-weight: 600; color: #f8fafc;
+      text-align: right;
     }
-    .result-box {
-      margin-top: 10px;
-      text-align: center;
+
+    /* 底部滑出抽屜 (Bottom Sheet) */
+    .sheet-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);
+      z-index: 10; opacity: 0; pointer-events: none; transition: opacity 0.3s;
     }
-    .result-title {
-      font-size: 0.9rem;
-      color: var(--sub-text);
+    .sheet-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .bottom-sheet {
+      position: fixed; bottom: -100%; left: 0; width: 100vw;
+      background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(25px);
+      border-top-left-radius: 28px; border-top-right-radius: 28px;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 24px; z-index: 11; transition: bottom 0.35s cubic-bezier(0.1, 0.9, 0.2, 1);
+      display: flex; flex-direction: column; align-items: center;
     }
-    .result-value {
-      font-size: 2.2rem;
-      font-weight: bold;
-      color: var(--accent-color);
-      margin: 5px 0;
+    .bottom-sheet.active { bottom: 0; }
+
+    .sheet-handle {
+      width: 36px; height: 4px; background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px; margin-bottom: 20px;
+    }
+
+    .sheet-title {
+      font-size: 1.1rem; font-weight: 600; color: #f8fafc; margin-bottom: 20px;
+    }
+
+    .form-group { width: 100%; max-width: 360px; margin-bottom: 16px; }
+    .form-label { font-size: 0.8rem; color: var(--sub-text); margin-bottom: 6px; display: block; }
+    .form-input {
+      width: 100%; padding: 12px 16px; border-radius: 12px;
+      border: 1px solid var(--border-color); background: var(--input-bg);
+      color: #f8fafc; font-size: 1rem; outline: none;
+    }
+
+    .type-selector, .lev-selector {
+      display: flex; gap: 8px; width: 100%; max-width: 360px;
+    }
+    .type-btn, .lev-btn {
+      flex: 1; padding: 10px; border-radius: 12px;
+      border: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.4);
+      color: var(--sub-text); font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; text-align: center; transition: all 0.2s;
+    }
+    .type-btn.active, .lev-btn.active {
+      background: rgba(56, 189, 248, 0.2); border-color: var(--accent-color); color: #f8fafc;
+    }
+
+    .submit-btn {
+      width: 100%; max-width: 360px; padding: 14px; margin-top: 10px;
+      border-radius: 14px; border: none; background: var(--accent-color);
+      color: #0f172a; font-size: 1rem; font-weight: 700; cursor: pointer;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
     }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <h2>資產淨值試算</h2>
-
-  <!-- 總淨值彙總卡片 -->
-  <div class="card" style="border-color: var(--accent-color);">
-    <div class="result-box">
-      <div class="result-title">預估總淨值 (元)</div>
-      <div class="result-value" id="total-net-worth">0</div>
+  <div class="container">
+    
+    <!-- 頂部總淨值彙總 -->
+    <div class="summary-card">
+      <div class="summary-label">NET WORTH</div>
+      <div class="summary-value" id="total-net-worth">$0</div>
+      <div class="summary-sub">
+        <span>原 <strong id="pct-orig">0%</strong></span>
+        <span>槓 <strong id="pct-lev">0%</strong></span>
+        <span>現 <strong id="pct-cash">0%</strong></span>
+      </div>
     </div>
+
+    <!-- 1. 原型資產 -->
+    <div class="section-card">
+      <div class="section-header">
+        <span class="section-title"><div class="dot dot-orig"></div> 原型股票</span>
+        <button class="add-btn" onclick="openSheet('original')">+ 新增</button>
+      </div>
+      <div id="list-original"></div>
+    </div>
+
+    <!-- 2. 槓桿資產 -->
+    <div class="section-card">
+      <div class="section-header">
+        <span class="section-title"><div class="dot dot-lev"></div> 槓桿資產</span>
+        <button class="add-btn" onclick="openSheet('leverage')">+ 新增</button>
+      </div>
+      <div id="list-leverage"></div>
+    </div>
+
+    <!-- 3. 現金與房屋 -->
+    <div class="section-card">
+      <div class="section-header">
+        <span class="section-title"><div class="dot dot-cash"></div> 現金與房屋</span>
+        <button class="add-btn" onclick="openSheet('cash')">+ 新增</button>
+      </div>
+      <div id="list-cash"></div>
+    </div>
+
   </div>
 
-  <!-- 1. 股票卡片 -->
-  <div class="card">
-    <div class="card-title">股票</div>
-    <div class="input-group">
-      <label>股票總價值 (元)</label>
-      <input type="text" id="stock_val" value="0" oninput="formatAndCalculate(this)">
+  <!-- 底部滑出抽屜 -->
+  <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+  <div class="bottom-sheet" id="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheet-title">新增資產</div>
+
+    <div class="form-group">
+      <label class="form-label">資產類別</label>
+      <div class="type-selector">
+        <div class="type-btn active" id="type-orig" onclick="setType('original')">原型</div>
+        <div class="type-btn" id="type-lev" onclick="setType('leverage')">槓桿</div>
+        <div class="type-btn" id="type-cash" onclick="setType('cash')">現金/房屋</div>
+      </div>
     </div>
+
+    <div class="form-group" id="group-symbol">
+      <label class="form-label">標的代號 / 名稱</label>
+      <input type="text" id="input-symbol" class="form-input" placeholder="例如：0050, 00631L">
+    </div>
+
+    <div class="form-group" id="group-lev-multiple" style="display: none;">
+      <label class="form-label">槓桿倍數</label>
+      <div class="lev-selector">
+        <div class="lev-btn" onclick="setLev(1.5)">1.5X</div>
+        <div class="lev-btn active" id="lev-2" onclick="setLev(2)">2.0X</div>
+        <div class="lev-btn" onclick="setLev(3)">3.0X</div>
+      </div>
+    </div>
+
+    <div class="form-group" id="group-shares">
+      <label class="form-label">持有股數</label>
+      <input type="number" id="input-shares" class="form-input" placeholder="例如：1000">
+    </div>
+
+    <div class="form-group" id="group-price">
+      <label class="form-label">估算單價 / 現值 (元)</label>
+      <input type="number" id="input-price" class="form-input" placeholder="例如：150">
+    </div>
+
+    <div class="form-group" id="group-total-val" style="display: none;">
+      <label class="form-label">總金額 (元)</label>
+      <input type="number" id="input-total-val" class="form-input" placeholder="例如：500000">
+    </div>
+
+    <button class="submit-btn" onclick="saveAsset()">儲存資產</button>
   </div>
 
-  <!-- 2. 現金卡片 -->
-  <div class="card">
-    <div class="card-title">現金</div>
-    <div class="input-group">
-      <label>現金總額 (元)</label>
-      <input type="text" id="cash_val" value="0" oninput="formatAndCalculate(this)">
-    </div>
-  </div>
+  <script>
+    // 預設示範資產資料庫 (若 localStorage 無資料時初始化)
+    let assets = JSON.parse(localStorage.getItem('user_assets')) || [
+      { id: 1, type: 'original', symbol: '0050', shares: 20000, price: 190 },
+      { id: 2, type: 'leverage', symbol: '00631L', shares: 15000, price: 210, multiple: 2 },
+      { id: 3, type: 'cash', symbol: '銀行活存', val: 1200000 }
+    ];
 
-  <!-- 3. 房子卡片 -->
-  <div class="card">
-    <div class="card-title">房子</div>
-    <div class="input-group">
-      <label>房屋預估價值 (元)</label>
-      <input type="text" id="house_val" value="0" oninput="formatAndCalculate(this)">
-    </div>
-  </div>
-</div>
+    let currentType = 'original';
+    let currentLevMultiple = 2;
 
-<script>
-  function parseNumber(formattedStr) {
-    if (!formattedStr) return 0;
-    return parseFloat(formattedStr.toString().replace(/,/g, '')) || 0;
-  }
-
-  function formatAndCalculate(input) {
-    let rawValue = parseNumber(input.value);
-    if (rawValue > 999999999999999) rawValue = 999999999999999; 
-    input.value = rawValue ? rawValue.toLocaleString('en-US') : (input.value === '0' ? '0' : '');
-    calculateTotal();
-  }
-
-  function calculateTotal() {
-    const stock = parseNumber(document.getElementById('stock_val').value);
-    const cash = parseNumber(document.getElementById('cash_val').value);
-    const house = parseNumber(document.getElementById('house_val').value);
-
-    const total = stock + cash + house;
-    document.getElementById('total-net-worth').innerText = total.toLocaleString('en-US');
-
-    localStorage.setItem('nw_stock', stock);
-    localStorage.setItem('sav_cash', cash);
-    localStorage.setItem('nw_house', house);
-  }
-
-  window.onload = function() {
-    if (localStorage.getItem('nw_stock')) {
-      document.getElementById('stock_val').value = parseNumber(localStorage.getItem('nw_stock')).toLocaleString('en-US');
+    function formatNumber(num) {
+      if (!num || isNaN(num)) return '0';
+      return Number(Math.round(num)).toLocaleString('en-US');
     }
-    if (localStorage.getItem('sav_cash')) {
-      document.getElementById('cash_val').value = parseNumber(localStorage.getItem('sav_cash')).toLocaleString('en-US');
+
+    function renderAssets() {
+      const listOrig = document.getElementById('list-original');
+      const listLev = document.getElementById('list-leverage');
+      const listCash = document.getElementById('list-cash');
+
+      listOrig.innerHTML = ''; listLev.innerHTML = ''; listCash.innerHTML = '';
+
+      let totalOrig = 0, totalLev = 0, totalCash = 0;
+
+      assets.forEach(item => {
+        let itemVal = 0;
+        let html = '';
+
+        if (item.type === 'cash') {
+          itemVal = item.val || 0;
+          totalCash += itemVal;
+          html = `
+            <div class="asset-capsule" onclick="deleteAsset(${item.id})">
+              <div class="asset-info">
+                <div class="asset-symbol">${item.symbol}</div>
+              </div>
+              <div class="asset-val">$${formatNumber(itemVal)}</div>
+            </div>`;
+          listCash.innerHTML += html;
+        } else {
+          itemVal = (item.shares || 0) * (item.price || 0);
+          if (item.type === 'original') {
+            totalOrig += itemVal;
+            html = `
+              <div class="asset-capsule" onclick="deleteAsset(${item.id})">
+                <div class="asset-info">
+                  <div class="asset-symbol">${item.symbol}</div>
+                  <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
+                </div>
+                <div class="asset-val">$${formatNumber(itemVal)}</div>
+              </div>`;
+            listOrig.innerHTML += html;
+          } else {
+            totalLev += itemVal;
+            html = `
+              <div class="asset-capsule" onclick="deleteAsset(${item.id})">
+                <div class="asset-info">
+                  <div class="asset-symbol">${item.symbol} <span class="badge-lev">${item.multiple || 2}X</span></div>
+                  <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
+                </div>
+                <div class="asset-val">$${formatNumber(itemVal)}</div>
+              </div>`;
+            listLev.innerHTML += html;
+          }
+        }
+      });
+
+      const totalNetWorth = totalOrig + totalLev + totalCash;
+      document.getElementById('total-net-worth').innerText = '$' + formatNumber(totalNetWorth);
+
+      if (totalNetWorth > 0) {
+        document.getElementById('pct-orig').innerText = Math.round((totalOrig / totalNetWorth) * 100) + '%';
+        document.getElementById('pct-lev').innerText = Math.round((totalLev / totalNetWorth) * 100) + '%';
+        document.getElementById('pct-cash').innerText = Math.round((totalCash / totalNetWorth) * 100) + '%';
+      }
+
+      // 同步全站 localStorage 鍵值
+      localStorage.setItem('user_assets', JSON.stringify(assets));
+      localStorage.setItem('alloc_original', totalOrig);
+      localStorage.setItem('alloc_leverage', totalLev);
+      localStorage.setItem('alloc_cash', totalCash);
+
+      // 驅動背景光暈
+      if (typeof updateGlowBackground === 'function') {
+        updateGlowBackground();
+      }
     }
-    if (localStorage.getItem('nw_house')) {
-      document.getElementById('house_val').value = parseNumber(localStorage.getItem('nw_house')).toLocaleString('en-US');
+
+    function openSheet(type) {
+      setType(type);
+      document.getElementById('sheet-overlay').classList.add('active');
+      document.getElementById('bottom-sheet').classList.add('active');
     }
-    calculateTotal();
-  };
-</script>
-<!-- 引入統一管理的導覽列腳本 -->
-<script src="nav.js"></script>
+
+    function closeSheet() {
+      document.getElementById('sheet-overlay').classList.remove('active');
+      document.getElementById('bottom-sheet').classList.remove('active');
+      document.getElementById('input-symbol').value = '';
+      document.getElementById('input-shares').value = '';
+      document.getElementById('input-price').value = '';
+      document.getElementById('input-total-val').value = '';
+    }
+
+    function setType(type) {
+      currentType = type;
+      document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('active'));
+      
+      const groupLev = document.getElementById('group-lev-multiple');
+      const groupShares = document.getElementById('group-shares');
+      const groupPrice = document.getElementById('group-price');
+      const groupTotal = document.getElementById('group-total-val');
+
+      if (type === 'original') {
+        document.getElementById('type-orig').classList.add('active');
+        groupLev.style.display = 'none';
+        groupShares.style.display = 'block';
+        groupPrice.style.display = 'block';
+        groupTotal.style.display = 'none';
+      } else if (type === 'leverage') {
+        document.getElementById('type-lev').classList.add('active');
+        groupLev.style.display = 'block';
+        groupShares.style.display = 'block';
+        groupPrice.style.display = 'block';
+        groupTotal.style.display = 'none';
+      } else {
+        document.getElementById('type-cash').classList.add('active');
+        groupLev.style.display = 'none';
+        groupShares.style.display = 'none';
+        groupPrice.style.display = 'none';
+        groupTotal.style.display = 'block';
+      }
+    }
+
+    function setLev(mult) {
+      currentLevMultiple = mult;
+      document.querySelectorAll('.lev-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    function saveAsset() {
+      const symbol = document.getElementById('input-symbol').value || '未命名資產';
+
+      if (currentType === 'cash') {
+        const val = parseFloat(document.getElementById('input-total-val').value) || 0;
+        assets.push({ id: Date.now(), type: 'cash', symbol: symbol, val: val });
+      } else {
+        const shares = parseFloat(document.getElementById('input-shares').value) || 0;
+        const price = parseFloat(document.getElementById('input-price').value) || 0;
+        assets.push({
+          id: Date.now(),
+          type: currentType,
+          symbol: symbol,
+          shares: shares,
+          price: price,
+          multiple: currentType === 'leverage' ? currentLevMultiple : undefined
+        });
+      }
+
+      renderAssets();
+      closeSheet();
+    }
+
+    function deleteAsset(id) {
+      if (confirm('確定要刪除此筆資產嗎？')) {
+        assets = assets.filter(a => a.id !== id);
+        renderAssets();
+      }
+    }
+
+    window.onload = function() {
+      renderAssets();
+    };
+  </script>
+
+  <!-- 引入統一背景與導覽列腳本 -->
+  <script src="glow.js"></script>
+  <script src="nav.js"></script>
+
 </body>
 </html>
