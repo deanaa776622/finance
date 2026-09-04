@@ -202,16 +202,16 @@
       font-size: 0.72rem; color: var(--accent-color); margin-top: 4px; display: none;
     }
 
-    .type-selector, .lev-selector, .currency-selector {
+    .type-selector, .lev-selector, .currency-selector, .mode-selector {
       display: flex; gap: 8px; width: 100%; max-width: 360px;
     }
-    .type-btn, .lev-btn, .curr-btn {
+    .type-btn, .lev-btn, .curr-btn, .mode-btn {
       flex: 1; padding: 10px; border-radius: 12px;
       border: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.4);
       color: var(--sub-text); font-size: 0.85rem; font-weight: 600;
       cursor: pointer; text-align: center; transition: all 0.2s;
     }
-    .type-btn.active, .lev-btn.active, .curr-btn.active {
+    .type-btn.active, .lev-btn.active, .curr-btn.active, .mode-btn.active {
       background: rgba(56, 189, 248, 0.2); border-color: var(--accent-color); color: #f8fafc;
     }
 
@@ -318,6 +318,15 @@
       </div>
     </div>
 
+    <!-- 現金/房屋專用：計算模式切換 -->
+    <div class="form-group" id="group-cash-mode" style="display: none;">
+      <label class="form-label">輸入方式</label>
+      <div class="mode-selector">
+        <div class="mode-btn active" id="mode-total" onclick="setCashMode('total')">總金額 (存款/房產)</div>
+        <div class="mode-btn" id="mode-shares" onclick="setCashMode('shares')">股數與單價 (股票/ETF)</div>
+      </div>
+    </div>
+
     <div class="form-group" id="group-symbol">
       <label class="form-label">標的代號 / 名稱 (支援台股如 0050、美股如 VT)</label>
       <input type="text" id="input-symbol" class="form-input" placeholder="例如：0050, 00631L, VT" onblur="fetchStockPrice()">
@@ -373,12 +382,13 @@
     let assets = JSON.parse(localStorage.getItem('user_assets')) || [
       { id: 1, type: 'original', symbol: '0050', shares: 20000, price: 190, currency: 'TWD', rate: 1 },
       { id: 2, type: 'leverage', symbol: '00631L', shares: 15000, price: 210, multiple: 2, currency: 'TWD', rate: 1 },
-      { id: 3, type: 'cash', symbol: '銀行活存', val: 1200000, currency: 'TWD', rate: 1 }
+      { id: 3, type: 'cash', symbol: '銀行活存', val: 1200000, currency: 'TWD', rate: 1, isSharesMode: false }
     ];
 
     let currentType = 'original';
     let currentCurrency = 'TWD';
     let currentLevMultiple = 2;
+    let currentCashMode = 'total'; // 'total' 或 'shares'
     let editingAssetId = null;
 
     function formatNumber(num) {
@@ -402,7 +412,7 @@
       const priceInput = document.getElementById('input-price');
       const rateInput = document.getElementById('input-rate');
 
-      if (!symbolInput || currentType === 'cash') return;
+      if (!symbolInput || (currentType === 'cash' && currentCashMode === 'total')) return;
       if (!GAS_API_URL || GAS_API_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") return;
 
       hint.innerText = "⚡ 正在查詢即時股價與匯率...";
@@ -444,19 +454,36 @@
         let html = '';
 
         if (item.type === 'cash') {
-          rawVal = item.val || 0;
-          twdVal = rawVal * fxRate;
-          totalCashTWD += twdVal;
+          if (item.isSharesMode) {
+            rawVal = (item.shares || 0) * (item.price || 0);
+            twdVal = rawVal * fxRate;
+            totalCashTWD += twdVal;
 
-          html = `
-            <div class="asset-capsule" onclick="openEditSheet(${item.id})">
-              <div class="asset-info">
-                <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
-              </div>
-              <div class="asset-val-box">
-                <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
-              </div>
-            </div>`;
+            html = `
+              <div class="asset-capsule" onclick="openEditSheet(${item.id})">
+                <div class="asset-info">
+                  <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
+                  <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
+                </div>
+                <div class="asset-val-box">
+                  <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
+                </div>
+              </div>`;
+          } else {
+            rawVal = item.val || 0;
+            twdVal = rawVal * fxRate;
+            totalCashTWD += twdVal;
+
+            html = `
+              <div class="asset-capsule" onclick="openEditSheet(${item.id})">
+                <div class="asset-info">
+                  <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
+                </div>
+                <div class="asset-val-box">
+                  <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
+                </div>
+              </div>`;
+          }
           listCash.innerHTML += html;
         } else {
           rawVal = (item.shares || 0) * (item.price || 0);
@@ -492,12 +519,10 @@
         }
       });
 
-      // 更新各卡片分類總和 (新台幣)
       document.getElementById('total-orig-val').innerText = 'NT$ ' + formatNumber(totalOrigTWD);
       document.getElementById('total-lev-val').innerText = 'NT$ ' + formatNumber(totalLevTWD);
       document.getElementById('total-cash-val').innerText = 'NT$ ' + formatNumber(totalCashTWD);
 
-      // 更新頂部總金額 (新台幣) 與佔比
       const totalNetWorthTWD = totalOrigTWD + totalLevTWD + totalCashTWD;
       document.getElementById('total-net-worth').innerText = '$' + formatNumber(totalNetWorthTWD);
 
@@ -507,7 +532,6 @@
         document.getElementById('pct-cash').innerText = Math.round((totalCashTWD / totalNetWorthTWD) * 100) + '%';
       }
 
-      // 同步新台幣總計至 localStorage 供全站讀取
       localStorage.setItem('user_assets', JSON.stringify(assets));
       localStorage.setItem('alloc_original', totalOrigTWD);
       localStorage.setItem('alloc_leverage', totalLevTWD);
@@ -527,6 +551,7 @@
       
       setType(type);
       setCurrency('TWD');
+      setCashMode('total');
       document.getElementById('sheet-overlay').classList.add('active');
       document.getElementById('bottom-sheet').classList.add('active');
     }
@@ -547,7 +572,14 @@
       document.getElementById('input-symbol').value = item.symbol || '';
 
       if (item.type === 'cash') {
-        document.getElementById('input-total-val').value = item.val || '';
+        if (item.isSharesMode) {
+          setCashMode('shares');
+          document.getElementById('input-shares').value = item.shares || '';
+          document.getElementById('input-price').value = item.price || '';
+        } else {
+          setCashMode('total');
+          document.getElementById('input-total-val').value = item.val || '';
+        }
       } else {
         document.getElementById('input-shares').value = item.shares || '';
         document.getElementById('input-price').value = item.price || '';
@@ -575,29 +607,47 @@
       currentType = type;
       document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('active'));
       
+      const groupCashMode = document.getElementById('group-cash-mode');
       const groupLev = document.getElementById('group-lev-multiple');
+
+      if (type === 'original') {
+        document.getElementById('type-orig').classList.add('active');
+        groupCashMode.style.display = 'none';
+        groupLev.style.display = 'none';
+        updateFormVisibility(false);
+      } else if (type === 'leverage') {
+        document.getElementById('type-lev').classList.add('active');
+        groupCashMode.style.display = 'none';
+        groupLev.style.display = 'block';
+        updateFormVisibility(false);
+      } else {
+        document.getElementById('type-cash').classList.add('active');
+        groupCashMode.style.display = 'block';
+        groupLev.style.display = 'none';
+        setCashMode(currentCashMode);
+      }
+    }
+
+    function setCashMode(mode) {
+      currentCashMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`mode-${mode}`).classList.add('active');
+      updateFormVisibility(mode === 'total');
+    }
+
+    function updateFormVisibility(isTotalValOnly) {
       const groupShares = document.getElementById('group-shares');
       const groupPrice = document.getElementById('group-price');
       const groupTotal = document.getElementById('group-total-val');
 
-      if (type === 'original') {
-        document.getElementById('type-orig').classList.add('active');
-        groupLev.style.display = 'none';
-        groupShares.style.display = 'block';
-        groupPrice.style.display = 'block';
-        groupTotal.style.display = 'none';
-      } else if (type === 'leverage') {
-        document.getElementById('type-lev').classList.add('active');
-        groupLev.style.display = 'block';
-        groupShares.style.display = 'block';
-        groupPrice.style.display = 'block';
-        groupTotal.style.display = 'none';
-      } else {
-        document.getElementById('type-cash').classList.add('active');
-        groupLev.style.display = 'none';
+      if (isTotalValOnly) {
         groupShares.style.display = 'none';
         groupPrice.style.display = 'none';
         groupTotal.style.display = 'block';
+      } else {
+        groupShares.style.display = 'block';
+        groupPrice.style.display = 'block';
+        groupTotal.style.display = 'none';
       }
     }
 
@@ -621,8 +671,29 @@
 
       let newData = {};
       if (currentType === 'cash') {
-        const val = parseFloat(document.getElementById('input-total-val').value) || 0;
-        newData = { type: 'cash', symbol: symbol, val: val, currency: currentCurrency, rate: rate };
+        if (currentCashMode === 'shares') {
+          const shares = parseFloat(document.getElementById('input-shares').value) || 0;
+          const price = parseFloat(document.getElementById('input-price').value) || 0;
+          newData = {
+            type: 'cash',
+            symbol: symbol,
+            shares: shares,
+            price: price,
+            currency: currentCurrency,
+            rate: rate,
+            isSharesMode: true
+          };
+        } else {
+          const val = parseFloat(document.getElementById('input-total-val').value) || 0;
+          newData = {
+            type: 'cash',
+            symbol: symbol,
+            val: val,
+            currency: currentCurrency,
+            rate: rate,
+            isSharesMode: false
+          };
+        }
       } else {
         const shares = parseFloat(document.getElementById('input-shares').value) || 0;
         const price = parseFloat(document.getElementById('input-price').value) || 0;
