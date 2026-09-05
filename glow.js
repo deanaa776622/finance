@@ -1,5 +1,5 @@
 /**
- * glow.js - 動態資產配置 Glow 背景引擎
+ * glow.js - 動態資產配置 Glow 背景引擎 (高亮度復原版)
  * 自動連動 stock.html 儲存於 LocalStorage 的資產配置金額
  */
 
@@ -33,22 +33,21 @@ function updateGlowBackground() {
       pointer-events: none;
       z-index: 0;
       overflow: hidden;
-      opacity: 0.6;
+      opacity: 1; /* 恢復 100% 容器透明度，提升整體明亮度 */
       transition: opacity 0.5s ease;
     `;
     document.body.prepend(glowContainer);
   }
 
-  // 4. 動態更新背景 Radial-Gradient (結合原型藍、槓桿綠、現金黃)
-  // 燈光範圍 (Stop %) 根據各自持股比例大小動態渲染
-  const pOrig = Math.max(10, Math.round(ratioOrig * 60));
-  const pLev = Math.max(10, Math.round(ratioLev * 60));
-  const pCash = Math.max(10, Math.round(ratioCash * 60));
+  // 4. 動態更新背景 Radial-Gradient (提高底色 Alpha 飽和度與擴散範圍)
+  const pOrig = Math.max(25, Math.round(ratioOrig * 75));
+  const pLev = Math.max(25, Math.round(ratioLev * 75));
+  const pCash = Math.max(25, Math.round(ratioCash * 75));
 
   glowContainer.style.background = `
-    radial-gradient(circle at 20% 20%, rgba(56, 189, 248, ${0.15 + ratioOrig * 0.25}) 0%, transparent ${pOrig}%),
-    radial-gradient(circle at 80% 30%, rgba(74, 222, 128, ${0.15 + ratioLev * 0.25}) 0%, transparent ${pLev}%),
-    radial-gradient(circle at 50% 80%, rgba(250, 204, 21, ${0.15 + ratioCash * 0.25}) 0%, transparent ${pCash}%)
+    radial-gradient(circle at 15% 15%, rgba(56, 189, 248, ${0.35 + ratioOrig * 0.35}) 0%, transparent ${pOrig}%),
+    radial-gradient(circle at 85% 25%, rgba(74, 222, 128, ${0.35 + ratioLev * 0.35}) 0%, transparent ${pLev}%),
+    radial-gradient(circle at 50% 85%, rgba(250, 204, 21, ${0.30 + ratioCash * 0.35}) 0%, transparent ${pCash}%)
   `;
 }
 
