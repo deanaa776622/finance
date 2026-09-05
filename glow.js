@@ -1,10 +1,11 @@
 /**
- * glow.js - 零卡頓 GPU 硬體加速隨機漂浮 Glow 背景引擎
+ * glow.js - 超大氣場巨型 Glow 背景引擎 (GPU 硬體加速版)
  * 
- * 效能優化：
- * 1. 移除 Canvas 與高耗能 JS 重繪，改回純 GPU 合成管線 (translate3d)。
- * 2. 使用不對稱 keyframes 與多頻率週期 (14s/19s/23s)，實現完全無規律的隨機漂浮感。
- * 3. 完整保留 index.html (Target Total) 達成率尺寸與獨立風控警示紅化邏輯。
+ * 視覺與效能：
+ * 1. 巨型光暈尺寸：最大尺寸升級至 680px，營造滿版極光氛圍。
+ * 2. 深度漸層 Blur：高斯模糊加大至 100px，確保大尺寸光球重疊時視覺極度柔和。
+ * 3. 零卡頓 GPU 加速：使用 translate3d 配合三軸不對稱 Keyframe 實現順暢漂浮。
+ * 4. 完整連動邏輯：完全承襲 Target Total 達成率尺寸與獨立風控警示紅化機制。
  */
 
 function updateGlowBackground() {
@@ -66,43 +67,43 @@ function updateGlowBackground() {
   const colorLev = getInterpolatedColor({ r: 74, g: 222, b: 128 }, factorLev);   // 槓桿綠 ➔ 警示紅
   const colorCash = getInterpolatedColor({ r: 250, g: 204, b: 21 }, factorCash);  // 現金黃 ➔ 警示紅
 
-  // 6. 光球最大尺寸為 420px，依「達成率」動態縮放
-  const maxOrbSize = 420;
+  // 6. 巨型光暈尺寸 (放大至 680px)，依達成率 0%~100% 動態縮放
+  const maxOrbSize = 680;
 
   const sizeOrig = maxOrbSize * ratioAchieveOrig;
   const sizeLev = maxOrbSize * ratioAchieveLev;
   const sizeCash = maxOrbSize * ratioAchieveCash;
 
-  // 7. 注入高感光、高流暢度 GPU 隨機位移動畫 keyframe
+  // 7. 注入 GPU 隨機巨型漂移動畫 keyframe
   if (!document.getElementById('glow-style-keyframes')) {
     const styleEl = document.createElement('style');
     styleEl.id = 'glow-style-keyframes';
     styleEl.innerHTML = `
       @keyframes randomFloat1 {
         0%   { transform: translate3d(0px, 0px, 0) scale(1); }
-        25%  { transform: translate3d(120px, 80px, 0) scale(1.15); }
-        50%  { transform: translate3d(40px, 160px, 0) scale(0.9); }
-        75%  { transform: translate3d(-80px, 60px, 0) scale(1.1); }
+        25%  { transform: translate3d(140px, 100px, 0) scale(1.1); }
+        50%  { transform: translate3d(50px, 180px, 0) scale(0.92); }
+        75%  { transform: translate3d(-100px, 80px, 0) scale(1.08); }
         100% { transform: translate3d(0px, 0px, 0) scale(1); }
       }
       @keyframes randomFloat2 {
         0%   { transform: translate3d(0px, 0px, 0) scale(1); }
-        33%  { transform: translate3d(-140px, 100px, 0) scale(1.2); }
-        66%  { transform: translate3d(-60px, -80px, 0) scale(0.85); }
+        33%  { transform: translate3d(-160px, 120px, 0) scale(1.12); }
+        66%  { transform: translate3d(-70px, -100px, 0) scale(0.88); }
         100% { transform: translate3d(0px, 0px, 0) scale(1); }
       }
       @keyframes randomFloat3 {
         0%   { transform: translate3d(0px, 0px, 0) scale(1); }
-        20%  { transform: translate3d(80px, -100px, 0) scale(0.95); }
-        50%  { transform: translate3d(-100px, -60px, 0) scale(1.18); }
-        80%  { transform: translate3d(60px, 40px, 0) scale(1.05); }
+        20%  { transform: translate3d(100px, -120px, 0) scale(0.95); }
+        50%  { transform: translate3d(-120px, -80px, 0) scale(1.15); }
+        80%  { transform: translate3d(80px, 50px, 0) scale(1.02); }
         100% { transform: translate3d(0px, 0px, 0) scale(1); }
       }
 
       .glow-orb {
         position: absolute;
         border-radius: 50%;
-        filter: blur(80px);
+        filter: blur(100px);
         pointer-events: none;
         will-change: transform;
         transition: background 0.8s ease, width 0.6s ease, height 0.6s ease, opacity 0.6s ease;
@@ -125,14 +126,14 @@ function updateGlowBackground() {
     `;
 
     glowContainer.innerHTML = `
-      <div id="orb-orig" class="glow-orb" style="top: -5%; left: -5%; animation: randomFloat1 14s ease-in-out infinite;"></div>
-      <div id="orb-lev" class="glow-orb" style="top: -5%; right: -5%; animation: randomFloat2 19s ease-in-out infinite;"></div>
-      <div id="orb-cash" class="glow-orb" style="bottom: -10%; left: 20%; animation: randomFloat3 23s ease-in-out infinite;"></div>
+      <div id="orb-orig" class="glow-orb" style="top: -15%; left: -15%; animation: randomFloat1 15s ease-in-out infinite;"></div>
+      <div id="orb-lev" class="glow-orb" style="top: -15%; right: -15%; animation: randomFloat2 20s ease-in-out infinite;"></div>
+      <div id="orb-cash" class="glow-orb" style="bottom: -20%; left: 15%; animation: randomFloat3 24s ease-in-out infinite;"></div>
     `;
     document.body.prepend(glowContainer);
   }
 
-  // 9. 更新樣式
+  // 9. 更新樣式 (適度將最大透明度調至 0.62，確保大尺寸光暈疊加時不遮蔽文字)
   const orbOrig = document.getElementById('orb-orig');
   const orbLev = document.getElementById('orb-lev');
   const orbCash = document.getElementById('orb-cash');
@@ -141,21 +142,21 @@ function updateGlowBackground() {
     orbOrig.style.width = `${sizeOrig}px`;
     orbOrig.style.height = `${sizeOrig}px`;
     orbOrig.style.background = colorOrig;
-    orbOrig.style.opacity = (0.7 * ratioAchieveOrig).toFixed(2);
+    orbOrig.style.opacity = (0.62 * ratioAchieveOrig).toFixed(2);
   }
 
   if (orbLev) {
     orbLev.style.width = `${sizeLev}px`;
     orbLev.style.height = `${sizeLev}px`;
     orbLev.style.background = colorLev;
-    orbLev.style.opacity = (0.7 * ratioAchieveLev).toFixed(2);
+    orbLev.style.opacity = (0.62 * ratioAchieveLev).toFixed(2);
   }
 
   if (orbCash) {
     orbCash.style.width = `${sizeCash}px`;
     orbCash.style.height = `${sizeCash}px`;
     orbCash.style.background = colorCash;
-    orbCash.style.opacity = (0.7 * ratioAchieveCash).toFixed(2);
+    orbCash.style.opacity = (0.62 * ratioAchieveCash).toFixed(2);
   }
 }
 
