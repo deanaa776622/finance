@@ -1,46 +1,57 @@
 /**
- * glow.js - 資產達成率與風控偏離度雙重連動 Glow 背景引擎
- * 特色：
- * 1. 尺寸邏輯：當前資產金額 / 目標金額 = 0% 時尺寸為 0 (不顯示)；達到 >= 100% 時尺寸達到最大。
- * 2. 顏色邏輯：原型、槓桿、現金各自獨立計算偏離差距 (|實際% - 目標%|)，2%~10% 獨立漸變變紅，>=10% 最紅。
- * 3. 獨立評估：三個光球尺寸與顏色互不影響。
- * 4. 保留 CSS Keyframe 柔和漂浮動畫。
+ * glow.js - 正確連動 index.html (Target Total) 的 Glow 背景引擎
+ * 
+ * 資料來源：
+ * 1. 總目標資產 (Target Total)：來自 index.html 寫入的 localStorage.getItem('sav_target_total')
+ * 2. 理想資產配置比例 (%)：來自 stock.html 寫入的 localStorage.getItem('target_ratios')
+ * 3. 當前實際資產金額 (TWD)：來自 stock.html 寫入的 alloc_original, alloc_leverage, alloc_cash
+ * 
+ * 運算規則：
+ * - 各類別目標金額 = Target Total * (理想比例 %)
+ * - 尺寸邏輯：當前金額 / 該類別目標金額 (0% 時尺寸為 0；>=100% 時達到最大尺寸)
+ * - 顏色邏輯：各類別獨立計算與理想比例的偏離度，超過 2%~10% 各自獨立漸變變紅
  */
 
 function updateGlowBackground() {
-  // 1. 讀取真實資產金額 (TWD)
+  // 1. 讀取當前實際資產金額 (TWD)
   const allocOrig = parseFloat(localStorage.getItem('alloc_original')) || 0;
   const allocLev = parseFloat(localStorage.getItem('alloc_leverage')) || 0;
   const allocCash = parseFloat(localStorage.getItem('alloc_cash')) || 0;
 
-  const totalNetWorth = allocOrig + allocLev + allocCash;
+  const currentTotal = allocOrig + allocLev + allocCash;
 
-  // 2. 讀取使用者設定的理想目標比例 (%)，預設 50/30/20
-  const targetRatios = JSON.parse(localStorage.getItem('target_ratios')) || { orig: 50, lev: 30, cash: 20 };
-
-  // 3. 計算實際比例 (%)
-  let actOrig = 0, actLev = 0, actCash = 0;
-  if (totalNetWorth > 0) {
-    actOrig = (allocOrig / totalNetWorth) * 100;
-    actLev = (allocLev / totalNetWorth) * 100;
-    actCash = (allocCash / totalNetWorth) * 100;
+  // 2. 讀取 index.html 的 Target Total (若尚未試算，暫以當前總資產為基準)
+  let targetTotal = parseFloat(localStorage.getItem('sav_target_total'));
+  if (isNaN(targetTotal) || targetTotal <= 0) {
+    targetTotal = currentTotal;
   }
 
-  // 4. 計算各資產目標金額 (Target Amount) 與達成率 (Achievement Ratio: 0.0 ~ 1.0)
-  const targetOrigAmount = totalNetWorth * (targetRatios.orig / 100);
-  const targetLevAmount = totalNetWorth * (targetRatios.lev / 100);
-  const targetCashAmount = totalNetWorth * (targetRatios.cash / 100);
+  // 3. 讀取理想資產配置目標比例 (%)，預設 50/30/20
+  const targetRatios = JSON.parse(localStorage.getItem('target_ratios')) || { orig: 50, lev: 30, cash: 20 };
 
+  // 4. 計算各類別的「目標金額 (TWD)」
+  const targetOrigAmount = targetTotal * (targetRatios.orig / 100);
+  const targetLevAmount = targetTotal * (targetRatios.lev / 100);
+  const targetCashAmount = targetTotal * (targetRatios.cash / 100);
+
+  // 5. 計算各類別「金額達成率 (0.0 ~ 1.0)」：當前金額 / 該類別目標金額
   const ratioAchieveOrig = targetOrigAmount > 0 ? Math.min(1.0, allocOrig / targetOrigAmount) : (allocOrig > 0 ? 1.0 : 0);
   const ratioAchieveLev = targetLevAmount > 0 ? Math.min(1.0, allocLev / targetLevAmount) : (allocLev > 0 ? 1.0 : 0);
   const ratioAchieveCash = targetCashAmount > 0 ? Math.min(1.0, allocCash / targetCashAmount) : (allocCash > 0 ? 1.0 : 0);
 
-  // 5. 計算各自類別的偏離差距 (絕對值 %)
+  // 6. 計算實際資產佔比 (%) 與 偏離差距 (絕對值 %)
+  let actOrig = 0, actLev = 0, actCash = 0;
+  if (currentTotal > 0) {
+    actOrig = (allocOrig / currentTotal) * 100;
+    actLev = (allocLev / currentTotal) * 100;
+    actCash = (allocCash / currentTotal) * 100;
+  }
+
   const devOrig = Math.abs(actOrig - targetRatios.orig);
   const devLev = Math.abs(actLev - targetRatios.lev);
   const devCash = Math.abs(actCash - targetRatios.cash);
 
-  // 6. 偏離紅化係數 (0.0~1.0)
+  // 7. 計算偏離紅化係數 (0.0~1.0)
   function getFactor(dev) {
     if (dev <= 2) return 0;
     return Math.min(1.0, (dev - 2) / 8); // 2% 到 10% 漸漸變紅
@@ -50,7 +61,7 @@ function updateGlowBackground() {
   const factorLev = getFactor(devLev);
   const factorCash = getFactor(devCash);
 
-  // 7. RGB 顏色插值計算
+  // 8. RGB 顏色插值計算
   function getInterpolatedColor(baseRgb, factor) {
     const targetRgb = { r: 244, g: 63, b: 94 }; // 警示紅 RGB (#f43f5e)
     const r = Math.round(baseRgb.r + (targetRgb.r - baseRgb.r) * factor);
@@ -63,14 +74,14 @@ function updateGlowBackground() {
   const colorLev = getInterpolatedColor({ r: 74, g: 222, b: 128 }, factorLev);   // 槓桿綠 ➔ 警示紅
   const colorCash = getInterpolatedColor({ r: 250, g: 204, b: 21 }, factorCash);  // 現金黃 ➔ 警示紅
 
-  // 8. 光球最大尺寸定為 420px，依達成率 (0.0 ~ 1.0) 線性決定尺寸與透明度
+  // 9. 光球最大尺寸定為 420px，依「金額達成率 (0.0 ~ 1.0)」動態決定尺寸與透明度
   const maxOrbSize = 420;
 
   const sizeOrig = maxOrbSize * ratioAchieveOrig;
   const sizeLev = maxOrbSize * ratioAchieveLev;
   const sizeCash = maxOrbSize * ratioAchieveCash;
 
-  // 9. 動態注入 Keyframe 漂浮動畫與 CSS (若尚未注入)
+  // 10. 動態注入 Keyframe 漂浮動畫 (若尚未注入)
   if (!document.getElementById('glow-style-keyframes')) {
     const styleEl = document.createElement('style');
     styleEl.id = 'glow-style-keyframes';
@@ -103,7 +114,7 @@ function updateGlowBackground() {
     document.head.appendChild(styleEl);
   }
 
-  // 10. 建立或擷取 DOM 容器
+  // 11. 建立或擷取 DOM 容器
   let glowContainer = document.getElementById('glow-bg-container');
   if (!glowContainer) {
     glowContainer = document.createElement('div');
@@ -124,7 +135,7 @@ function updateGlowBackground() {
     document.body.prepend(glowContainer);
   }
 
-  // 11. 套用動態計算後的顏色、尺寸與透明度 (達成率為 0 時尺寸為 0，且 opacity 設為 0)
+  // 12. 套用獨立計算後的顏色、尺寸與透明度
   const orbOrig = document.getElementById('orb-orig');
   const orbLev = document.getElementById('orb-lev');
   const orbCash = document.getElementById('orb-cash');
