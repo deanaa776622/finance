@@ -1,14 +1,14 @@
 /**
- * glow.js - 個別資產風控獨立偏離警示 Glow 背景引擎
+ * glow.js - 資產達成率與風控偏離度雙重連動 Glow 背景引擎
  * 特色：
- * 1. 原型、槓桿、現金三種資產獨立計算偏離差距 (|實際% - 目標%|)。
- * 2. 差距 <=2% 維持原主題色，2%~10% 該類別單獨漸漸變紅，>=10% 該類別轉為最紅。
- * 3. 各資產顏色互不影響，一眼可看出是哪個類別偏離。
- * 4. 保留 CSS Keyframe 柔和漂浮動畫與總資產規模尺寸放大。
+ * 1. 尺寸邏輯：當前資產金額 / 目標金額 = 0% 時尺寸為 0 (不顯示)；達到 >= 100% 時尺寸達到最大。
+ * 2. 顏色邏輯：原型、槓桿、現金各自獨立計算偏離差距 (|實際% - 目標%|)，2%~10% 獨立漸變變紅，>=10% 最紅。
+ * 3. 獨立評估：三個光球尺寸與顏色互不影響。
+ * 4. 保留 CSS Keyframe 柔和漂浮動畫。
  */
 
 function updateGlowBackground() {
-  // 1. 讀取真實資產金額
+  // 1. 讀取真實資產金額 (TWD)
   const allocOrig = parseFloat(localStorage.getItem('alloc_original')) || 0;
   const allocLev = parseFloat(localStorage.getItem('alloc_leverage')) || 0;
   const allocCash = parseFloat(localStorage.getItem('alloc_cash')) || 0;
@@ -19,19 +19,28 @@ function updateGlowBackground() {
   const targetRatios = JSON.parse(localStorage.getItem('target_ratios')) || { orig: 50, lev: 30, cash: 20 };
 
   // 3. 計算實際比例 (%)
-  let actOrig = 50, actLev = 30, actCash = 20;
+  let actOrig = 0, actLev = 0, actCash = 0;
   if (totalNetWorth > 0) {
     actOrig = (allocOrig / totalNetWorth) * 100;
     actLev = (allocLev / totalNetWorth) * 100;
     actCash = (allocCash / totalNetWorth) * 100;
   }
 
-  // 4. 計算各自類別的偏離差距 (絕對值 %)
+  // 4. 計算各資產目標金額 (Target Amount) 與達成率 (Achievement Ratio: 0.0 ~ 1.0)
+  const targetOrigAmount = totalNetWorth * (targetRatios.orig / 100);
+  const targetLevAmount = totalNetWorth * (targetRatios.lev / 100);
+  const targetCashAmount = totalNetWorth * (targetRatios.cash / 100);
+
+  const ratioAchieveOrig = targetOrigAmount > 0 ? Math.min(1.0, allocOrig / targetOrigAmount) : (allocOrig > 0 ? 1.0 : 0);
+  const ratioAchieveLev = targetLevAmount > 0 ? Math.min(1.0, allocLev / targetLevAmount) : (allocLev > 0 ? 1.0 : 0);
+  const ratioAchieveCash = targetCashAmount > 0 ? Math.min(1.0, allocCash / targetCashAmount) : (allocCash > 0 ? 1.0 : 0);
+
+  // 5. 計算各自類別的偏離差距 (絕對值 %)
   const devOrig = Math.abs(actOrig - targetRatios.orig);
   const devLev = Math.abs(actLev - targetRatios.lev);
   const devCash = Math.abs(actCash - targetRatios.cash);
 
-  // 5. 輔助函式：計算單一類別的偏離紅化係數 (0.0~1.0)
+  // 6. 偏離紅化係數 (0.0~1.0)
   function getFactor(dev) {
     if (dev <= 2) return 0;
     return Math.min(1.0, (dev - 2) / 8); // 2% 到 10% 漸漸變紅
@@ -41,35 +50,34 @@ function updateGlowBackground() {
   const factorLev = getFactor(devLev);
   const factorCash = getFactor(devCash);
 
-  // 6. 輔助函式：根據個別 factor 在「原主題色」與「警示紅 (#f43f5e)」之間做 RGB 插值計算
+  // 7. RGB 顏色插值計算
   function getInterpolatedColor(baseRgb, factor) {
-    const targetRgb = { r: 244, g: 63, b: 94 }; // 警示紅 RGB
+    const targetRgb = { r: 244, g: 63, b: 94 }; // 警示紅 RGB (#f43f5e)
     const r = Math.round(baseRgb.r + (targetRgb.r - baseRgb.r) * factor);
     const g = Math.round(baseRgb.g + (targetRgb.g - baseRgb.g) * factor);
     const b = Math.round(baseRgb.b + (targetRgb.b - baseRgb.b) * factor);
     return `rgb(${r}, ${g}, ${b})`;
   }
 
-  // 個別獨立計算對應顏色
   const colorOrig = getInterpolatedColor({ r: 56, g: 189, b: 248 }, factorOrig); // 原型藍 ➔ 警示紅
   const colorLev = getInterpolatedColor({ r: 74, g: 222, b: 128 }, factorLev);   // 槓桿綠 ➔ 警示紅
   const colorCash = getInterpolatedColor({ r: 250, g: 204, b: 21 }, factorCash);  // 現金黃 ➔ 警示紅
 
-  // 7. 根據「總淨資產規模」計算光暈尺寸 (Scale)
-  let netWorthScale = 1.0;
-  if (totalNetWorth > 0) {
-    netWorthScale = 0.8 + Math.min(1.2, Math.log10(totalNetWorth / 100000) * 0.4);
-    if (netWorthScale < 0.8) netWorthScale = 0.8;
-  }
+  // 8. 光球最大尺寸定為 420px，依達成率 (0.0 ~ 1.0) 線性決定尺寸與透明度
+  const maxOrbSize = 420;
 
-  // 8. 動態注入 Keyframe 漂浮動畫與 CSS (若尚未注入)
+  const sizeOrig = maxOrbSize * ratioAchieveOrig;
+  const sizeLev = maxOrbSize * ratioAchieveLev;
+  const sizeCash = maxOrbSize * ratioAchieveCash;
+
+  // 9. 動態注入 Keyframe 漂浮動畫與 CSS (若尚未注入)
   if (!document.getElementById('glow-style-keyframes')) {
     const styleEl = document.createElement('style');
     styleEl.id = 'glow-style-keyframes';
     styleEl.innerHTML = `
       @keyframes floatOrb1 {
         0%   { transform: translate(0px, 0px) scale(1); }
-        50%  { transform: translate(60px, 40px) scale(1.15); }
+        50%  { transform: translate(60px, 40px) scale(1.12); }
         100% { transform: translate(0px, 0px) scale(1); }
       }
       @keyframes floatOrb2 {
@@ -79,7 +87,7 @@ function updateGlowBackground() {
       }
       @keyframes floatOrb3 {
         0%   { transform: translate(0px, 0px) scale(1); }
-        50%  { transform: translate(40px, -60px) scale(1.2); }
+        50%  { transform: translate(40px, -60px) scale(1.15); }
         100% { transform: translate(0px, 0px) scale(1); }
       }
 
@@ -87,16 +95,15 @@ function updateGlowBackground() {
         position: absolute;
         border-radius: 50%;
         filter: blur(80px);
-        opacity: 0.75;
         pointer-events: none;
-        will-change: transform, background, width, height;
-        transition: background 0.8s ease, width 0.6s ease, height 0.6s ease;
+        will-change: transform, background, width, height, opacity;
+        transition: background 0.8s ease, width 0.6s ease, height 0.6s ease, opacity 0.6s ease;
       }
     `;
     document.head.appendChild(styleEl);
   }
 
-  // 9. 建立或擷取 DOM 容器
+  // 10. 建立或擷取 DOM 容器
   let glowContainer = document.getElementById('glow-bg-container');
   if (!glowContainer) {
     glowContainer = document.createElement('div');
@@ -117,29 +124,30 @@ function updateGlowBackground() {
     document.body.prepend(glowContainer);
   }
 
-  // 10. 套用各自獨立計算後的顏色與尺寸
-  const baseSize = 360 * netWorthScale;
-
+  // 11. 套用動態計算後的顏色、尺寸與透明度 (達成率為 0 時尺寸為 0，且 opacity 設為 0)
   const orbOrig = document.getElementById('orb-orig');
   const orbLev = document.getElementById('orb-lev');
   const orbCash = document.getElementById('orb-cash');
 
   if (orbOrig) {
-    orbOrig.style.width = `${baseSize}px`;
-    orbOrig.style.height = `${baseSize}px`;
+    orbOrig.style.width = `${sizeOrig}px`;
+    orbOrig.style.height = `${sizeOrig}px`;
     orbOrig.style.background = colorOrig;
+    orbOrig.style.opacity = (0.75 * ratioAchieveOrig).toFixed(2);
   }
 
   if (orbLev) {
-    orbLev.style.width = `${baseSize}px`;
-    orbLev.style.height = `${baseSize}px`;
+    orbLev.style.width = `${sizeLev}px`;
+    orbLev.style.height = `${sizeLev}px`;
     orbLev.style.background = colorLev;
+    orbLev.style.opacity = (0.75 * ratioAchieveLev).toFixed(2);
   }
 
   if (orbCash) {
-    orbCash.style.width = `${baseSize}px`;
-    orbCash.style.height = `${baseSize}px`;
+    orbCash.style.width = `${sizeCash}px`;
+    orbCash.style.height = `${sizeCash}px`;
     orbCash.style.background = colorCash;
+    orbCash.style.opacity = (0.75 * ratioAchieveCash).toFixed(2);
   }
 }
 
