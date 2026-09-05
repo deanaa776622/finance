@@ -19,7 +19,7 @@
       --border-color: rgba(255, 255, 255, 0.08);
       --danger-color: #f43f5e;
 
-      /* Bottom Sheet 動態主題色變數 (預設原型天藍) */
+      /* Bottom Sheet 動態主題色變數 */
       --active-theme-color: #38bdf8;
       --active-theme-rgb: 56, 189, 248;
     }
@@ -75,7 +75,7 @@
       display: flex; gap: 8px; align-items: center;
     }
 
-    /* 圖示按鈕 (刷新 + 隱藏) */
+    /* 圖示按鈕 */
     .icon-btn {
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.12);
@@ -89,13 +89,10 @@
     .icon-btn:active { transform: scale(0.9); }
     .icon-btn.spinning {
       animation: spin 1s linear infinite;
-      pointer-events: none;
-      opacity: 0.7;
+      pointer-events: none; opacity: 0.7;
     }
 
-    @keyframes spin {
-      100% { transform: rotate(360deg); }
-    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
 
     .refresh-status {
       font-size: 0.72rem; color: var(--accent-color);
@@ -109,9 +106,18 @@
       margin: 4px 0;
     }
 
+    /* 可點擊的比例區塊 */
     .summary-sub {
       font-size: 0.8rem; color: #94a3b8;
       display: flex; justify-content: center; gap: 12px;
+      padding: 6px 12px; border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+      cursor: pointer; transition: all 0.2s;
+      margin-top: 6px;
+    }
+    .summary-sub:active {
+      transform: scale(0.96); background: rgba(255, 255, 255, 0.08);
     }
 
     /* 分組卡片 */
@@ -119,8 +125,7 @@
       background: var(--card-bg);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border-radius: 24px;
-      padding: 20px;
+      border-radius: 24px; padding: 20px;
       border: 1px solid var(--border-color);
       margin-bottom: 16px;
     }
@@ -136,13 +141,8 @@
       display: flex; align-items: center; gap: 8px;
     }
 
-    .section-action {
-      display: flex; align-items: center; gap: 10px;
-    }
-
-    .section-total {
-      font-size: 0.85rem; font-weight: 600; color: #94a3b8;
-    }
+    .section-action { display: flex; align-items: center; gap: 10px; }
+    .section-total { font-size: 0.85rem; font-weight: 600; color: #94a3b8; }
 
     .arrow-icon {
       font-size: 0.75rem; color: var(--sub-text);
@@ -150,9 +150,7 @@
     }
     .arrow-icon.open { transform: rotate(180deg); }
 
-    .section-body {
-      display: none; margin-top: 14px; padding-top: 4px;
-    }
+    .section-body { display: none; margin-top: 14px; padding-top: 4px; }
     .section-body.open { display: block; }
 
     .dot { width: 8px; height: 8px; border-radius: 50%; }
@@ -177,9 +175,7 @@
       border: 1px solid rgba(255, 255, 255, 0.05);
       padding: 12px 16px; border-radius: 16px;
       margin-bottom: 10px; transition: transform 0.15s, background 0.2s;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
+      cursor: pointer; position: relative; overflow: hidden;
     }
     .asset-capsule:active {
       transform: scale(0.98); background: rgba(30, 41, 59, 0.8);
@@ -210,20 +206,15 @@
     .asset-val { font-size: 1.05rem; font-weight: 600; color: #f8fafc; }
     .asset-pct-text { font-size: 0.72rem; color: #94a3b8; margin-top: 2px; font-weight: 600; }
 
-    /* 底部微型進度條 CSS */
+    /* 底部微型進度條 */
     .capsule-progress-track {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 3px;
-      background: rgba(255, 255, 255, 0.05);
-      z-index: 0;
+      position: absolute; bottom: 0; left: 0;
+      width: 100%; height: 3px;
+      background: rgba(255, 255, 255, 0.05); z-index: 0;
     }
 
     .capsule-progress-fill {
-      height: 100%;
-      border-radius: 0 2px 2px 0;
+      height: 100%; border-radius: 0 2px 2px 0;
       transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .capsule-progress-fill.orig {
@@ -239,7 +230,7 @@
       box-shadow: 0 0 6px rgba(250, 204, 21, 0.6);
     }
 
-    /* 底部滑出抽屜 */
+    /* 底部滑出抽屜 (共通) */
     .sheet-overlay {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);
@@ -277,24 +268,12 @@
       color: #f8fafc; font-size: 1rem; outline: none;
       transition: opacity 0.2s, background 0.2s, border-color 0.3s;
     }
-    .form-input:focus {
-      border-color: var(--active-theme-color);
-    }
+    .form-input:focus { border-color: var(--active-theme-color); }
 
-    /* 停用 (Disabled) 狀態之 CSS 呈現 */
-    .form-group.disabled {
-      opacity: 0.35;
-      pointer-events: none;
-    }
-    .form-input:disabled {
-      background: rgba(15, 23, 42, 0.3);
-      color: var(--sub-text);
-      cursor: not-allowed;
-    }
+    .form-group.disabled { opacity: 0.35; pointer-events: none; }
+    .form-input:disabled { background: rgba(15, 23, 42, 0.3); color: var(--sub-text); cursor: not-allowed; }
     .type-btn.disabled, .lev-btn.disabled, .curr-btn.disabled, .mode-btn.disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
-      pointer-events: none;
+      opacity: 0.35; cursor: not-allowed; pointer-events: none;
     }
 
     .price-hint {
@@ -312,7 +291,6 @@
       cursor: pointer; text-align: center; transition: all 0.3s ease;
     }
 
-    /* 1. 資產類別專屬選屬狀態 (藍、綠、黃) */
     .type-btn#type-orig.active {
       background: rgba(56, 189, 248, 0.2); border-color: var(--accent-color); color: var(--accent-color);
     }
@@ -323,7 +301,6 @@
       background: rgba(250, 204, 21, 0.2); border-color: var(--cash-color); color: var(--cash-color);
     }
 
-    /* 2. 動態連動主調色 */
     .lev-btn.active, .curr-btn.active, .mode-btn.active {
       background: rgba(var(--active-theme-rgb), 0.2);
       border-color: var(--active-theme-color);
@@ -334,13 +311,15 @@
       width: 100%; max-width: 360px; display: flex; gap: 10px; margin-top: 10px;
     }
 
-    /* 3. 動態主題色儲存按鈕 */
     .submit-btn {
       flex: 1; padding: 14px; border-radius: 14px; border: none;
       background: var(--active-theme-color); color: #0f172a;
       font-size: 1rem; font-weight: 700; cursor: pointer;
       box-shadow: 0 0 15px rgba(var(--active-theme-rgb), 0.4);
-      transition: background 0.3s ease, box-shadow 0.3s ease;
+      transition: background 0.3s ease, box-shadow 0.3s ease, opacity 0.2s;
+    }
+    .submit-btn:disabled {
+      opacity: 0.4; cursor: not-allowed; box-shadow: none;
     }
 
     .delete-btn {
@@ -350,6 +329,13 @@
       display: none;
     }
     .delete-btn:active { transform: scale(0.95); }
+
+    /* 理想比例提示語文案 */
+    .ratio-hint {
+      font-size: 0.75rem; text-align: center; margin-top: 6px; color: var(--sub-text);
+    }
+    .ratio-hint.error { color: var(--danger-color); }
+    .ratio-hint.success { color: var(--leverage-color); }
   </style>
 </head>
 <body>
@@ -367,10 +353,12 @@
       </div>
       <div class="summary-value" id="total-net-worth">$0</div>
       <div class="refresh-status" id="refresh-status">⚡ 正在更新最新即時股價...</div>
-      <div class="summary-sub">
-        <span>原 <strong id="pct-orig">0%</strong></span>
-        <span>槓 <strong id="pct-lev">0%</strong></span>
-        <span>現 <strong id="pct-cash">0%</strong></span>
+      
+      <!-- 點擊觸發理想配置設定 -->
+      <div class="summary-sub" onclick="openRatioSheet()" title="點擊設定理想配置比例">
+        <span>原 <strong id="pct-orig">50%</strong></span>
+        <span>槓 <strong id="pct-lev">30%</strong></span>
+        <span>現 <strong id="pct-cash">20%</strong></span>
       </div>
     </div>
 
@@ -427,13 +415,14 @@
 
   </div>
 
-  <!-- 底部滑出抽屜 -->
-  <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+  <!-- 遮罩層 -->
+  <div class="sheet-overlay" id="sheet-overlay" onclick="closeAllSheets()"></div>
+
+  <!-- 抽屜一：資產編輯 Bottom Sheet -->
   <div class="bottom-sheet" id="bottom-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title" id="sheet-title">新增資產</div>
 
-    <!-- 1. 資產類別 -->
     <div class="form-group">
       <label class="form-label">資產類別</label>
       <div class="type-selector">
@@ -443,7 +432,6 @@
       </div>
     </div>
 
-    <!-- 2. 輸入方式 -->
     <div class="form-group" id="group-cash-mode">
       <label class="form-label">輸入方式</label>
       <div class="mode-selector">
@@ -452,14 +440,12 @@
       </div>
     </div>
 
-    <!-- 3. 標的代號 / 名稱 -->
     <div class="form-group" id="group-symbol">
       <label class="form-label" id="label-symbol">標的代號 / 名稱 (支援台股如 0050、美股如 VT)</label>
       <input type="text" id="input-symbol" class="form-input" placeholder="例如：0050, 00631L, VT" onblur="fetchStockPrice()">
       <div class="price-hint" id="price-hint">正在連線抓取最新股價...</div>
     </div>
 
-    <!-- 4. 計價幣別與匯率 -->
     <div class="form-group">
       <label class="form-label">計價幣別</label>
       <div class="currency-selector">
@@ -473,7 +459,6 @@
       <input type="number" id="input-rate" class="form-input" placeholder="例如：32.2" value="32.0">
     </div>
 
-    <!-- 5. 槓桿倍數 -->
     <div class="form-group" id="group-lev-multiple">
       <label class="form-label">槓桿倍數</label>
       <div class="lev-selector">
@@ -483,7 +468,6 @@
       </div>
     </div>
 
-    <!-- 6. 股數與單價 -->
     <div class="form-group" id="group-shares">
       <label class="form-label">持有股數</label>
       <input type="number" id="input-shares" class="form-input" placeholder="例如：1000">
@@ -494,16 +478,41 @@
       <input type="number" id="input-price" class="form-input" placeholder="代號輸入後自動抓取，亦可手動修正">
     </div>
 
-    <!-- 7. 總金額 -->
     <div class="form-group" id="group-total-val">
       <label class="form-label">總金額</label>
       <input type="number" id="input-total-val" class="form-input" placeholder="例如：500000">
     </div>
 
-    <!-- 按鈕組 -->
     <div class="action-btn-group">
       <button class="delete-btn" id="btn-delete" onclick="executeDeleteAsset()">刪除</button>
       <button class="submit-btn" id="btn-submit" onclick="saveAsset()">儲存資產</button>
+    </div>
+  </div>
+
+  <!-- 抽屜二：理想配置比例設定 Bottom Sheet -->
+  <div class="bottom-sheet" id="ratio-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">設定理想配置比例 (%)</div>
+
+    <div class="form-group">
+      <label class="form-label">原型股票比例 (%)</label>
+      <input type="number" id="input-ratio-orig" class="form-input" placeholder="例如：50" oninput="validateRatios()">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">槓桿資產比例 (%)</label>
+      <input type="number" id="input-ratio-lev" class="form-input" placeholder="例如：30" oninput="validateRatios()">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">現金與房屋比例 (%)</label>
+      <input type="number" id="input-ratio-cash" class="form-input" placeholder="例如：20" oninput="validateRatios()">
+    </div>
+
+    <div class="ratio-hint" id="ratio-status-text">總和必須為 100%</div>
+
+    <div class="action-btn-group" style="margin-top: 14px;">
+      <button class="submit-btn" id="btn-save-ratio" onclick="saveRatios()">儲存理想比例</button>
     </div>
   </div>
 
@@ -516,6 +525,7 @@
       { id: 3, type: 'cash', symbol: '銀行活存', val: 1200000, currency: 'TWD', rate: 1, isSharesMode: false }
     ];
 
+    let targetRatios = JSON.parse(localStorage.getItem('target_ratios')) || { orig: 50, lev: 30, cash: 20 };
     let isPrivate = JSON.parse(localStorage.getItem('user_privacy_mode')) || false;
 
     let currentType = 'original';
@@ -543,6 +553,65 @@
       } else {
         body.classList.add('open'); arrow.classList.add('open');
       }
+    }
+
+    /* 理想比例 Bottom Sheet 邏輯 */
+    function openRatioSheet() {
+      document.getElementById('input-ratio-orig').value = targetRatios.orig;
+      document.getElementById('input-ratio-lev').value = targetRatios.lev;
+      document.getElementById('input-ratio-cash').value = targetRatios.cash;
+
+      // 設置為預設天藍色風格
+      document.documentElement.style.setProperty('--active-theme-color', '#38bdf8');
+      document.documentElement.style.setProperty('--active-theme-rgb', '56, 189, 248');
+
+      validateRatios();
+      document.getElementById('sheet-overlay').classList.add('active');
+      document.getElementById('ratio-sheet').classList.add('active');
+    }
+
+    function validateRatios() {
+      const orig = parseFloat(document.getElementById('input-ratio-orig').value) || 0;
+      const lev = parseFloat(document.getElementById('input-ratio-lev').value) || 0;
+      const cash = parseFloat(document.getElementById('input-ratio-cash').value) || 0;
+
+      const sum = orig + lev + cash;
+      const statusText = document.getElementById('ratio-status-text');
+      const btnSave = document.getElementById('btn-save-ratio');
+
+      if (Math.abs(sum - 100) < 0.01) {
+        statusText.innerText = "✓ 比例總和為 100%";
+        statusText.className = "ratio-hint success";
+        btnSave.disabled = false;
+      } else {
+        statusText.innerText = `✕ 總和必須為 100%（目前：${sum.toFixed(1)}%）`;
+        statusText.className = "ratio-hint error";
+        btnSave.disabled = true;
+      }
+    }
+
+    function saveRatios() {
+      const orig = parseFloat(document.getElementById('input-ratio-orig').value) || 0;
+      const lev = parseFloat(document.getElementById('input-ratio-lev').value) || 0;
+      const cash = parseFloat(document.getElementById('input-ratio-cash').value) || 0;
+
+      targetRatios = { orig, lev, cash };
+      localStorage.setItem('target_ratios', JSON.stringify(targetRatios));
+
+      renderAssets();
+      closeAllSheets();
+    }
+
+    function closeAllSheets() {
+      document.getElementById('sheet-overlay').classList.remove('active');
+      document.getElementById('bottom-sheet').classList.remove('active');
+      document.getElementById('ratio-sheet').classList.remove('active');
+      document.getElementById('input-symbol').value = '';
+      document.getElementById('input-shares').value = '';
+      document.getElementById('input-price').value = '';
+      document.getElementById('input-total-val').value = '';
+      document.getElementById('price-hint').style.display = 'none';
+      editingAssetId = null;
     }
 
     async function refreshAllPrices() {
@@ -581,9 +650,7 @@
       btn.classList.remove('spinning');
       statusText.innerText = `✓ 已更新 ${updateCount} 筆股票與最新匯率`;
 
-      setTimeout(() => {
-        statusText.style.display = 'none';
-      }, 3000);
+      setTimeout(() => { statusText.style.display = 'none'; }, 3000);
     }
 
     async function fetchStockPrice() {
@@ -617,7 +684,6 @@
     }
 
     function renderAssets() {
-      // 更新隱藏按鈕圖示
       const btnPrivacy = document.getElementById('btn-toggle-privacy');
       if (btnPrivacy) btnPrivacy.innerText = isPrivate ? '🙈' : '👁️';
 
@@ -656,14 +722,11 @@
         let fillClass = 'orig';
 
         if (item.type === 'original') {
-          categoryTotal = totalOrigTWD;
-          fillClass = 'orig';
+          categoryTotal = totalOrigTWD; fillClass = 'orig';
         } else if (item.type === 'leverage') {
-          categoryTotal = totalLevTWD;
-          fillClass = 'lev';
+          categoryTotal = totalLevTWD; fillClass = 'lev';
         } else {
-          categoryTotal = totalCashTWD;
-          fillClass = 'cash';
+          categoryTotal = totalCashTWD; fillClass = 'cash';
         }
 
         const pct = categoryTotal > 0 ? (twdVal / categoryTotal) * 100 : 0;
@@ -674,7 +737,6 @@
             <div class="capsule-progress-fill ${fillClass}" style="width: ${pct.toFixed(1)}%;"></div>
           </div>`;
 
-        // 隱藏模式下的文字替換邏輯
         const valText = isPrivate ? 'NT$ ****' : `NT$ ${formatNumber(twdVal)}`;
         const priceText = isPrivate ? '****' : `$${item.price}`;
 
@@ -739,7 +801,6 @@
         }
       });
 
-      // 總金額與小計金額隱藏呈現
       document.getElementById('total-orig-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalOrigTWD);
       document.getElementById('total-lev-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalLevTWD);
       document.getElementById('total-cash-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalCashTWD);
@@ -747,11 +808,10 @@
       const totalNetWorthTWD = totalOrigTWD + totalLevTWD + totalCashTWD;
       document.getElementById('total-net-worth').innerText = isPrivate ? '****' : '$' + formatNumber(totalNetWorthTWD);
 
-      if (totalNetWorthTWD > 0) {
-        document.getElementById('pct-orig').innerText = Math.round((totalOrigTWD / totalNetWorthTWD) * 100) + '%';
-        document.getElementById('pct-lev').innerText = Math.round((totalLevTWD / totalNetWorthTWD) * 100) + '%';
-        document.getElementById('pct-cash').innerText = Math.round((totalCashTWD / totalNetWorthTWD) * 100) + '%';
-      }
+      // 顯示設定的理想比例（若尚未設定則自動顯示現有計算值）
+      document.getElementById('pct-orig').innerText = targetRatios.orig + '%';
+      document.getElementById('pct-lev').innerText = targetRatios.lev + '%';
+      document.getElementById('pct-cash').innerText = targetRatios.cash + '%';
 
       localStorage.setItem('user_assets', JSON.stringify(assets));
       localStorage.setItem('alloc_original', totalOrigTWD);
@@ -816,17 +876,6 @@
       document.getElementById('bottom-sheet').classList.add('active');
     }
 
-    function closeSheet() {
-      document.getElementById('sheet-overlay').classList.remove('active');
-      document.getElementById('bottom-sheet').classList.remove('active');
-      document.getElementById('input-symbol').value = '';
-      document.getElementById('input-shares').value = '';
-      document.getElementById('input-price').value = '';
-      document.getElementById('input-total-val').value = '';
-      document.getElementById('price-hint').style.display = 'none';
-      editingAssetId = null;
-    }
-
     function setType(type) {
       currentType = type;
       document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('active'));
@@ -888,19 +937,13 @@
       if (mode === 'total' && currentType === 'cash') {
         groupShares.classList.add('disabled');
         groupPrice.classList.add('disabled');
-        inputShares.disabled = true;
-        inputPrice.disabled = true;
-
-        groupTotal.classList.remove('disabled');
-        inputTotal.disabled = false;
+        inputShares.disabled = true; inputPrice.disabled = true;
+        groupTotal.classList.remove('disabled'); inputTotal.disabled = false;
       } else {
         groupShares.classList.remove('disabled');
         groupPrice.classList.remove('disabled');
-        inputShares.disabled = false;
-        inputPrice.disabled = false;
-
-        groupTotal.classList.add('disabled');
-        inputTotal.disabled = true;
+        inputShares.disabled = false; inputPrice.disabled = false;
+        groupTotal.classList.add('disabled'); inputTotal.disabled = true;
       }
     }
 
@@ -913,11 +956,9 @@
       const inputRate = document.getElementById('input-rate');
 
       if (curr === 'USD') {
-        groupRate.classList.remove('disabled');
-        inputRate.disabled = false;
+        groupRate.classList.remove('disabled'); inputRate.disabled = false;
       } else {
-        groupRate.classList.add('disabled');
-        inputRate.disabled = true;
+        groupRate.classList.add('disabled'); inputRate.disabled = true;
       }
     }
 
@@ -937,36 +978,16 @@
         if (currentCashMode === 'shares') {
           const shares = parseFloat(document.getElementById('input-shares').value) || 0;
           const price = parseFloat(document.getElementById('input-price').value) || 0;
-          newData = {
-            type: 'cash',
-            symbol: symbol,
-            shares: shares,
-            price: price,
-            currency: currentCurrency,
-            rate: rate,
-            isSharesMode: true
-          };
+          newData = { type: 'cash', symbol, shares, price, currency: currentCurrency, rate, isSharesMode: true };
         } else {
           const val = parseFloat(document.getElementById('input-total-val').value) || 0;
-          newData = {
-            type: 'cash',
-            symbol: symbol,
-            val: val,
-            currency: currentCurrency,
-            rate: rate,
-            isSharesMode: false
-          };
+          newData = { type: 'cash', symbol, val, currency: currentCurrency, rate, isSharesMode: false };
         }
       } else {
         const shares = parseFloat(document.getElementById('input-shares').value) || 0;
         const price = parseFloat(document.getElementById('input-price').value) || 0;
         newData = {
-          type: currentType,
-          symbol: symbol,
-          shares: shares,
-          price: price,
-          currency: currentCurrency,
-          rate: rate,
+          type: currentType, symbol, shares, price, currency: currentCurrency, rate,
           multiple: currentType === 'leverage' ? currentLevMultiple : undefined
         };
       }
@@ -978,7 +999,7 @@
       }
 
       renderAssets();
-      closeSheet();
+      closeAllSheets();
 
       const keyMap = { original: 'orig', leverage: 'lev', cash: 'cash' };
       const targetKey = keyMap[currentType];
@@ -996,7 +1017,7 @@
       if (editingAssetId !== null) {
         assets = assets.filter(a => a.id !== editingAssetId);
         renderAssets();
-        closeSheet();
+        closeAllSheets();
       }
     }
 
