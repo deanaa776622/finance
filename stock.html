@@ -106,7 +106,7 @@
       margin: 4px 0;
     }
 
-    /* 可點擊的比例區塊 */
+    /* 顯示實際比例，點擊可開啟理想比例設定 */
     .summary-sub {
       font-size: 0.8rem; color: #94a3b8;
       display: flex; justify-content: center; gap: 12px;
@@ -330,7 +330,6 @@
     }
     .delete-btn:active { transform: scale(0.95); }
 
-    /* 理想比例提示語文案 */
     .ratio-hint {
       font-size: 0.75rem; text-align: center; margin-top: 6px; color: var(--sub-text);
     }
@@ -354,11 +353,11 @@
       <div class="summary-value" id="total-net-worth">$0</div>
       <div class="refresh-status" id="refresh-status">⚡ 正在更新最新即時股價...</div>
       
-      <!-- 點擊觸發理想配置設定 -->
+      <!-- 顯示真實比例，點擊開啟理想比例設定檔 -->
       <div class="summary-sub" onclick="openRatioSheet()" title="點擊設定理想配置比例">
-        <span>原 <strong id="pct-orig">50%</strong></span>
-        <span>槓 <strong id="pct-lev">30%</strong></span>
-        <span>現 <strong id="pct-cash">20%</strong></span>
+        <span>原 <strong id="pct-orig">0%</strong></span>
+        <span>槓 <strong id="pct-lev">0%</strong></span>
+        <span>現 <strong id="pct-cash">0%</strong></span>
       </div>
     </div>
 
@@ -492,27 +491,27 @@
   <!-- 抽屜二：理想配置比例設定 Bottom Sheet -->
   <div class="bottom-sheet" id="ratio-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title">設定理想配置比例 (%)</div>
+    <div class="sheet-title">設定理想配置目標 (%)</div>
 
     <div class="form-group">
-      <label class="form-label">原型股票比例 (%)</label>
+      <label class="form-label">原型股票目標比例 (%)</label>
       <input type="number" id="input-ratio-orig" class="form-input" placeholder="例如：50" oninput="validateRatios()">
     </div>
 
     <div class="form-group">
-      <label class="form-label">槓桿資產比例 (%)</label>
+      <label class="form-label">槓桿資產目標比例 (%)</label>
       <input type="number" id="input-ratio-lev" class="form-input" placeholder="例如：30" oninput="validateRatios()">
     </div>
 
     <div class="form-group">
-      <label class="form-label">現金與房屋比例 (%)</label>
+      <label class="form-label">現金與房屋目標比例 (%)</label>
       <input type="number" id="input-ratio-cash" class="form-input" placeholder="例如：20" oninput="validateRatios()">
     </div>
 
     <div class="ratio-hint" id="ratio-status-text">總和必須為 100%</div>
 
     <div class="action-btn-group" style="margin-top: 14px;">
-      <button class="submit-btn" id="btn-save-ratio" onclick="saveRatios()">儲存理想比例</button>
+      <button class="submit-btn" id="btn-save-ratio" onclick="saveRatios()">儲存目標比例</button>
     </div>
   </div>
 
@@ -561,7 +560,6 @@
       document.getElementById('input-ratio-lev').value = targetRatios.lev;
       document.getElementById('input-ratio-cash').value = targetRatios.cash;
 
-      // 設置為預設天藍色風格
       document.documentElement.style.setProperty('--active-theme-color', '#38bdf8');
       document.documentElement.style.setProperty('--active-theme-rgb', '56, 189, 248');
 
@@ -598,7 +596,6 @@
       targetRatios = { orig, lev, cash };
       localStorage.setItem('target_ratios', JSON.stringify(targetRatios));
 
-      renderAssets();
       closeAllSheets();
     }
 
@@ -808,10 +805,16 @@
       const totalNetWorthTWD = totalOrigTWD + totalLevTWD + totalCashTWD;
       document.getElementById('total-net-worth').innerText = isPrivate ? '****' : '$' + formatNumber(totalNetWorthTWD);
 
-      // 顯示設定的理想比例（若尚未設定則自動顯示現有計算值）
-      document.getElementById('pct-orig').innerText = targetRatios.orig + '%';
-      document.getElementById('pct-lev').innerText = targetRatios.lev + '%';
-      document.getElementById('pct-cash').innerText = targetRatios.cash + '%';
+      // 動態計算並顯示真實比例
+      if (totalNetWorthTWD > 0) {
+        document.getElementById('pct-orig').innerText = Math.round((totalOrigTWD / totalNetWorthTWD) * 100) + '%';
+        document.getElementById('pct-lev').innerText = Math.round((totalLevTWD / totalNetWorthTWD) * 100) + '%';
+        document.getElementById('pct-cash').innerText = Math.round((totalCashTWD / totalNetWorthTWD) * 100) + '%';
+      } else {
+        document.getElementById('pct-orig').innerText = '0%';
+        document.getElementById('pct-lev').innerText = '0%';
+        document.getElementById('pct-cash').innerText = '0%';
+      }
 
       localStorage.setItem('user_assets', JSON.stringify(assets));
       localStorage.setItem('alloc_original', totalOrigTWD);
