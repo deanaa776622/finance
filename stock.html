@@ -71,8 +71,12 @@
       text-transform: uppercase;
     }
 
-    /* 批次刷新按鈕 */
-    .refresh-btn {
+    .header-actions {
+      display: flex; gap: 8px; align-items: center;
+    }
+
+    /* 圖示按鈕 (刷新 + 隱藏) */
+    .icon-btn {
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.12);
       color: var(--accent-color);
@@ -80,10 +84,10 @@
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; transition: all 0.2s;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
     }
-    .refresh-btn:active { transform: scale(0.9); }
-    .refresh-btn.spinning {
+    .icon-btn:active { transform: scale(0.9); }
+    .icon-btn.spinning {
       animation: spin 1s linear infinite;
       pointer-events: none;
       opacity: 0.7;
@@ -319,7 +323,7 @@
       background: rgba(250, 204, 21, 0.2); border-color: var(--cash-color); color: var(--cash-color);
     }
 
-    /* 2. 動態連動主調色 (其他按鈕如：輸入模式、幣別、槓桿倍數) */
+    /* 2. 動態連動主調色 */
     .lev-btn.active, .curr-btn.active, .mode-btn.active {
       background: rgba(var(--active-theme-rgb), 0.2);
       border-color: var(--active-theme-color);
@@ -356,7 +360,10 @@
     <div class="summary-card">
       <div class="summary-header">
         <div class="summary-label">NET WORTH (TWD)</div>
-        <button class="refresh-btn" id="btn-refresh-all" onclick="refreshAllPrices()" title="一鍵更新股價與匯率">↻</button>
+        <div class="header-actions">
+          <button class="icon-btn" id="btn-toggle-privacy" onclick="togglePrivacy()" title="隱藏/顯示金額">👁️</button>
+          <button class="icon-btn" id="btn-refresh-all" onclick="refreshAllPrices()" title="一鍵更新股價與匯率">↻</button>
+        </div>
       </div>
       <div class="summary-value" id="total-net-worth">$0</div>
       <div class="refresh-status" id="refresh-status">⚡ 正在更新最新即時股價...</div>
@@ -420,7 +427,7 @@
 
   </div>
 
-  <!-- 底部滑出抽屜 (全控制項固定保持，防高度跳動) -->
+  <!-- 底部滑出抽屜 -->
   <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
   <div class="bottom-sheet" id="bottom-sheet">
     <div class="sheet-handle"></div>
@@ -466,7 +473,7 @@
       <input type="number" id="input-rate" class="form-input" placeholder="例如：32.2" value="32.0">
     </div>
 
-    <!-- 5. 槓桿倍數 (僅槓桿資產啟用並顯示選取高亮) -->
+    <!-- 5. 槓桿倍數 -->
     <div class="form-group" id="group-lev-multiple">
       <label class="form-label">槓桿倍數</label>
       <div class="lev-selector">
@@ -509,6 +516,8 @@
       { id: 3, type: 'cash', symbol: '銀行活存', val: 1200000, currency: 'TWD', rate: 1, isSharesMode: false }
     ];
 
+    let isPrivate = JSON.parse(localStorage.getItem('user_privacy_mode')) || false;
+
     let currentType = 'original';
     let currentCurrency = 'TWD';
     let currentLevMultiple = 2;
@@ -518,6 +527,12 @@
     function formatNumber(num) {
       if (!num || isNaN(num)) return '0';
       return Number(Math.round(num)).toLocaleString('en-US');
+    }
+
+    function togglePrivacy() {
+      isPrivate = !isPrivate;
+      localStorage.setItem('user_privacy_mode', JSON.stringify(isPrivate));
+      renderAssets();
     }
 
     function toggleSection(sectionKey) {
@@ -602,6 +617,10 @@
     }
 
     function renderAssets() {
+      // 更新隱藏按鈕圖示
+      const btnPrivacy = document.getElementById('btn-toggle-privacy');
+      if (btnPrivacy) btnPrivacy.innerText = isPrivate ? '🙈' : '👁️';
+
       const listOrig = document.getElementById('list-original');
       const listLev = document.getElementById('list-leverage');
       const listCash = document.getElementById('list-cash');
@@ -624,7 +643,7 @@
         else if (item.type === 'cash') totalCashTWD += twdVal;
       });
 
-      // 第二階段：計算佔比與渲染膠囊 (微型進度條)
+      // 第二階段：計算佔比與渲染膠囊
       assets.forEach(item => {
         const curr = item.currency || 'TWD';
         const fxRate = curr === 'USD' ? (item.rate || 32.0) : 1;
@@ -655,6 +674,10 @@
             <div class="capsule-progress-fill ${fillClass}" style="width: ${pct.toFixed(1)}%;"></div>
           </div>`;
 
+        // 隱藏模式下的文字替換邏輯
+        const valText = isPrivate ? 'NT$ ****' : `NT$ ${formatNumber(twdVal)}`;
+        const priceText = isPrivate ? '****' : `$${item.price}`;
+
         let html = '';
 
         if (item.type === 'cash') {
@@ -663,10 +686,10 @@
               <div class="asset-capsule" onclick="openEditSheet(${item.id})">
                 <div class="asset-info">
                   <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
-                  <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
+                  <div class="asset-detail">${formatNumber(item.shares)} 股 · @${priceText}</div>
                 </div>
                 <div class="asset-val-box">
-                  <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
+                  <div class="asset-val">${valText}</div>
                   <div class="asset-pct-text">${pctFormatted}</div>
                 </div>
                 ${progressBarHtml}
@@ -678,7 +701,7 @@
                   <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
                 </div>
                 <div class="asset-val-box">
-                  <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
+                  <div class="asset-val">${valText}</div>
                   <div class="asset-pct-text">${pctFormatted}</div>
                 </div>
                 ${progressBarHtml}
@@ -690,10 +713,10 @@
             <div class="asset-capsule" onclick="openEditSheet(${item.id})">
               <div class="asset-info">
                 <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span></div>
-                <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
+                <div class="asset-detail">${formatNumber(item.shares)} 股 · @${priceText}</div>
               </div>
               <div class="asset-val-box">
-                <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
+                <div class="asset-val">${valText}</div>
                 <div class="asset-pct-text">${pctFormatted}</div>
               </div>
               ${progressBarHtml}
@@ -704,10 +727,10 @@
             <div class="asset-capsule" onclick="openEditSheet(${item.id})">
               <div class="asset-info">
                 <div class="asset-symbol">${item.symbol} <span class="badge-currency">${curr}</span> <span class="badge-lev">${item.multiple || 2}X</span></div>
-                <div class="asset-detail">${formatNumber(item.shares)} 股 · @$${item.price}</div>
+                <div class="asset-detail">${formatNumber(item.shares)} 股 · @${priceText}</div>
               </div>
               <div class="asset-val-box">
-                <div class="asset-val">NT$ ${formatNumber(twdVal)}</div>
+                <div class="asset-val">${valText}</div>
                 <div class="asset-pct-text">${pctFormatted}</div>
               </div>
               ${progressBarHtml}
@@ -716,12 +739,13 @@
         }
       });
 
-      document.getElementById('total-orig-val').innerText = 'NT$ ' + formatNumber(totalOrigTWD);
-      document.getElementById('total-lev-val').innerText = 'NT$ ' + formatNumber(totalLevTWD);
-      document.getElementById('total-cash-val').innerText = 'NT$ ' + formatNumber(totalCashTWD);
+      // 總金額與小計金額隱藏呈現
+      document.getElementById('total-orig-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalOrigTWD);
+      document.getElementById('total-lev-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalLevTWD);
+      document.getElementById('total-cash-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalCashTWD);
 
       const totalNetWorthTWD = totalOrigTWD + totalLevTWD + totalCashTWD;
-      document.getElementById('total-net-worth').innerText = '$' + formatNumber(totalNetWorthTWD);
+      document.getElementById('total-net-worth').innerText = isPrivate ? '****' : '$' + formatNumber(totalNetWorthTWD);
 
       if (totalNetWorthTWD > 0) {
         document.getElementById('pct-orig').innerText = Math.round((totalOrigTWD / totalNetWorthTWD) * 100) + '%';
@@ -803,7 +827,6 @@
       editingAssetId = null;
     }
 
-    // 重構：類別切換時動態處理槓桿按鈕的高亮 (Active) 狀態
     function setType(type) {
       currentType = type;
       document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('active'));
@@ -835,17 +858,17 @@
 
         if (type === 'leverage') {
           levGroup.classList.remove('disabled');
-          setLev(currentLevMultiple); // 恢復選取高亮
+          setLev(currentLevMultiple);
         } else {
           levGroup.classList.add('disabled');
-          document.querySelectorAll('.lev-btn').forEach(btn => btn.classList.remove('active')); // 清除高亮
+          document.querySelectorAll('.lev-btn').forEach(btn => btn.classList.remove('active'));
         }
       } else {
         modeGroup.classList.remove('disabled');
         btnModeTotal.classList.remove('disabled');
         btnModeShares.classList.remove('disabled');
         levGroup.classList.add('disabled');
-        document.querySelectorAll('.lev-btn').forEach(btn => btn.classList.remove('active')); // 清除高亮
+        document.querySelectorAll('.lev-btn').forEach(btn => btn.classList.remove('active'));
         setCashMode(currentCashMode);
       }
     }
