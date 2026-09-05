@@ -1,44 +1,11 @@
 /**
- * glow.js - Canvas 隨機漂浮與風控連動 Glow 背景引擎
+ * glow.js - 零卡頓 GPU 硬體加速隨機漂浮 Glow 背景引擎
  * 
- * 特色：
- * 1. 隨機漂浮：三個光球具備獨立隨機向量速度與有機邊界反彈，軌跡完全不重複。
- * 2. 達成率尺寸：連動 index.html (Target Total) 與理想比例，達成率 0%~100% 動態縮放半徑。
- * 3. 獨立風控偏離警示：原型、槓桿、現金各自獨立計算偏離差距，2%~10% 獨立漸變變紅。
+ * 效能優化：
+ * 1. 移除 Canvas 與高耗能 JS 重繪，改回純 GPU 合成管線 (translate3d)。
+ * 2. 使用不對稱 keyframes 與多頻率週期 (14s/19s/23s)，實現完全無規律的隨機漂浮感。
+ * 3. 完整保留 index.html (Target Total) 達成率尺寸與獨立風控警示紅化邏輯。
  */
-
-// 存放三個資產光球的物理狀態
-const glowOrbsState = [
-  { id: 'orig', name: '原型', x: 0, y: 0, vx: 0.3, vy: 0.2, baseRgb: { r: 56, g: 189, b: 248 }, currentRgb: 'rgb(56, 189, 248)', currentSize: 0, currentOpacity: 0 },
-  { id: 'lev',  name: '槓桿', x: 0, y: 0, vx: -0.25, vy: 0.35, baseRgb: { r: 74, g: 222, b: 128 }, currentRgb: 'rgb(74, 222, 128)', currentSize: 0, currentOpacity: 0 },
-  { id: 'cash', name: '現金', x: 0, y: 0, vx: 0.2, vy: -0.3, baseRgb: { r: 250, g: 204, b: 21 }, currentRgb: 'rgb(250, 204, 21)', currentSize: 0, currentOpacity: 0 }
-];
-
-let glowCanvas = null;
-let glowCtx = null;
-let isGlowEngineRunning = false;
-
-// 初始化隨機位置與向量速度
-function initGlowPositions() {
-  const width = window.innerWidth || 375;
-  const height = window.innerHeight || 667;
-
-  glowOrbsState.forEach((orb, idx) => {
-    // 預設將三個光球隨機散開在螢幕不同分區
-    if (idx === 0) { orb.x = width * (0.15 + Math.random() * 0.3); orb.y = height * (0.15 + Math.random() * 0.3); }
-    else if (idx === 1) { orb.x = width * (0.55 + Math.random() * 0.3); orb.y = height * (0.2 + Math.random() * 0.3); }
-    else { orb.x = width * (0.3 + Math.random() * 0.4); orb.y = height * (0.6 + Math.random() * 0.3); }
-
-    // 賦予微小的隨機漂浮速度 (-0.4 ~ 0.4 px/frame)
-    const speedScale = 0.35;
-    orb.vx = (Math.random() - 0.5) * 2 * speedScale;
-    orb.vy = (Math.random() - 0.5) * 2 * speedScale;
-    
-    // 避免速度過慢或死角
-    if (Math.abs(orb.vx) < 0.1) orb.vx = orb.vx < 0 ? -0.2 : 0.2;
-    if (Math.abs(orb.vy) < 0.1) orb.vy = orb.vy < 0 ? -0.2 : 0.2;
-  });
-}
 
 function updateGlowBackground() {
   // 1. 讀取當前實際資產金額 (TWD)
@@ -95,103 +62,101 @@ function updateGlowBackground() {
     return `rgb(${r}, ${g}, ${b})`;
   }
 
-  // 6. 計算各光球數值
-  const maxRadius = 260; // 光球最大半徑 (相當於直徑 520px)
+  const colorOrig = getInterpolatedColor({ r: 56, g: 189, b: 248 }, factorOrig); // 原型藍 ➔ 警示紅
+  const colorLev = getInterpolatedColor({ r: 74, g: 222, b: 128 }, factorLev);   // 槓桿綠 ➔ 警示紅
+  const colorCash = getInterpolatedColor({ r: 250, g: 204, b: 21 }, factorCash);  // 現金黃 ➔ 警示紅
 
-  glowOrbsState[0].currentRgb = getInterpolatedColor(glowOrbsState[0].baseRgb, factorOrig);
-  glowOrbsState[0].currentSize = maxRadius * ratioAchieveOrig;
-  glowOrbsState[0].currentOpacity = 0.65 * ratioAchieveOrig;
+  // 6. 光球最大尺寸為 420px，依「達成率」動態縮放
+  const maxOrbSize = 420;
 
-  glowOrbsState[1].currentRgb = getInterpolatedColor(glowOrbsState[1].baseRgb, factorLev);
-  glowOrbsState[1].currentSize = maxRadius * ratioAchieveLev;
-  glowOrbsState[1].currentOpacity = 0.65 * ratioAchieveLev;
+  const sizeOrig = maxOrbSize * ratioAchieveOrig;
+  const sizeLev = maxOrbSize * ratioAchieveLev;
+  const sizeCash = maxOrbSize * ratioAchieveCash;
 
-  glowOrbsState[2].currentRgb = getInterpolatedColor(glowOrbsState[2].baseRgb, factorCash);
-  glowOrbsState[2].currentSize = maxRadius * ratioAchieveCash;
-  glowOrbsState[2].currentOpacity = 0.65 * ratioAchieveCash;
+  // 7. 注入高感光、高流暢度 GPU 隨機位移動畫 keyframe
+  if (!document.getElementById('glow-style-keyframes')) {
+    const styleEl = document.createElement('style');
+    styleEl.id = 'glow-style-keyframes';
+    styleEl.innerHTML = `
+      @keyframes randomFloat1 {
+        0%   { transform: translate3d(0px, 0px, 0) scale(1); }
+        25%  { transform: translate3d(120px, 80px, 0) scale(1.15); }
+        50%  { transform: translate3d(40px, 160px, 0) scale(0.9); }
+        75%  { transform: translate3d(-80px, 60px, 0) scale(1.1); }
+        100% { transform: translate3d(0px, 0px, 0) scale(1); }
+      }
+      @keyframes randomFloat2 {
+        0%   { transform: translate3d(0px, 0px, 0) scale(1); }
+        33%  { transform: translate3d(-140px, 100px, 0) scale(1.2); }
+        66%  { transform: translate3d(-60px, -80px, 0) scale(0.85); }
+        100% { transform: translate3d(0px, 0px, 0) scale(1); }
+      }
+      @keyframes randomFloat3 {
+        0%   { transform: translate3d(0px, 0px, 0) scale(1); }
+        20%  { transform: translate3d(80px, -100px, 0) scale(0.95); }
+        50%  { transform: translate3d(-100px, -60px, 0) scale(1.18); }
+        80%  { transform: translate3d(60px, 40px, 0) scale(1.05); }
+        100% { transform: translate3d(0px, 0px, 0) scale(1); }
+      }
 
-  // 7. 初始化並啟動 Canvas 隨機漂浮循環 (若尚未啟動)
-  if (!isGlowEngineRunning) {
-    setupCanvas();
-    initGlowPositions();
-    isGlowEngineRunning = true;
-    requestAnimationFrame(renderGlowFrame);
+      .glow-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        pointer-events: none;
+        will-change: transform;
+        transition: background 0.8s ease, width 0.6s ease, height 0.6s ease, opacity 0.6s ease;
+      }
+    `;
+    document.head.appendChild(styleEl);
   }
-}
 
-// 建立滿版全螢幕 Canvas DOM
-function setupCanvas() {
-  glowCanvas = document.getElementById('glow-canvas-bg');
-  if (!glowCanvas) {
-    glowCanvas = document.createElement('canvas');
-    glowCanvas.id = 'glow-canvas-bg';
-    glowCanvas.style.cssText = `
+  // 8. 建立 DOM 容器
+  let glowContainer = document.getElementById('glow-bg-container');
+  if (!glowContainer) {
+    glowContainer = document.createElement('div');
+    glowContainer.id = 'glow-bg-container';
+    glowContainer.style.cssText = `
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
       pointer-events: none;
       z-index: 0;
-      filter: blur(50px);
+      overflow: hidden;
     `;
-    document.body.prepend(glowCanvas);
+
+    glowContainer.innerHTML = `
+      <div id="orb-orig" class="glow-orb" style="top: -5%; left: -5%; animation: randomFloat1 14s ease-in-out infinite;"></div>
+      <div id="orb-lev" class="glow-orb" style="top: -5%; right: -5%; animation: randomFloat2 19s ease-in-out infinite;"></div>
+      <div id="orb-cash" class="glow-orb" style="bottom: -10%; left: 20%; animation: randomFloat3 23s ease-in-out infinite;"></div>
+    `;
+    document.body.prepend(glowContainer);
   }
-  glowCtx = glowCanvas.getContext('2d');
-  resizeCanvas();
 
-  window.addEventListener('resize', resizeCanvas);
-}
+  // 9. 更新樣式
+  const orbOrig = document.getElementById('orb-orig');
+  const orbLev = document.getElementById('orb-lev');
+  const orbCash = document.getElementById('orb-cash');
 
-function resizeCanvas() {
-  if (glowCanvas) {
-    glowCanvas.width = window.innerWidth;
-    glowCanvas.height = window.innerHeight;
+  if (orbOrig) {
+    orbOrig.style.width = `${sizeOrig}px`;
+    orbOrig.style.height = `${sizeOrig}px`;
+    orbOrig.style.background = colorOrig;
+    orbOrig.style.opacity = (0.7 * ratioAchieveOrig).toFixed(2);
   }
-}
 
-// Canvas 60fps 隨機物理漂浮渲染動畫
-function renderGlowFrame() {
-  if (!glowCtx || !glowCanvas) return;
+  if (orbLev) {
+    orbLev.style.width = `${sizeLev}px`;
+    orbLev.style.height = `${sizeLev}px`;
+    orbLev.style.background = colorLev;
+    orbLev.style.opacity = (0.7 * ratioAchieveLev).toFixed(2);
+  }
 
-  const width = glowCanvas.width;
-  const height = glowCanvas.height;
-
-  // 清空畫布
-  glowCtx.clearRect(0, 0, width, height);
-
-  // 繪製與位移各個隨機光球
-  glowOrbsState.forEach(orb => {
-    if (orb.currentSize <= 0 || orb.currentOpacity <= 0) return;
-
-    // 1. 位置隨機累加 (漂浮位移)
-    orb.x += orb.vx;
-    orb.y += orb.vy;
-
-    // 2. 有機邊界碰撞反彈 (帶微幅隨機擾動)
-    const margin = orb.currentSize * 0.3;
-    if (orb.x < -margin || orb.x > width + margin) {
-      orb.vx *= -1;
-      orb.vy += (Math.random() - 0.5) * 0.1;
-    }
-    if (orb.y < -margin || orb.y > height + margin) {
-      orb.vy *= -1;
-      orb.vx += (Math.random() - 0.5) * 0.1;
-    }
-
-    // 3. 繪製徑向漸層隨機發光球
-    const gradient = glowCtx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.currentSize);
-    
-    // 轉為帶透明度之色彩 Stop
-    const rgbStr = orb.currentRgb.replace('rgb', 'rgba').replace(')', '');
-    gradient.addColorStop(0, `${rgbStr}, ${orb.currentOpacity})`);
-    gradient.addColorStop(0.6, `${rgbStr}, ${orb.currentOpacity * 0.4})`);
-    gradient.addColorStop(1, `${rgbStr}, 0)`);
-
-    glowCtx.fillStyle = gradient;
-    glowCtx.beginPath();
-    glowCtx.arc(orb.x, orb.y, orb.currentSize, 0, Math.PI * 2);
-    glowCtx.fill();
-  });
-
-  requestAnimationFrame(renderGlowFrame);
+  if (orbCash) {
+    orbCash.style.width = `${sizeCash}px`;
+    orbCash.style.height = `${sizeCash}px`;
+    orbCash.style.background = colorCash;
+    orbCash.style.opacity = (0.7 * ratioAchieveCash).toFixed(2);
+  }
 }
 
 // 頁面載入時自動執行一次
