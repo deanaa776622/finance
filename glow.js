@@ -1,22 +1,68 @@
 /**
- * glow.js - 原始經典動態 Glow 背景引擎
+ * glow.js - 個別資產風控獨立偏離警示 Glow 背景引擎
+ * 特色：
+ * 1. 原型、槓桿、現金三種資產獨立計算偏離差距 (|實際% - 目標%|)。
+ * 2. 差距 <=2% 維持原主題色，2%~10% 該類別單獨漸漸變紅，>=10% 該類別轉為最紅。
+ * 3. 各資產顏色互不影響，一眼可看出是哪個類別偏離。
+ * 4. 保留 CSS Keyframe 柔和漂浮動畫與總資產規模尺寸放大。
  */
 
 function updateGlowBackground() {
+  // 1. 讀取真實資產金額
   const allocOrig = parseFloat(localStorage.getItem('alloc_original')) || 0;
   const allocLev = parseFloat(localStorage.getItem('alloc_leverage')) || 0;
   const allocCash = parseFloat(localStorage.getItem('alloc_cash')) || 0;
 
   const totalNetWorth = allocOrig + allocLev + allocCash;
 
-  // 1. 資產規模連動放大
+  // 2. 讀取使用者設定的理想目標比例 (%)，預設 50/30/20
+  const targetRatios = JSON.parse(localStorage.getItem('target_ratios')) || { orig: 50, lev: 30, cash: 20 };
+
+  // 3. 計算實際比例 (%)
+  let actOrig = 50, actLev = 30, actCash = 20;
+  if (totalNetWorth > 0) {
+    actOrig = (allocOrig / totalNetWorth) * 100;
+    actLev = (allocLev / totalNetWorth) * 100;
+    actCash = (allocCash / totalNetWorth) * 100;
+  }
+
+  // 4. 計算各自類別的偏離差距 (絕對值 %)
+  const devOrig = Math.abs(actOrig - targetRatios.orig);
+  const devLev = Math.abs(actLev - targetRatios.lev);
+  const devCash = Math.abs(actCash - targetRatios.cash);
+
+  // 5. 輔助函式：計算單一類別的偏離紅化係數 (0.0~1.0)
+  function getFactor(dev) {
+    if (dev <= 2) return 0;
+    return Math.min(1.0, (dev - 2) / 8); // 2% 到 10% 漸漸變紅
+  }
+
+  const factorOrig = getFactor(devOrig);
+  const factorLev = getFactor(devLev);
+  const factorCash = getFactor(devCash);
+
+  // 6. 輔助函式：根據個別 factor 在「原主題色」與「警示紅 (#f43f5e)」之間做 RGB 插值計算
+  function getInterpolatedColor(baseRgb, factor) {
+    const targetRgb = { r: 244, g: 63, b: 94 }; // 警示紅 RGB
+    const r = Math.round(baseRgb.r + (targetRgb.r - baseRgb.r) * factor);
+    const g = Math.round(baseRgb.g + (targetRgb.g - baseRgb.g) * factor);
+    const b = Math.round(baseRgb.b + (targetRgb.b - baseRgb.b) * factor);
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  // 個別獨立計算對應顏色
+  const colorOrig = getInterpolatedColor({ r: 56, g: 189, b: 248 }, factorOrig); // 原型藍 ➔ 警示紅
+  const colorLev = getInterpolatedColor({ r: 74, g: 222, b: 128 }, factorLev);   // 槓桿綠 ➔ 警示紅
+  const colorCash = getInterpolatedColor({ r: 250, g: 204, b: 21 }, factorCash);  // 現金黃 ➔ 警示紅
+
+  // 7. 根據「總淨資產規模」計算光暈尺寸 (Scale)
   let netWorthScale = 1.0;
   if (totalNetWorth > 0) {
     netWorthScale = 0.8 + Math.min(1.2, Math.log10(totalNetWorth / 100000) * 0.4);
     if (netWorthScale < 0.8) netWorthScale = 0.8;
   }
 
-  // 2. 注入Keyframe漂浮動畫
+  // 8. 動態注入 Keyframe 漂浮動畫與 CSS (若尚未注入)
   if (!document.getElementById('glow-style-keyframes')) {
     const styleEl = document.createElement('style');
     styleEl.id = 'glow-style-keyframes';
@@ -41,15 +87,16 @@ function updateGlowBackground() {
         position: absolute;
         border-radius: 50%;
         filter: blur(80px);
-        opacity: 0.65;
+        opacity: 0.75;
         pointer-events: none;
-        will-change: transform;
+        will-change: transform, background, width, height;
+        transition: background 0.8s ease, width 0.6s ease, height 0.6s ease;
       }
     `;
     document.head.appendChild(styleEl);
   }
 
-  // 3. 建立 DOM 容器
+  // 9. 建立或擷取 DOM 容器
   let glowContainer = document.getElementById('glow-bg-container');
   if (!glowContainer) {
     glowContainer = document.createElement('div');
@@ -63,22 +110,38 @@ function updateGlowBackground() {
     `;
 
     glowContainer.innerHTML = `
-      <div id="orb-orig" class="glow-orb" style="top: -10%; left: -10%; background: #38bdf8; animation: floatOrb1 18s ease-in-out infinite;"></div>
-      <div id="orb-lev" class="glow-orb" style="top: -5%; right: -10%; background: #4ade80; animation: floatOrb2 22s ease-in-out infinite;"></div>
-      <div id="orb-cash" class="glow-orb" style="bottom: -15%; left: 20%; background: #facc15; animation: floatOrb3 20s ease-in-out infinite;"></div>
+      <div id="orb-orig" class="glow-orb" style="top: -10%; left: -10%; animation: floatOrb1 18s ease-in-out infinite;"></div>
+      <div id="orb-lev" class="glow-orb" style="top: -5%; right: -10%; animation: floatOrb2 22s ease-in-out infinite;"></div>
+      <div id="orb-cash" class="glow-orb" style="bottom: -15%; left: 20%; animation: floatOrb3 20s ease-in-out infinite;"></div>
     `;
     document.body.prepend(glowContainer);
   }
 
-  // 4. 更新尺寸
+  // 10. 套用各自獨立計算後的顏色與尺寸
   const baseSize = 360 * netWorthScale;
+
   const orbOrig = document.getElementById('orb-orig');
   const orbLev = document.getElementById('orb-lev');
   const orbCash = document.getElementById('orb-cash');
 
-  if (orbOrig) { orbOrig.style.width = `${baseSize}px`; orbOrig.style.height = `${baseSize}px`; }
-  if (orbLev) { orbLev.style.width = `${baseSize}px`; orbLev.style.height = `${baseSize}px`; }
-  if (orbCash) { orbCash.style.width = `${baseSize}px`; orbCash.style.height = `${baseSize}px`; }
+  if (orbOrig) {
+    orbOrig.style.width = `${baseSize}px`;
+    orbOrig.style.height = `${baseSize}px`;
+    orbOrig.style.background = colorOrig;
+  }
+
+  if (orbLev) {
+    orbLev.style.width = `${baseSize}px`;
+    orbLev.style.height = `${baseSize}px`;
+    orbLev.style.background = colorLev;
+  }
+
+  if (orbCash) {
+    orbCash.style.width = `${baseSize}px`;
+    orbCash.style.height = `${baseSize}px`;
+    orbCash.style.background = colorCash;
+  }
 }
 
+// 頁面載入時自動執行一次
 document.addEventListener('DOMContentLoaded', updateGlowBackground);
