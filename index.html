@@ -47,7 +47,7 @@
       z-index: 1;
     }
 
-    /* 調音盤玻璃卡片 (加上 overflow: hidden 以便底部進度條貼邊) */
+    /* 調音盤玻璃卡片 (具備點擊展開/收合手勢) */
     .tuner-card {
       background: var(--card-bg);
       backdrop-filter: blur(20px);
@@ -58,12 +58,35 @@
       border: 1px solid var(--border-color);
       position: relative;
       overflow: hidden;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.3s ease;
+    }
+
+    /* 頂部展開提示箭頭 */
+    .expand-toggle-icon {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      font-size: 0.75rem;
+      color: var(--sub-text);
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease;
+    }
+
+    .tuner-card.expanded .expand-toggle-icon {
+      transform: rotate(180deg);
+      color: var(--accent-color);
     }
 
     /* 中央主角：巨大時間顯示 */
     .hero-time {
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: 0; /* 預設收合時緊湊 */
+      transition: margin-bottom 0.35s ease;
+    }
+
+    .tuner-card.expanded .hero-time {
+      margin-bottom: 24px;
     }
 
     .hero-label {
@@ -92,6 +115,25 @@
     .hero-detail {
       font-size: 0.85rem;
       color: var(--sub-text);
+      display: none; /* 預設隱藏，展開時顯示 */
+    }
+
+    .tuner-card.expanded .hero-detail {
+      display: block;
+    }
+
+    /* 可動態摺疊的擴充內容容器 */
+    .expandable-content {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
+    }
+
+    .tuner-card.expanded .expandable-content {
+      max-height: 600px;
+      opacity: 1;
+      padding-top: 10px;
     }
 
     /* 整合式控制項區域 */
@@ -179,7 +221,7 @@
       color: #cbd5e1;
     }
 
-    /* 參考 stock.html 膠囊底部的微型進度條風格 */
+    /* 貼齊卡片底部之微型進度條 (預設永恆顯示) */
     .card-progress-track {
       position: absolute;
       bottom: 0;
@@ -202,57 +244,65 @@
 <body>
 
   <div class="container">
-    <div class="tuner-card">
+    <div class="tuner-card" id="main-tuner-card" onclick="toggleCardExpand(event)">
       
-      <!-- 核心主角：退休時間 -->
+      <!-- 右上角摺疊提示箭頭 -->
+      <span class="expand-toggle-icon">▼</span>
+
+      <!-- 核心主角：距離目標年數 -->
       <div class="hero-time">
         <div class="hero-label">距離目標</div>
         <div class="hero-value" id="result-years">-- <span class="hero-unit">YEARS</span></div>
         <div class="hero-detail" id="result-months">-- 個月</div>
       </div>
 
-      <!-- 調音盤 1: 生活費 -->
-      <div class="control-row">
-        <div class="row-header" id="row_cost" data-type="cost">
-          <span class="row-title">年花費</span>
-          <input type="text" id="annual_cost" class="seamless-input" value="1,440,000" oninput="syncCostFromInput(this)">
+      <!-- 點擊後可展開顯示的細節資訊 -->
+      <div class="expandable-content" id="expandable-content">
+
+        <!-- 調音盤 1: 生活費 -->
+        <div class="control-row">
+          <div class="row-header" id="row_cost" data-type="cost">
+            <span class="row-title">年花費</span>
+            <input type="text" id="annual_cost" class="seamless-input" value="1,440,000" oninput="syncCostFromInput(this)" onclick="event.stopPropagation()">
+          </div>
         </div>
+
+        <!-- 調音盤 2: 年化報酬率 -->
+        <div class="control-row">
+          <div class="row-header" id="row_rate" data-type="rate">
+            <span class="row-title">年報酬率</span>
+            <input type="number" step="0.01" id="rate" class="seamless-input" value="7.00" oninput="syncRateFromInput(this)" onblur="formatRate(this)" onclick="event.stopPropagation()">
+          </div>
+        </div>
+
+        <!-- 調音盤 3: 每月存入 -->
+        <div class="control-row">
+          <div class="row-header" id="row_pmt" data-type="pmt">
+            <span class="row-title">月投資額</span>
+            <input type="text" id="pmt" class="seamless-input" value="13,500" oninput="syncPmtFromInput(this)" onclick="event.stopPropagation()">
+          </div>
+        </div>
+
+        <!-- 極簡無邊框流動圖表 -->
+        <div class="chart-box">
+          <canvas id="assetChart"></canvas>
+        </div>
+
+        <!-- 次要自動鎖定指標 -->
+        <div class="secondary-info">
+          <div class="info-item">
+            <span class="info-label">目前資產</span>
+            <span class="info-value" id="pv_display">$0</span>
+          </div>
+          <div class="info-item" style="text-align: right;">
+            <span class="info-label">目標金額</span>
+            <span class="info-value" id="fv_display">$0</span>
+          </div>
+        </div>
+
       </div>
 
-      <!-- 調音盤 2: 年化報酬率 -->
-      <div class="control-row">
-        <div class="row-header" id="row_rate" data-type="rate">
-          <span class="row-title">年報酬率</span>
-          <input type="number" step="0.01" id="rate" class="seamless-input" value="7.00" oninput="syncRateFromInput(this)" onblur="formatRate(this)">
-        </div>
-      </div>
-
-      <!-- 調音盤 3: 每月存入 -->
-      <div class="control-row">
-        <div class="row-header" id="row_pmt" data-type="pmt">
-          <span class="row-title">月投資額</span>
-          <input type="text" id="pmt" class="seamless-input" value="13,500" oninput="syncPmtFromInput(this)">
-        </div>
-      </div>
-
-      <!-- 極簡無邊框流動圖表 -->
-      <div class="chart-box">
-        <canvas id="assetChart"></canvas>
-      </div>
-
-      <!-- 次要自動鎖定指標 -->
-      <div class="secondary-info">
-        <div class="info-item">
-          <span class="info-label">目前資產</span>
-          <span class="info-value" id="pv_display">$0</span>
-        </div>
-        <div class="info-item" style="text-align: right;">
-          <span class="info-label">目標金額</span>
-          <span class="info-value" id="fv_display">$0</span>
-        </div>
-      </div>
-
-      <!-- 貼齊卡片底部之微型進度條 (目前資產 / 目標金額) -->
+      <!-- 貼齊卡片底部之微型進度條 (預設永恆顯示) -->
       <div class="card-progress-track">
         <div class="card-progress-fill" id="asset-progress-fill"></div>
       </div>
@@ -262,6 +312,19 @@
 
   <script>
     let assetChart = null;
+
+    // 控制卡片展開與收合
+    function toggleCardExpand(e) {
+      // 避免點擊輸入框或拖曳手勢時誤觸收合
+      if (e.target.tagName === 'INPUT' || e.target.classList.contains('seamless-input')) return;
+      const card = document.getElementById('main-tuner-card');
+      card.classList.toggle('expanded');
+
+      // 展開時如果圖表已存在，補一次 resize 確保視覺無縫適應
+      if (card.classList.contains('expanded') && assetChart) {
+        setTimeout(() => assetChart.resize(), 50);
+      }
+    }
 
     function formatNumber(num) {
       if (num === null || num === undefined || isNaN(num)) return '0';
