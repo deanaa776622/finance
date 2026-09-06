@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>資產清單與淨值</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -26,22 +26,36 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body {
-      width: 100%; min-height: 100%;
+    html {
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
       background-color: var(--bg-color);
-      color: var(--text-color);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
     body {
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
       padding: 20px;
       padding-bottom: 90px !important;
-      display: flex; flex-direction: column; align-items: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow-y: hidden; /* 預設關閉捲動 */
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
     }
 
     .container {
       width: 100%; max-width: 400px;
       position: relative; z-index: 1;
+      margin: 0;
+      transition: margin 0.3s ease;
     }
 
     /* 頂部總覽卡片 */
@@ -339,7 +353,7 @@
 </head>
 <body>
 
-  <div class="container">
+  <div class="container" id="main-container">
     
     <!-- 頂部總覽卡片 -->
     <div class="summary-card">
@@ -532,6 +546,36 @@
     let currentLevMultiple = 2;
     let currentCashMode = 'shares';
     let editingAssetId = null;
+    let canScroll = false;
+
+    // 精確檢測內容是否超出螢幕，決定滑動限制
+    function checkOverflow() {
+      setTimeout(() => {
+        const container = document.getElementById('main-container');
+        const containerRect = container.getBoundingClientRect();
+        
+        // 判定容器底端是否超過可見區域 (預留底部導覽列空間)
+        canScroll = containerRect.bottom > (window.innerHeight - 80);
+        
+        if (canScroll) {
+          document.documentElement.style.overflowY = 'auto';
+          document.body.style.overflowY = 'auto';
+        } else {
+          document.documentElement.style.overflowY = 'hidden';
+          document.body.style.overflowY = 'hidden';
+          window.scrollTo(0, 0);
+        }
+      }, 100);
+    }
+
+    // 防範 iOS 下拉/上拉橡皮筋回彈 (若抽屜開啟時允許抽屜內部滑動)
+    document.addEventListener('touchmove', function(e) {
+      const isSheetActive = document.getElementById('bottom-sheet').classList.contains('active') ||
+                            document.getElementById('ratio-sheet').classList.contains('active');
+      if (!canScroll && !isSheetActive) {
+        e.preventDefault();
+      }
+    }, { passive: false });
 
     function formatNumber(num) {
       if (!num || isNaN(num)) return '0';
@@ -552,6 +596,7 @@
       } else {
         body.classList.add('open'); arrow.classList.add('open');
       }
+      checkOverflow();
     }
 
     /* 理想比例 Bottom Sheet 邏輯 */
@@ -824,6 +869,8 @@
       if (typeof updateGlowBackground === 'function') {
         updateGlowBackground();
       }
+
+      checkOverflow();
     }
 
     function openSheet(type, evt) {
@@ -1026,7 +1073,10 @@
 
     window.onload = function() {
       renderAssets();
+      checkOverflow();
     };
+
+    window.onresize = checkOverflow;
   </script>
 
   <!-- 引入統一背景與導覽列腳本 -->
