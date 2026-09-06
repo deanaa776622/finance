@@ -1,11 +1,11 @@
 /**
- * glow.js - 超大氣場巨型 Glow 背景引擎 (GPU 硬體加速版)
+ * glow.js - 恆定全亮巨型 Glow 背景引擎 (GPU 硬體加速版)
  * 
- * 視覺與效能：
- * 1. 巨型光暈尺寸：最大尺寸升級至 680px，營造滿版極光氛圍。
- * 2. 深度漸層 Blur：高斯模糊加大至 100px，確保大尺寸光球重疊時視覺極度柔和。
- * 3. 零卡頓 GPU 加速：使用 translate3d 配合三軸不對稱 Keyframe 實現順暢漂浮。
- * 4. 完整連動邏輯：完全承襲 Target Total 達成率尺寸與獨立風控警示紅化機制。
+ * 特色：
+ * 1. 恆定全亮：光球透明度 (opacity) 固定保持在最高飽和度 (0.62)，不再隨金額減少而變暗。
+ * 2. 達成率尺寸：連動 index.html (Target Total) 與理想比例，達成率 0%~100% 動態縮放半徑 (0px ~ 680px)。
+ * 3. 獨立風控偏離警示：原型、槓桿、現金各自獨立計算偏離差距，2%~10% 獨立漸變變紅。
+ * 4. 零卡頓 GPU 漂浮：使用 translate3d 實現順暢的無規律極光漂移。
  */
 
 function updateGlowBackground() {
@@ -67,7 +67,7 @@ function updateGlowBackground() {
   const colorLev = getInterpolatedColor({ r: 74, g: 222, b: 128 }, factorLev);   // 槓桿綠 ➔ 警示紅
   const colorCash = getInterpolatedColor({ r: 250, g: 204, b: 21 }, factorCash);  // 現金黃 ➔ 警示紅
 
-  // 6. 巨型光暈尺寸 (放大至 680px)，依達成率 0%~100% 動態縮放
+  // 6. 巨型光暈尺寸 (最大 680px)，依達成率 0%~100% 動態縮放
   const maxOrbSize = 680;
 
   const sizeOrig = maxOrbSize * ratioAchieveOrig;
@@ -133,7 +133,7 @@ function updateGlowBackground() {
     document.body.prepend(glowContainer);
   }
 
-  // 9. 更新樣式 (適度將最大透明度調至 0.62，確保大尺寸光暈疊加時不遮蔽文字)
+  // 9. 套用樣式 (只要尺寸 > 0，opacity 永遠維持全亮 0.62)
   const orbOrig = document.getElementById('orb-orig');
   const orbLev = document.getElementById('orb-lev');
   const orbCash = document.getElementById('orb-cash');
@@ -142,21 +142,21 @@ function updateGlowBackground() {
     orbOrig.style.width = `${sizeOrig}px`;
     orbOrig.style.height = `${sizeOrig}px`;
     orbOrig.style.background = colorOrig;
-    orbOrig.style.opacity = (0.62 * ratioAchieveOrig).toFixed(2);
+    orbOrig.style.opacity = sizeOrig > 0 ? "0.62" : "0";
   }
 
   if (orbLev) {
     orbLev.style.width = `${sizeLev}px`;
     orbLev.style.height = `${sizeLev}px`;
     orbLev.style.background = colorLev;
-    orbLev.style.opacity = (0.62 * ratioAchieveLev).toFixed(2);
+    orbLev.style.opacity = sizeLev > 0 ? "0.62" : "0";
   }
 
   if (orbCash) {
     orbCash.style.width = `${sizeCash}px`;
     orbCash.style.height = `${sizeCash}px`;
     orbCash.style.background = colorCash;
-    orbCash.style.opacity = (0.62 * ratioAchieveCash).toFixed(2);
+    orbCash.style.opacity = sizeCash > 0 ? "0.62" : "0";
   }
 }
 
