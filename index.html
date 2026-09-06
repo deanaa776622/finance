@@ -47,7 +47,7 @@
       z-index: 1;
     }
 
-    /* 調音盤玻璃卡片 (具備點擊展開/收合手勢) */
+    /* 調音盤玻璃卡片 */
     .tuner-card {
       background: var(--card-bg);
       backdrop-filter: blur(20px);
@@ -81,7 +81,7 @@
     /* 中央主角：巨大時間顯示 */
     .hero-time {
       text-align: center;
-      margin-bottom: 0; /* 預設收合時緊湊 */
+      margin-bottom: 0;
       transition: margin-bottom 0.35s ease;
     }
 
@@ -115,7 +115,7 @@
     .hero-detail {
       font-size: 0.85rem;
       color: var(--sub-text);
-      display: none; /* 預設隱藏，展開時顯示 */
+      display: none;
     }
 
     .tuner-card.expanded .hero-detail {
@@ -187,12 +187,14 @@
       text-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
     }
 
-    /* 純淨極簡圖表容器 */
+    /* 極簡圖表容器 (長按顯現 X/Y 刻度軸) */
     .chart-box {
-      height: 110px;
+      height: 120px;
       width: 100%;
       margin-top: 15px;
       position: relative;
+      touch-action: none;
+      cursor: crosshair;
     }
 
     /* 次要自動鎖定指標 */
@@ -221,7 +223,7 @@
       color: #cbd5e1;
     }
 
-    /* 貼齊卡片底部之微型進度條 (預設永恆顯示) */
+    /* 貼齊卡片底部之微型進度條 */
     .card-progress-track {
       position: absolute;
       bottom: 0;
@@ -283,8 +285,8 @@
           </div>
         </div>
 
-        <!-- 極簡無邊框流動圖表 -->
-        <div class="chart-box">
+        <!-- 極簡圖表容器 (按住不放時顯現 X/Y 刻度軸) -->
+        <div class="chart-box" id="chart-container">
           <canvas id="assetChart"></canvas>
         </div>
 
@@ -302,7 +304,7 @@
 
       </div>
 
-      <!-- 貼齊卡片底部之微型進度條 (預設永恆顯示) -->
+      <!-- 貼齊卡片底部之微型進度條 -->
       <div class="card-progress-track">
         <div class="card-progress-fill" id="asset-progress-fill"></div>
       </div>
@@ -312,15 +314,14 @@
 
   <script>
     let assetChart = null;
+    let isChartHeld = false;
 
     // 控制卡片展開與收合
     function toggleCardExpand(e) {
-      // 避免點擊輸入框或拖曳手勢時誤觸收合
-      if (e.target.tagName === 'INPUT' || e.target.classList.contains('seamless-input')) return;
+      if (e.target.tagName === 'INPUT' || e.target.classList.contains('seamless-input') || isChartHeld) return;
       const card = document.getElementById('main-tuner-card');
       card.classList.toggle('expanded');
 
-      // 展開時如果圖表已存在，補一次 resize 確保視覺無縫適應
       if (card.classList.contains('expanded') && assetChart) {
         setTimeout(() => assetChart.resize(), 50);
       }
@@ -411,7 +412,7 @@
       const pmtVal = parseNumber(document.getElementById('pmt').value);
       const monthlyRate = annualRate / 12;
 
-      // 更新卡片底部進度條 (目前資產 / 目標金額)
+      // 更新卡片底部進度條
       const progressFill = document.getElementById('asset-progress-fill');
       if (progressFill) {
         let progressPercent = 0;
@@ -471,7 +472,7 @@
       let currentAsset = initialPv;
 
       for (let yr = 0; yr <= maxYears; yr++) {
-        labels.push(yr);
+        labels.push(`第 ${yr} 年`);
         assetData.push(Math.round(currentAsset));
 
         for (let m = 0; m < 12; m++) {
@@ -482,7 +483,7 @@
       updateChart(labels, assetData);
     }
 
-    /* 無網格極簡白色曲線圖 */
+    /* 長按切換 X/Y 刻度顯現的 Chart.js 引擎 */
     function updateChart(labels, data) {
       const ctx = document.getElementById('assetChart').getContext('2d');
 
@@ -510,27 +511,84 @@
             fill: true,
             tension: 0.4,
             pointRadius: 0,
-            pointHoverRadius: 4
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: '#ffffff'
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
           plugins: {
             legend: { display: false },
             tooltip: {
               enabled: true,
+              displayColors: false,
+              backgroundColor: 'rgba(15, 23, 42, 0.85)',
+              titleColor: '#94a3b8',
+              bodyColor: '#ffffff',
+              borderColor: 'rgba(255, 255, 255, 0.15)',
+              borderWidth: 1,
               callbacks: {
-                label: (context) => `$${formatNumber(context.raw)}`
+                label: (context) => ` 預估資產: $${formatNumber(context.raw)}`
               }
             }
           },
           scales: {
-            x: { display: false },
-            y: { display: false }
+            x: {
+              display: false, // 預設隱藏
+              grid: { color: 'rgba(255, 255, 255, 0.06)' },
+              ticks: { color: '#64748b', font: { size: 10 } }
+            },
+            y: {
+              display: false, // 預設隱藏
+              grid: { color: 'rgba(255, 255, 255, 0.06)' },
+              ticks: {
+                color: '#64748b',
+                font: { size: 10 },
+                callback: (val) => {
+                  if (val >= 1e8) return (val / 1e8).toFixed(1) + '億';
+                  if (val >= 1e4) return (val / 1e4).toFixed(0) + '萬';
+                  return val;
+                }
+              }
+            }
           }
         }
       });
+    }
+
+    // 綁定圖表長按顯現 X/Y 軸手勢
+    function setupChartHoldToReveal() {
+      const container = document.getElementById('chart-container');
+      if (!container) return;
+
+      function revealAxes(show) {
+        if (!assetChart) return;
+        isChartHeld = show;
+        assetChart.options.scales.x.display = show;
+        assetChart.options.scales.y.display = show;
+        assetChart.update('none'); // 無縫無動畫淡入刻度
+      }
+
+      function onStart(e) {
+        e.stopPropagation(); // 阻止觸發卡片收合
+        revealAxes(true);
+      }
+
+      function onEnd(e) {
+        e.stopPropagation();
+        revealAxes(false);
+      }
+
+      container.addEventListener('mousedown', onStart);
+      container.addEventListener('touchstart', onStart, { passive: true });
+      container.addEventListener('mouseup', onEnd);
+      container.addEventListener('mouseleave', onEnd);
+      container.addEventListener('touchend', onEnd);
     }
 
     // 資訊欄微幅拖曳引擎
@@ -629,6 +687,7 @@
       setupRowRelativeDrag('row_cost', 'annual_cost', 'cost');
       setupRowRelativeDrag('row_rate', 'rate', 'rate');
       setupRowRelativeDrag('row_pmt', 'pmt', 'pmt');
+      setupChartHoldToReveal();
 
       calculate();
     };
