@@ -6,6 +6,7 @@
  * 2. 達成率尺寸：連動 index.html (Target Total) 與理想比例，達成率 0%~100% 動態縮放半徑 (0px ~ 680px)。
  * 3. 獨立風控偏離警示：原型、槓桿、現金各自獨立計算偏離差距，2%~10% 獨立漸變變紅。
  * 4. 零卡頓 GPU 漂浮：使用 translate3d 實現順暢的無規律極光漂移。
+ * 5. 正確回傳 maxDiff 給 home.html 切換 BALANCED / ATTENTION 狀態。
  */
 
 function updateGlowBackground() {
@@ -158,6 +159,9 @@ function updateGlowBackground() {
     orbCash.style.background = colorCash;
     orbCash.style.opacity = sizeCash > 0 ? "0.62" : "0";
   }
+
+  // 10. 回傳三種資產類別中的最大偏離值，供 home.html 判斷是否為 ATTENTION
+  return Math.max(devOrig, devLev, devCash);
 }
 
 // 頁面載入時自動執行一次
