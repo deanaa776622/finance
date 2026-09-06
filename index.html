@@ -24,28 +24,24 @@
       padding: 0;
     }
 
-    html {
+    /* 解決 Viewport 工具列伸縮造成底條發白/位移的 CSS 設定 */
+    html, body {
       width: 100%;
-      height: 100%;
-      height: 100dvh;
-      overflow: hidden;
+      min-height: 100vh;
+      min-height: 100dvh;
       background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
     body {
-      width: 100%;
-      height: 100%;
-      height: 100dvh;
       padding: 20px;
       padding-bottom: 90px !important;
       display: flex;
       flex-direction: column;
       align-items: center;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      overflow-y: hidden; /* 預設鎖死 */
-      overscroll-behavior: none;
+      overflow-y: hidden; /* 預設鎖死上下捲動 */
+      overscroll-behavior-y: none;
       -webkit-overflow-scrolling: touch;
     }
 
@@ -54,7 +50,7 @@
       max-width: 400px;
       position: relative;
       z-index: 1;
-      margin: auto 0; /* 在沒有溢出時 vertically 居中，增加美感 */
+      margin: auto 0;
       transition: margin 0.3s ease;
     }
 
@@ -308,30 +304,27 @@
     let isAxesVisible = false;
     let canScroll = false;
 
-    // 精確檢測內容是否超出螢幕，並動態設定滑動狀態
+    // 精確檢測內容是否超出螢幕，並動態設定滑動狀態 (不改寫 html 節點)
     function checkOverflow() {
       setTimeout(() => {
         const card = document.getElementById('main-tuner-card');
         const container = document.getElementById('main-container');
         const cardRect = card.getBoundingClientRect();
         
-        // 判定卡片底端是否超過可見區域（保留 90px 導覽列空間）
         canScroll = cardRect.bottom > (window.innerHeight - 80);
         
         if (canScroll) {
-          document.documentElement.style.overflowY = 'auto';
           document.body.style.overflowY = 'auto';
-          container.style.margin = '0'; // 溢出時改為頂部對齊，以便向下滑動
+          container.style.margin = '0';
         } else {
-          document.documentElement.style.overflowY = 'hidden';
           document.body.style.overflowY = 'hidden';
-          window.scrollTo(0, 0); // 還原捲動位置
-          container.style.margin = 'auto 0'; // 未溢出時彈性垂直居中
+          window.scrollTo(0, 0);
+          container.style.margin = 'auto 0';
         }
       }, 360);
     }
 
-    // 防範 iOS 下拉/上拉橡皮筋回彈
+    // 防範未溢出時的橡皮筋回彈
     document.addEventListener('touchmove', function(e) {
       if (!canScroll) {
         e.preventDefault();
