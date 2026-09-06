@@ -12,7 +12,7 @@
     :root {
       --bg-color: #0f172a;
       --card-bg: rgba(30, 41, 59, 0.45);
-      --accent-color: #38bdf8;
+      --accent-color: #ffffff; /* 改為高質感亮白 */
       --text-color: #f8fafc;
       --sub-text: #64748b;
       --border-color: rgba(255, 255, 255, 0.08);
@@ -76,7 +76,7 @@
       font-size: 3.2rem;
       font-weight: 700;
       color: var(--accent-color);
-      text-shadow: 0 0 24px rgba(56, 189, 248, 0.45);
+      text-shadow: 0 0 24px rgba(255, 255, 255, 0.45);
       margin: 4px 0;
       line-height: 1.1;
     }
@@ -135,13 +135,13 @@
 
     .seamless-input:focus {
       color: var(--accent-color);
-      text-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
     }
 
-    /* 拖曳操作時，文字呈現亮藍光暈與微微縮放效果 */
+    /* 拖曳操作時，文字呈現白色亮光與微影效果 */
     .row-header.active .seamless-input {
       color: var(--accent-color);
-      text-shadow: 0 0 12px rgba(56, 189, 248, 0.7);
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
     }
 
     /* 純淨極簡圖表容器 */
@@ -384,7 +384,7 @@
       updateChart(labels, assetData);
     }
 
-    /* 無網格極簡曲線圖 */
+    /* 無網格極簡白色曲線圖 */
     function updateChart(labels, data) {
       const ctx = document.getElementById('assetChart').getContext('2d');
 
@@ -400,13 +400,13 @@
           labels: labels,
           datasets: [{
             data: data,
-            borderColor: '#38bdf8',
+            borderColor: '#ffffff', // 改為高質感白色
             borderWidth: 2,
             backgroundColor: (context) => {
               const bgCtx = context.chart.ctx;
               const gradient = bgCtx.createLinearGradient(0, 0, 0, 100);
-              gradient.addColorStop(0, 'rgba(56, 189, 248, 0.25)');
-              gradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+              gradient.addColorStop(0, 'rgba(255, 255, 255, 0.20)'); // 白色半透明漸層
+              gradient.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
               return gradient;
             },
             fill: true,
@@ -435,7 +435,7 @@
       });
     }
 
-    // 資訊欄直接相容微幅拖曳與輸入手勢引擎
+    // 資訊欄微幅拖曳引擎
     function setupRowRelativeDrag(rowId, inputId, type) {
       const row = document.getElementById(rowId);
       const input = document.getElementById(inputId);
@@ -448,7 +448,6 @@
       let hasMoved = false;
 
       function onPointerDown(e) {
-        // 若使用者正在點擊 input 準備打字，不觸發拖曳
         if (e.target === input && document.activeElement === input) return;
 
         isDragging = true;
@@ -474,7 +473,6 @@
         const currentX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
         const deltaX = currentX - startX;
 
-        // 當移動距離超過 5px，判定為手勢拖曳，取消預設點擊事件
         if (Math.abs(deltaX) > 5) {
           hasMoved = true;
           if (e.cancelable) e.preventDefault();
@@ -530,7 +528,6 @@
         document.getElementById('pmt').value = formatNumber(savedPmt);
       }
 
-      // 將三個欄位綁定無痕相對拖曳手勢
       setupRowRelativeDrag('row_cost', 'annual_cost', 'cost');
       setupRowRelativeDrag('row_rate', 'rate', 'rate');
       setupRowRelativeDrag('row_pmt', 'pmt', 'pmt');
