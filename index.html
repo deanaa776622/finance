@@ -38,6 +38,9 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      /* 預設關閉捲動，僅在內容溢出時由 JS 開啟 */
+      overflow-y: hidden;
+      overscroll-behavior-y: none;
     }
 
     .container {
@@ -296,6 +299,14 @@
     let assetChart = null;
     let isAxesVisible = false;
 
+    // 動態檢查內容是否超出瀏覽器高度，決定是否開放上下捲動
+    function checkOverflow() {
+      setTimeout(() => {
+        const hasOverflow = document.documentElement.scrollHeight > window.innerHeight;
+        document.body.style.overflowY = hasOverflow ? 'auto' : 'hidden';
+      }, 350); // 配合 CSS 展開動畫時間
+    }
+
     // 僅由「最上方達標年份資訊 (.hero-time)」觸發展開/縮起
     function toggleCardExpand(e) {
       if (e) e.stopPropagation();
@@ -305,6 +316,8 @@
       if (card.classList.contains('expanded') && assetChart) {
         setTimeout(() => assetChart.resize(), 50);
       }
+
+      checkOverflow();
     }
 
     // 點擊圖表切換顯示/隱藏 X 與 Y 軸刻度
@@ -650,7 +663,10 @@
       setupRowRelativeDrag('row_pmt', 'pmt', 'pmt');
 
       calculate();
+      checkOverflow();
     };
+
+    window.onresize = checkOverflow;
   </script>
 
   <!-- 引入統一背景與導覽列腳本 -->
