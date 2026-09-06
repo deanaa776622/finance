@@ -92,16 +92,21 @@
       color: var(--sub-text);
     }
 
-    /* 控制項區域 */
+    /* 整合式控制項區域 (不佔額外垂直空間) */
     .control-row {
-      margin-bottom: 20px;
+      margin-bottom: 18px;
+      position: relative;
     }
 
     .row-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 6px;
+      padding: 6px 0;
+      position: relative;
+      cursor: ew-resize; /* 指示可左右拖曳 */
+      touch-action: none;
+      user-select: none;
     }
 
     .row-title {
@@ -109,6 +114,7 @@
       font-weight: 500;
       color: var(--sub-text);
       letter-spacing: 0.05em;
+      pointer-events: none;
     }
 
     /* 去邊框無痕輸入框 */
@@ -123,6 +129,8 @@
       outline: none;
       font-family: inherit;
       transition: color 0.3s ease, text-shadow 0.3s ease;
+      position: relative;
+      z-index: 2;
     }
 
     .seamless-input:focus {
@@ -130,45 +138,10 @@
       text-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
     }
 
-    /* 相對滑動控制區域 (無進度條概念) */
-    .relative-slider-track {
-      width: 100%;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      cursor: grab;
-      touch-action: none;
-      user-select: none;
-    }
-
-    .relative-slider-track:active {
-      cursor: grabbing;
-    }
-
-    /* 靜態中央極簡小光點 */
-    .relative-slider-thumb {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent-color);
-      opacity: 0.65;
-      box-shadow: 0 0 8px var(--accent-color);
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease, box-shadow 0.2s ease, width 0.2s ease, height 0.2s ease;
-      pointer-events: none;
-    }
-
-    /* 拖曳中：光點放大閃耀 */
-    .relative-slider-track.active .relative-slider-thumb {
-      width: 14px;
-      height: 14px;
-      opacity: 1;
-      box-shadow: 0 0 16px var(--accent-color), 0 0 28px rgba(56, 189, 248, 0.7);
-      transition: none; /* 拖曳時即時跟隨，不設 transition delay */
+    /* 拖曳操作時，文字呈現亮藍光暈與微微縮放效果 */
+    .row-header.active .seamless-input {
+      color: var(--accent-color);
+      text-shadow: 0 0 12px rgba(56, 189, 248, 0.7);
     }
 
     /* 純淨極簡圖表容器 */
@@ -179,7 +152,7 @@
       position: relative;
     }
 
-    /* 次要指標收納區 */
+    /* 次要自動鎖定指標 */
     .secondary-info {
       display: flex;
       justify-content: space-between;
@@ -218,36 +191,27 @@
         <div class="hero-detail" id="result-months">-- 個月</div>
       </div>
 
-      <!-- 調音盤 1: 生活費 -->
+      <!-- 調音盤 1: 生活費 (拖曳整列或數字即可調整) -->
       <div class="control-row">
-        <div class="row-header">
+        <div class="row-header" id="row_cost" data-type="cost">
           <span class="row-title">年花費</span>
           <input type="text" id="annual_cost" class="seamless-input" value="1,440,000" oninput="syncCostFromInput(this)">
-        </div>
-        <div class="relative-slider-track" id="track_cost" data-type="cost">
-          <div class="relative-slider-thumb" id="thumb_cost"></div>
         </div>
       </div>
 
       <!-- 調音盤 2: 年化報酬率 -->
       <div class="control-row">
-        <div class="row-header">
+        <div class="row-header" id="row_rate" data-type="rate">
           <span class="row-title">年報酬率</span>
           <input type="number" step="0.01" id="rate" class="seamless-input" value="7.00" oninput="syncRateFromInput(this)" onblur="formatRate(this)">
-        </div>
-        <div class="relative-slider-track" id="track_rate" data-type="rate">
-          <div class="relative-slider-thumb" id="thumb_rate"></div>
         </div>
       </div>
 
       <!-- 調音盤 3: 每月存入 -->
       <div class="control-row">
-        <div class="row-header">
+        <div class="row-header" id="row_pmt" data-type="pmt">
           <span class="row-title">月投資額</span>
           <input type="text" id="pmt" class="seamless-input" value="13,500" oninput="syncPmtFromInput(this)">
-        </div>
-        <div class="relative-slider-track" id="track_pmt" data-type="pmt">
-          <div class="relative-slider-thumb" id="thumb_pmt"></div>
         </div>
       </div>
 
@@ -471,29 +435,33 @@
       });
     }
 
-    // 無邊界相對滑動引擎 (Relative Infinite Slider Engine)
-    function setupRelativeSlider(trackId, thumbId, inputId, type) {
-      const track = document.getElementById(trackId);
-      const thumb = document.getElementById(thumbId);
+    // 資訊欄直接相容微幅拖曳與輸入手勢引擎
+    function setupRowRelativeDrag(rowId, inputId, type) {
+      const row = document.getElementById(rowId);
       const input = document.getElementById(inputId);
 
-      if (!track || !thumb || !input) return;
+      if (!row || !input) return;
 
       let isDragging = false;
       let startX = 0;
       let initialValue = 0;
+      let hasMoved = false;
 
       function onPointerDown(e) {
+        // 若使用者正在點擊 input 準備打字，不觸發拖曳
+        if (e.target === input && document.activeElement === input) return;
+
         isDragging = true;
+        hasMoved = false;
         startX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
-        
+
         if (type === 'cost' || type === 'pmt') {
           initialValue = parseNumber(input.value);
         } else if (type === 'rate') {
           initialValue = parseFloat(input.value) || 0;
         }
 
-        track.classList.add('active');
+        row.classList.add('active');
         document.addEventListener('mousemove', onPointerMove);
         document.addEventListener('touchmove', onPointerMove, { passive: false });
         document.addEventListener('mouseup', onPointerUp);
@@ -502,30 +470,29 @@
 
       function onPointerMove(e) {
         if (!isDragging) return;
-        if (e.cancelable) e.preventDefault();
 
         const currentX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
         const deltaX = currentX - startX;
 
-        // 計算視覺光點相對位移（限制在 -100px 到 100px 之間，給予彈性回饋）
-        const clampedDeltaX = Math.max(-100, Math.min(100, deltaX));
-        thumb.style.transform = `translate(calc(-50% + ${clampedDeltaX}px), -50%)`;
+        // 當移動距離超過 5px，判定為手勢拖曳，取消預設點擊事件
+        if (Math.abs(deltaX) > 5) {
+          hasMoved = true;
+          if (e.cancelable) e.preventDefault();
+        }
 
-        // 依據拖曳距離與類型動態調整金額增量
+        if (!hasMoved) return;
+
         if (type === 'cost') {
-          // 年花費：每 1px 約代表 10,000 元（帶加速曲線）
           const step = 10000;
-          const change = Math.round((deltaX * step) / 10) * 10;
+          const change = Math.round((deltaX * step) / 12) * 10;
           let newValue = Math.max(0, initialValue + change);
           input.value = formatNumber(newValue);
         } else if (type === 'pmt') {
-          // 月存入：每 1px 約代表 1,000 元
           const step = 1000;
-          const change = Math.round((deltaX * step) / 10) * 10;
+          const change = Math.round((deltaX * step) / 12) * 10;
           let newValue = Math.max(0, initialValue + change);
           input.value = formatNumber(newValue);
         } else if (type === 'rate') {
-          // 年報酬率：每 10px 約代表 0.1%
           const change = (deltaX * 0.02);
           let newValue = Math.max(0, Math.min(100, initialValue + change));
           input.value = newValue.toFixed(2);
@@ -537,10 +504,7 @@
       function onPointerUp() {
         if (!isDragging) return;
         isDragging = false;
-        track.classList.remove('active');
-
-        // 放開後光點自動柔和彈回正中央 (50%)
-        thumb.style.transform = 'translateX(-50%)';
+        row.classList.remove('active');
 
         document.removeEventListener('mousemove', onPointerMove);
         document.removeEventListener('touchmove', onPointerMove);
@@ -548,8 +512,8 @@
         document.removeEventListener('touchend', onPointerUp);
       }
 
-      track.addEventListener('mousedown', onPointerDown);
-      track.addEventListener('touchstart', onPointerDown, { passive: true });
+      row.addEventListener('mousedown', onPointerDown);
+      row.addEventListener('touchstart', onPointerDown, { passive: true });
     }
 
     window.onload = function() {
@@ -566,10 +530,10 @@
         document.getElementById('pmt').value = formatNumber(savedPmt);
       }
 
-      // 初始化三個相對滑動手感引擎
-      setupRelativeSlider('track_cost', 'thumb_cost', 'annual_cost', 'cost');
-      setupRelativeSlider('track_rate', 'thumb_rate', 'rate', 'rate');
-      setupRelativeSlider('track_pmt', 'thumb_pmt', 'pmt', 'pmt');
+      // 將三個欄位綁定無痕相對拖曳手勢
+      setupRowRelativeDrag('row_cost', 'annual_cost', 'cost');
+      setupRowRelativeDrag('row_rate', 'rate', 'rate');
+      setupRowRelativeDrag('row_pmt', 'pmt', 'pmt');
 
       calculate();
     };
