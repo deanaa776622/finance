@@ -12,7 +12,7 @@
     :root {
       --bg-color: #0f172a;
       --card-bg: rgba(30, 41, 59, 0.45);
-      --accent-color: #ffffff; /* 改為高質感亮白 */
+      --accent-color: #ffffff; /* 高質感亮白 */
       --text-color: #f8fafc;
       --sub-text: #64748b;
       --border-color: rgba(255, 255, 255, 0.08);
@@ -92,7 +92,7 @@
       color: var(--sub-text);
     }
 
-    /* 整合式控制項區域 (不佔額外垂直空間) */
+    /* 整合式控制項區域 */
     .control-row {
       margin-bottom: 18px;
       position: relative;
@@ -104,7 +104,7 @@
       align-items: center;
       padding: 6px 0;
       position: relative;
-      cursor: ew-resize; /* 指示可左右拖曳 */
+      cursor: ew-resize;
       touch-action: none;
       user-select: none;
     }
@@ -138,7 +138,6 @@
       text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
     }
 
-    /* 拖曳操作時，文字呈現白色亮光與微影效果 */
     .row-header.active .seamless-input {
       color: var(--accent-color);
       text-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
@@ -152,7 +151,7 @@
       position: relative;
     }
 
-    /* 次要自動鎖定指標 */
+    /* 次要自動鎖定指標 (已將位置對調) */
     .secondary-info {
       display: flex;
       justify-content: space-between;
@@ -191,7 +190,7 @@
         <div class="hero-detail" id="result-months">-- 個月</div>
       </div>
 
-      <!-- 調音盤 1: 生活費 (拖曳整列或數字即可調整) -->
+      <!-- 調音盤 1: 生活費 -->
       <div class="control-row">
         <div class="row-header" id="row_cost" data-type="cost">
           <span class="row-title">年花費</span>
@@ -220,15 +219,15 @@
         <canvas id="assetChart"></canvas>
       </div>
 
-      <!-- 次要自動鎖定指標 -->
+      <!-- 次要自動鎖定指標 (對調後：目前資產在左，目標金額在右) -->
       <div class="secondary-info">
         <div class="info-item">
-          <span class="info-label">目標金額</span>
-          <span class="info-value" id="fv_display">$0</span>
-        </div>
-        <div class="info-item" style="text-align: right;">
           <span class="info-label">目前資產</span>
           <span class="info-value" id="pv_display">$0</span>
+        </div>
+        <div class="info-item" style="text-align: right;">
+          <span class="info-label">目標金額</span>
+          <span class="info-value" id="fv_display">$0</span>
         </div>
       </div>
 
@@ -400,12 +399,12 @@
           labels: labels,
           datasets: [{
             data: data,
-            borderColor: '#ffffff', // 改為高質感白色
+            borderColor: '#ffffff',
             borderWidth: 2,
             backgroundColor: (context) => {
               const bgCtx = context.chart.ctx;
               const gradient = bgCtx.createLinearGradient(0, 0, 0, 100);
-              gradient.addColorStop(0, 'rgba(255, 255, 255, 0.20)'); // 白色半透明漸層
+              gradient.addColorStop(0, 'rgba(255, 255, 255, 0.20)');
               gradient.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
               return gradient;
             },
