@@ -187,14 +187,13 @@
       text-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
     }
 
-    /* 極簡圖表容器 (長按顯現 X/Y 刻度軸) */
+    /* 極簡圖表容器 (點擊切換顯現 X/Y 刻度軸) */
     .chart-box {
       height: 120px;
       width: 100%;
       margin-top: 15px;
       position: relative;
-      touch-action: none;
-      cursor: crosshair;
+      cursor: pointer;
     }
 
     /* 次要自動鎖定指標 */
@@ -285,8 +284,8 @@
           </div>
         </div>
 
-        <!-- 極簡圖表容器 (按住不放時顯現 X/Y 刻度軸) -->
-        <div class="chart-box" id="chart-container">
+        <!-- 極簡圖表容器 (點擊切換顯示 X/Y 刻度軸) -->
+        <div class="chart-box" id="chart-container" onclick="toggleChartAxes(event)">
           <canvas id="assetChart"></canvas>
         </div>
 
@@ -314,17 +313,28 @@
 
   <script>
     let assetChart = null;
-    let isChartHeld = false;
+    let isAxesVisible = false;
 
     // 控制卡片展開與收合
     function toggleCardExpand(e) {
-      if (e.target.tagName === 'INPUT' || e.target.classList.contains('seamless-input') || isChartHeld) return;
+      if (e.target.tagName === 'INPUT' || e.target.classList.contains('seamless-input')) return;
       const card = document.getElementById('main-tuner-card');
       card.classList.toggle('expanded');
 
       if (card.classList.contains('expanded') && assetChart) {
         setTimeout(() => assetChart.resize(), 50);
       }
+    }
+
+    // 點擊圖表切換顯示/隱藏 X 與 Y 軸刻度
+    function toggleChartAxes(e) {
+      e.stopPropagation(); // 阻止觸發卡片收合
+      if (!assetChart) return;
+      
+      isAxesVisible = !isAxesVisible;
+      assetChart.options.scales.x.display = isAxesVisible;
+      assetChart.options.scales.y.display = isAxesVisible;
+      assetChart.update('none'); // 無縫淡入淡出，不重新跑動態畫
     }
 
     function formatNumber(num) {
@@ -483,7 +493,7 @@
       updateChart(labels, assetData);
     }
 
-    /* 長按切換 X/Y 刻度顯現的 Chart.js 引擎 */
+    /* 支援點擊切換刻度軸顯現的 Chart.js 繪製函式 */
     function updateChart(labels, data) {
       const ctx = document.getElementById('assetChart').getContext('2d');
 
@@ -539,12 +549,12 @@
           },
           scales: {
             x: {
-              display: false, // 預設隱藏
+              display: isAxesVisible,
               grid: { color: 'rgba(255, 255, 255, 0.06)' },
               ticks: { color: '#64748b', font: { size: 10 } }
             },
             y: {
-              display: false, // 預設隱藏
+              display: isAxesVisible,
               grid: { color: 'rgba(255, 255, 255, 0.06)' },
               ticks: {
                 color: '#64748b',
@@ -559,36 +569,6 @@
           }
         }
       });
-    }
-
-    // 綁定圖表長按顯現 X/Y 軸手勢
-    function setupChartHoldToReveal() {
-      const container = document.getElementById('chart-container');
-      if (!container) return;
-
-      function revealAxes(show) {
-        if (!assetChart) return;
-        isChartHeld = show;
-        assetChart.options.scales.x.display = show;
-        assetChart.options.scales.y.display = show;
-        assetChart.update('none'); // 無縫無動畫淡入刻度
-      }
-
-      function onStart(e) {
-        e.stopPropagation(); // 阻止觸發卡片收合
-        revealAxes(true);
-      }
-
-      function onEnd(e) {
-        e.stopPropagation();
-        revealAxes(false);
-      }
-
-      container.addEventListener('mousedown', onStart);
-      container.addEventListener('touchstart', onStart, { passive: true });
-      container.addEventListener('mouseup', onEnd);
-      container.addEventListener('mouseleave', onEnd);
-      container.addEventListener('touchend', onEnd);
     }
 
     // 資訊欄微幅拖曳引擎
@@ -687,7 +667,6 @@
       setupRowRelativeDrag('row_cost', 'annual_cost', 'cost');
       setupRowRelativeDrag('row_rate', 'rate', 'rate');
       setupRowRelativeDrag('row_pmt', 'pmt', 'pmt');
-      setupChartHoldToReveal();
 
       calculate();
     };
