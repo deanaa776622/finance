@@ -130,55 +130,45 @@
       text-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
     }
 
-    /* 隱藏式極簡拉霸容器 */
-    .slider-wrapper {
+    /* 相對滑動控制區域 (無進度條概念) */
+    .relative-slider-track {
       width: 100%;
-      height: 16px;
+      height: 20px;
       display: flex;
       align-items: center;
+      justify-content: center;
       position: relative;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
     }
 
-    input[type="range"] {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 100%;
-      height: 2px;
-      border-radius: 1px;
-      /* 預設完全透明，不顯示橫條 */
-      background: transparent !important;
-      outline: none;
-      transition: background 0.3s ease, height 0.2s ease;
-      cursor: pointer;
+    .relative-slider-track:active {
+      cursor: grabbing;
     }
 
-    /* 懸停或拖曳時，軌道才顯現出來 */
-    .slider-wrapper:hover input[type="range"],
-    input[type="range"]:active {
-      height: 4px;
-    }
-
-    /* 控制點 (Thumb)：預設僅顯示微光小點 */
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
+    /* 靜態中央極簡小光點 */
+    .relative-slider-thumb {
       width: 8px;
       height: 8px;
       border-radius: 50%;
       background: var(--accent-color);
       opacity: 0.65;
       box-shadow: 0 0 8px var(--accent-color);
-      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease, box-shadow 0.25s ease, width 0.25s ease, height 0.25s ease;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease, box-shadow 0.2s ease, width 0.2s ease, height 0.2s ease;
+      pointer-events: none;
     }
 
-    /* 拖曳/按住/Hover 時：微光點變大發光 */
-    .slider-wrapper:hover input[type="range"]::-webkit-slider-thumb,
-    input[type="range"]:active::-webkit-slider-thumb {
-      width: 16px;
-      height: 16px;
+    /* 拖曳中：光點放大閃耀 */
+    .relative-slider-track.active .relative-slider-thumb {
+      width: 14px;
+      height: 14px;
       opacity: 1;
-      box-shadow: 0 0 16px var(--accent-color), 0 0 32px rgba(56, 189, 248, 0.6);
-      transform: scale(1.2);
+      box-shadow: 0 0 16px var(--accent-color), 0 0 28px rgba(56, 189, 248, 0.7);
+      transition: none; /* 拖曳時即時跟隨，不設 transition delay */
     }
 
     /* 純淨極簡圖表容器 */
@@ -234,8 +224,8 @@
           <span class="row-title">年花費</span>
           <input type="text" id="annual_cost" class="seamless-input" value="1,440,000" oninput="syncCostFromInput(this)">
         </div>
-        <div class="slider-wrapper">
-          <input type="range" id="annual_cost_slider" min="0" max="10000000" step="10000" value="1440000" oninput="syncCostFromSlider(this)">
+        <div class="relative-slider-track" id="track_cost" data-type="cost">
+          <div class="relative-slider-thumb" id="thumb_cost"></div>
         </div>
       </div>
 
@@ -245,8 +235,8 @@
           <span class="row-title">年報酬率</span>
           <input type="number" step="0.01" id="rate" class="seamless-input" value="7.00" oninput="syncRateFromInput(this)" onblur="formatRate(this)">
         </div>
-        <div class="slider-wrapper">
-          <input type="range" id="rate_slider" min="0" max="50" step="0.1" value="7.00" oninput="syncRateFromSlider(this)">
+        <div class="relative-slider-track" id="track_rate" data-type="rate">
+          <div class="relative-slider-thumb" id="thumb_rate"></div>
         </div>
       </div>
 
@@ -256,8 +246,8 @@
           <span class="row-title">月投資額</span>
           <input type="text" id="pmt" class="seamless-input" value="13,500" oninput="syncPmtFromInput(this)">
         </div>
-        <div class="slider-wrapper">
-          <input type="range" id="pmt_slider" min="0" max="1000000" step="1000" value="13500" oninput="syncPmtFromSlider(this)">
+        <div class="relative-slider-track" id="track_pmt" data-type="pmt">
+          <div class="relative-slider-thumb" id="thumb_pmt"></div>
         </div>
       </div>
 
@@ -284,19 +274,6 @@
   <script>
     let assetChart = null;
 
-    // 僅在操作中/懸停時更新背景 Track 顏色
-    function updateSliderTrack(slider, isInteracting = true) {
-      if (!isInteracting) {
-        slider.style.background = 'transparent';
-        return;
-      }
-      const min = parseFloat(slider.min) || 0;
-      const max = parseFloat(slider.max) || 100;
-      const val = parseFloat(slider.value) || 0;
-      const percentage = ((val - min) / (max - min)) * 100;
-      slider.style.background = `linear-gradient(to right, rgba(56, 189, 248, 0.85) 0%, rgba(56, 189, 248, 0.85) ${percentage}%, rgba(255, 255, 255, 0.08) ${percentage}%, rgba(255, 255, 255, 0.08) 100%)`;
-    }
-
     function formatNumber(num) {
       if (num === null || num === undefined || isNaN(num)) return '0';
       return Number(Math.round(num)).toLocaleString('en-US');
@@ -309,52 +286,23 @@
 
     function syncCostFromInput(input) {
       let rawValue = parseNumber(input.value);
-      if (rawValue > 10000000) rawValue = 10000000;
       input.value = rawValue ? rawValue.toLocaleString('en-US') : (input.value === '0' ? '0' : '');
-      const slider = document.getElementById('annual_cost_slider');
-      slider.value = rawValue;
-      calculate();
-    }
-
-    function syncCostFromSlider(slider) {
-      const val = parseFloat(slider.value) || 0;
-      document.getElementById('annual_cost').value = formatNumber(val);
-      updateSliderTrack(slider, true);
       calculate();
     }
 
     function syncRateFromInput(input) {
       let val = parseFloat(input.value);
       if (isNaN(val)) val = 0;
-      if (val > 50) {
-        val = 50;
-        input.value = "50";
+      if (val > 100) {
+        val = 100;
+        input.value = "100";
       }
-      const slider = document.getElementById('rate_slider');
-      slider.value = val;
-      calculate();
-    }
-
-    function syncRateFromSlider(slider) {
-      const val = parseFloat(slider.value) || 0;
-      document.getElementById('rate').value = val.toFixed(2);
-      updateSliderTrack(slider, true);
       calculate();
     }
 
     function syncPmtFromInput(input) {
       let rawValue = parseNumber(input.value);
-      if (rawValue > 1000000) rawValue = 1000000;
       input.value = rawValue ? rawValue.toLocaleString('en-US') : (input.value === '0' ? '0' : '');
-      const slider = document.getElementById('pmt_slider');
-      slider.value = rawValue;
-      calculate();
-    }
-
-    function syncPmtFromSlider(slider) {
-      const val = parseFloat(slider.value) || 0;
-      document.getElementById('pmt').value = formatNumber(val);
-      updateSliderTrack(slider, true);
       calculate();
     }
 
@@ -362,8 +310,6 @@
       let value = parseFloat(input.value);
       if (!isNaN(value)) {
         input.value = value.toFixed(2);
-        const slider = document.getElementById('rate_slider');
-        slider.value = value;
       }
     }
 
@@ -525,34 +471,105 @@
       });
     }
 
+    // 無邊界相對滑動引擎 (Relative Infinite Slider Engine)
+    function setupRelativeSlider(trackId, thumbId, inputId, type) {
+      const track = document.getElementById(trackId);
+      const thumb = document.getElementById(thumbId);
+      const input = document.getElementById(inputId);
+
+      if (!track || !thumb || !input) return;
+
+      let isDragging = false;
+      let startX = 0;
+      let initialValue = 0;
+
+      function onPointerDown(e) {
+        isDragging = true;
+        startX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+        
+        if (type === 'cost' || type === 'pmt') {
+          initialValue = parseNumber(input.value);
+        } else if (type === 'rate') {
+          initialValue = parseFloat(input.value) || 0;
+        }
+
+        track.classList.add('active');
+        document.addEventListener('mousemove', onPointerMove);
+        document.addEventListener('touchmove', onPointerMove, { passive: false });
+        document.addEventListener('mouseup', onPointerUp);
+        document.addEventListener('touchend', onPointerUp);
+      }
+
+      function onPointerMove(e) {
+        if (!isDragging) return;
+        if (e.cancelable) e.preventDefault();
+
+        const currentX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+        const deltaX = currentX - startX;
+
+        // 計算視覺光點相對位移（限制在 -100px 到 100px 之間，給予彈性回饋）
+        const clampedDeltaX = Math.max(-100, Math.min(100, deltaX));
+        thumb.style.transform = `translate(calc(-50% + ${clampedDeltaX}px), -50%)`;
+
+        // 依據拖曳距離與類型動態調整金額增量
+        if (type === 'cost') {
+          // 年花費：每 1px 約代表 10,000 元（帶加速曲線）
+          const step = 10000;
+          const change = Math.round((deltaX * step) / 10) * 10;
+          let newValue = Math.max(0, initialValue + change);
+          input.value = formatNumber(newValue);
+        } else if (type === 'pmt') {
+          // 月存入：每 1px 約代表 1,000 元
+          const step = 1000;
+          const change = Math.round((deltaX * step) / 10) * 10;
+          let newValue = Math.max(0, initialValue + change);
+          input.value = formatNumber(newValue);
+        } else if (type === 'rate') {
+          // 年報酬率：每 10px 約代表 0.1%
+          const change = (deltaX * 0.02);
+          let newValue = Math.max(0, Math.min(100, initialValue + change));
+          input.value = newValue.toFixed(2);
+        }
+
+        calculate();
+      }
+
+      function onPointerUp() {
+        if (!isDragging) return;
+        isDragging = false;
+        track.classList.remove('active');
+
+        // 放開後光點自動柔和彈回正中央 (50%)
+        thumb.style.transform = 'translateX(-50%)';
+
+        document.removeEventListener('mousemove', onPointerMove);
+        document.removeEventListener('touchmove', onPointerMove);
+        document.removeEventListener('mouseup', onPointerUp);
+        document.removeEventListener('touchend', onPointerUp);
+      }
+
+      track.addEventListener('mousedown', onPointerDown);
+      track.addEventListener('touchstart', onPointerDown, { passive: true });
+    }
+
     window.onload = function() {
       if (localStorage.getItem('sav_annual_cost')) {
         const savedCost = parseNumber(localStorage.getItem('sav_annual_cost'));
         document.getElementById('annual_cost').value = formatNumber(savedCost);
-        document.getElementById('annual_cost_slider').value = savedCost;
       }
       if (localStorage.getItem('sav_rate')) {
         const savedRate = parseFloat(localStorage.getItem('sav_rate')) || 0;
         document.getElementById('rate').value = savedRate.toFixed(2);
-        document.getElementById('rate_slider').value = savedRate;
       }
       if (localStorage.getItem('sav_pmt')) {
         const savedPmt = parseNumber(localStorage.getItem('sav_pmt'));
         document.getElementById('pmt').value = formatNumber(savedPmt);
-        document.getElementById('pmt_slider').value = savedPmt;
       }
 
-      // 監聽按壓/放開事件，離開時還原為透明
-      ['annual_cost_slider', 'rate_slider', 'pmt_slider'].forEach(id => {
-        const s = document.getElementById(id);
-        if (s) {
-          s.addEventListener('mousedown', () => updateSliderTrack(s, true));
-          s.addEventListener('touchstart', () => updateSliderTrack(s, true));
-          s.addEventListener('mouseleave', () => updateSliderTrack(s, false));
-          s.addEventListener('touchend', () => updateSliderTrack(s, false));
-          s.addEventListener('mouseup', () => updateSliderTrack(s, false));
-        }
-      });
+      // 初始化三個相對滑動手感引擎
+      setupRelativeSlider('track_cost', 'thumb_cost', 'annual_cost', 'cost');
+      setupRelativeSlider('track_rate', 'thumb_rate', 'rate', 'rate');
+      setupRelativeSlider('track_pmt', 'thumb_pmt', 'pmt', 'pmt');
 
       calculate();
     };
