@@ -60,24 +60,6 @@
       overflow: hidden;
     }
 
-    /* 頂部展開提示箭頭 (可點擊) */
-    .expand-toggle-icon {
-      position: absolute;
-      top: 20px;
-      right: 24px;
-      font-size: 0.75rem;
-      color: var(--sub-text);
-      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease;
-      cursor: pointer;
-      z-index: 3;
-      padding: 8px;
-    }
-
-    .tuner-card.expanded .expand-toggle-icon {
-      transform: rotate(180deg);
-      color: var(--accent-color);
-    }
-
     /* 中央主角：巨大時間顯示 (專職負責展開/縮起點擊) */
     .hero-time {
       text-align: center;
@@ -248,18 +230,15 @@
 
   <div class="container">
     <div class="tuner-card" id="main-tuner-card">
-      
-      <!-- 右上角摺疊提示箭頭 (專屬點擊展開/縮起) -->
-      <span class="expand-toggle-icon" onclick="toggleCardExpand(event)">▼</span>
 
-      <!-- 核心主角：距離目標年數 (專屬點擊展開/縮起) -->
+      <!-- 核心主角：距離目標年數 (點擊控制展開/縮起) -->
       <div class="hero-time" onclick="toggleCardExpand(event)">
         <div class="hero-label">距離目標</div>
         <div class="hero-value" id="result-years">-- <span class="hero-unit">YEARS</span></div>
         <div class="hero-detail" id="result-months">-- 個月</div>
       </div>
 
-      <!-- 點擊後可展開顯示的細節資訊 (獨立區域，不觸發卡片縮起) -->
+      <!-- 點擊後可展開顯示的細節資訊 -->
       <div class="expandable-content" id="expandable-content">
 
         <!-- 調音盤 1: 生活費 -->
@@ -317,7 +296,7 @@
     let assetChart = null;
     let isAxesVisible = false;
 
-    // 僅由「最上方達標年份資訊 (.hero-time)」與「右上角箭頭」觸發展開/縮起
+    // 僅由「最上方達標年份資訊 (.hero-time)」觸發展開/縮起
     function toggleCardExpand(e) {
       if (e) e.stopPropagation();
       const card = document.getElementById('main-tuner-card');
