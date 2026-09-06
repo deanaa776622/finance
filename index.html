@@ -11,11 +11,11 @@
   <style>
     :root {
       --bg-color: #0f172a;
-      --card-bg: rgba(30, 41, 59, 0.45);
+      --card-bg: rgba(15, 23, 42, 0.65);
       --accent-color: #38bdf8;
       --text-color: #f8fafc;
-      --sub-text: #64748b;
-      --border-color: rgba(255, 255, 255, 0.08);
+      --sub-text: #cbd5e1;
+      --border-color: rgba(255, 255, 255, 0.12);
     }
 
     * {
@@ -50,11 +50,11 @@
     /* 調音盤玻璃卡片 */
     .tuner-card {
       background: var(--card-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
       border-radius: 28px;
       padding: 28px 24px 20px 24px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
       border: 1px solid var(--border-color);
     }
 
@@ -70,6 +70,7 @@
       letter-spacing: 0.2em;
       color: var(--sub-text);
       text-transform: uppercase;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
     }
 
     .hero-value {
@@ -90,18 +91,19 @@
     .hero-detail {
       font-size: 0.85rem;
       color: var(--sub-text);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
     }
 
     /* 控制項區域 */
     .control-row {
-      margin-bottom: 22px;
+      margin-bottom: 20px;
     }
 
     .row-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .row-title {
@@ -109,6 +111,7 @@
       font-weight: 500;
       color: var(--sub-text);
       letter-spacing: 0.05em;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
     }
 
     /* 去邊框無痕輸入框 */
@@ -122,6 +125,7 @@
       width: 140px;
       outline: none;
       font-family: inherit;
+      transition: color 0.3s ease, text-shadow 0.3s ease;
     }
 
     .seamless-input:focus {
@@ -129,40 +133,55 @@
       text-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
     }
 
-    .seamless-input:disabled {
-      color: #94a3b8;
-      cursor: not-allowed;
-    }
-
-    /* 流線極簡滑桿 */
+    /* 隱藏式極簡拉霸容器 */
     .slider-wrapper {
       width: 100%;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      position: relative;
     }
 
     input[type="range"] {
       -webkit-appearance: none;
       appearance: none;
       width: 100%;
-      height: 4px;
-      border-radius: 2px;
-      background: rgba(255, 255, 255, 0.12);
+      height: 2px;
+      border-radius: 1px;
+      /* 預設為隱形微透線條，啟用/按住時顯現藍色填滿與背景軌道 */
+      background: rgba(255, 255, 255, 0.05);
       outline: none;
+      transition: background 0.3s ease, height 0.2s ease;
+      cursor: pointer;
     }
 
+    /* 滑鼠懸停或按住時，軌道稍微變明顯 */
+    .slider-wrapper:hover input[type="range"],
+    input[type="range"]:active {
+      height: 4px;
+    }
+
+    /* 控制點 (Thumb)：預設為靜態小微光點 */
     input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
-      width: 16px;
-      height: 16px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: var(--accent-color);
-      cursor: pointer;
-      box-shadow: 0 0 12px var(--accent-color);
-      transition: transform 0.1s ease;
+      opacity: 0.6;
+      box-shadow: 0 0 6px var(--accent-color);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease, box-shadow 0.25s ease, width 0.25s ease, height 0.25s ease;
     }
 
-    input[type="range"]::-webkit-slider-thumb:active {
-      transform: scale(1.25);
+    /* 拖曳/按住/Hover 時：瞬間膨脹並發出強烈呼吸光芒 */
+    .slider-wrapper:hover input[type="range"]::-webkit-slider-thumb,
+    input[type="range"]:active::-webkit-slider-thumb {
+      width: 16px;
+      height: 16px;
+      opacity: 1;
+      box-shadow: 0 0 16px var(--accent-color), 0 0 32px rgba(56, 189, 248, 0.6);
+      transform: scale(1.2);
     }
 
     /* 純淨極簡圖表容器 */
@@ -191,6 +210,7 @@
       font-size: 0.72rem;
       color: var(--sub-text);
       margin-bottom: 2px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
     }
 
     .info-value {
@@ -268,6 +288,15 @@
   <script>
     let assetChart = null;
 
+    // 動態更新 Slider 進度條顏色深淺漸層
+    function updateSliderTrack(slider) {
+      const min = parseFloat(slider.min) || 0;
+      const max = parseFloat(slider.max) || 100;
+      const val = parseFloat(slider.value) || 0;
+      const percentage = ((val - min) / (max - min)) * 100;
+      slider.style.background = `linear-gradient(to right, rgba(56, 189, 248, 0.85) 0%, rgba(56, 189, 248, 0.85) ${percentage}%, rgba(255, 255, 255, 0.08) ${percentage}%, rgba(255, 255, 255, 0.08) 100%)`;
+    }
+
     function formatNumber(num) {
       if (num === null || num === undefined || isNaN(num)) return '0';
       return Number(Math.round(num)).toLocaleString('en-US');
@@ -282,13 +311,16 @@
       let rawValue = parseNumber(input.value);
       if (rawValue > 10000000) rawValue = 10000000;
       input.value = rawValue ? rawValue.toLocaleString('en-US') : (input.value === '0' ? '0' : '');
-      document.getElementById('annual_cost_slider').value = rawValue;
+      const slider = document.getElementById('annual_cost_slider');
+      slider.value = rawValue;
+      updateSliderTrack(slider);
       calculate();
     }
 
     function syncCostFromSlider(slider) {
       const val = parseFloat(slider.value) || 0;
       document.getElementById('annual_cost').value = formatNumber(val);
+      updateSliderTrack(slider);
       calculate();
     }
 
@@ -299,13 +331,16 @@
         val = 50;
         input.value = "50";
       }
-      document.getElementById('rate_slider').value = val;
+      const slider = document.getElementById('rate_slider');
+      slider.value = val;
+      updateSliderTrack(slider);
       calculate();
     }
 
     function syncRateFromSlider(slider) {
       const val = parseFloat(slider.value) || 0;
       document.getElementById('rate').value = val.toFixed(2);
+      updateSliderTrack(slider);
       calculate();
     }
 
@@ -313,13 +348,16 @@
       let rawValue = parseNumber(input.value);
       if (rawValue > 1000000) rawValue = 1000000;
       input.value = rawValue ? rawValue.toLocaleString('en-US') : (input.value === '0' ? '0' : '');
-      document.getElementById('pmt_slider').value = rawValue;
+      const slider = document.getElementById('pmt_slider');
+      slider.value = rawValue;
+      updateSliderTrack(slider);
       calculate();
     }
 
     function syncPmtFromSlider(slider) {
       const val = parseFloat(slider.value) || 0;
       document.getElementById('pmt').value = formatNumber(val);
+      updateSliderTrack(slider);
       calculate();
     }
 
@@ -327,7 +365,9 @@
       let value = parseFloat(input.value);
       if (!isNaN(value)) {
         input.value = value.toFixed(2);
-        document.getElementById('rate_slider').value = value;
+        const slider = document.getElementById('rate_slider');
+        slider.value = value;
+        updateSliderTrack(slider);
       }
     }
 
@@ -505,6 +545,13 @@
         document.getElementById('pmt').value = formatNumber(savedPmt);
         document.getElementById('pmt_slider').value = savedPmt;
       }
+
+      // 初始化所有 Slider 軌跡 Fill
+      ['annual_cost_slider', 'rate_slider', 'pmt_slider'].forEach(id => {
+        const s = document.getElementById(id);
+        if (s) updateSliderTrack(s);
+      });
+
       calculate();
     };
   </script>
