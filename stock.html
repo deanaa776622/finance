@@ -349,7 +349,7 @@
     }
     .delete-btn:active { transform: scale(0.95); }
 
-    /* 發光分段滑桿全新元件 CSS */
+    /* 無白線發光分段滑桿 CSS */
     .ratio-slider-container {
       width: 100%; max-width: 360px;
       margin: 10px 0 24px 0; user-select: none;
@@ -391,43 +391,15 @@
     .tag-lev  .ratio-tag-val { color: var(--leverage-color); text-shadow: 0 0 10px rgba(74, 222, 128, 0.5); }
     .tag-cash .ratio-tag-val { color: var(--cash-color); text-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
 
-    /* 發光分段長條 */
+    /* 無白切線發光長條 (純色無縫動態過渡) */
     .glow-track {
       height: 24px; width: 100%; border-radius: 12px;
       background: rgba(15, 23, 42, 0.8);
       border: 1px solid rgba(255, 255, 255, 0.12);
-      position: relative; display: flex; overflow: hidden;
+      position: relative; overflow: hidden;
       touch-action: none; cursor: pointer;
       box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
-    }
-
-    .glow-segment {
-      height: 100%; transition: width 0.05s linear; position: relative;
-    }
-
-    .glow-seg-orig {
-      background: linear-gradient(90deg, #0284c7, #38bdf8);
-      box-shadow: 0 0 14px rgba(56, 189, 248, 0.6);
-      z-index: 3;
-    }
-
-    .glow-seg-lev {
-      background: linear-gradient(90deg, #16a34a, #4ade80);
-      box-shadow: 0 0 14px rgba(74, 222, 128, 0.6);
-      z-index: 2;
-    }
-
-    .glow-seg-cash {
-      background: linear-gradient(90deg, #ca8a04, #facc15);
-      box-shadow: 0 0 14px rgba(250, 204, 21, 0.6);
-      z-index: 1;
-    }
-
-    /* 區段分割發光切線 */
-    .glow-divider {
-      position: absolute; top: 0; width: 3px; height: 100%;
-      background: #ffffff; box-shadow: 0 0 8px #ffffff;
-      z-index: 5; transform: translateX(-50%); pointer-events: none;
+      transition: background 0.05s linear;
     }
 
     .slider-hint {
@@ -586,7 +558,7 @@
     </div>
   </div>
 
-  <!-- 抽屜二：理想配置比例設定 Bottom Sheet (全新發光分段滑桿) -->
+  <!-- 抽屜二：理想配置比例設定 Bottom Sheet (無白切線發光分段滑桿) -->
   <div class="bottom-sheet" id="ratio-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">設定理想配置目標 (%)</div>
@@ -621,14 +593,8 @@
         </div>
       </div>
 
-      <!-- 無控制桿發光長條 -->
-      <div class="glow-track" id="glow-track">
-        <div class="glow-segment glow-seg-orig" id="seg-orig" style="width: 50%;"></div>
-        <div class="glow-segment glow-seg-lev" id="seg-lev" style="width: 30%;"></div>
-        <div class="glow-segment glow-seg-cash" id="seg-cash" style="width: 20%;"></div>
-        <div class="glow-divider" id="divider-1" style="left: 50%;"></div>
-        <div class="glow-divider" id="divider-2" style="left: 80%;"></div>
-      </div>
+      <!-- 無白切線發光長條 -->
+      <div class="glow-track" id="glow-track"></div>
 
       <div class="slider-hint">👉 在發光條上滑動 (10% 吸附) · 點擊原型/槓桿數字可輸入個位數</div>
     </div>
@@ -725,13 +691,18 @@
       lev = Math.max(0, Math.min(100 - orig, lev));
       cash = Math.max(0, 100 - orig - lev);
 
-      // 更新發光條區段與切線位置
-      document.getElementById('seg-orig').style.width = `${orig}%`;
-      document.getElementById('seg-lev').style.width = `${lev}%`;
-      document.getElementById('seg-cash').style.width = `${cash}%`;
+      const p1 = orig;
+      const p2 = orig + lev;
 
-      document.getElementById('divider-1').style.left = `${orig}%`;
-      document.getElementById('divider-2').style.left = `${orig + lev}%`;
+      // 無白切線純色動態連續漸層過渡
+      const track = document.getElementById('glow-track');
+      if (track) {
+        track.style.background = `linear-gradient(90deg, 
+          #38bdf8 0%, #38bdf8 ${p1}%, 
+          #4ade80 ${p1}%, #4ade80 ${p2}%, 
+          #facc15 ${p2}%, #facc15 100%)`;
+        track.style.boxShadow = `inset 0 2px 6px rgba(0, 0, 0, 0.6), 0 0 12px rgba(56, 189, 248, 0.3)`;
+      }
 
       // 更新數字標籤
       document.getElementById('tag-val-orig').innerText = Math.round(orig);
@@ -753,7 +724,7 @@
         const b1 = targetRatios.orig;
         const b2 = targetRatios.orig + targetRatios.lev;
 
-        // 判定距離最近的邊界切線
+        // 判定距離最近的顏色過渡點
         if (Math.abs(percent - b1) < Math.abs(percent - b2)) {
           activeBoundary = 1;
         } else {
