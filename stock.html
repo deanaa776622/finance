@@ -349,7 +349,7 @@
     }
     .delete-btn:active { transform: scale(0.95); }
 
-    /* 無白線發光分段滑桿 CSS */
+    /* 真光暈霓虹分段滑桿 CSS */
     .ratio-slider-container {
       width: 100%; max-width: 360px;
       margin: 10px 0 24px 0; user-select: none;
@@ -391,19 +391,18 @@
     .tag-lev  .ratio-tag-val { color: var(--leverage-color); text-shadow: 0 0 10px rgba(74, 222, 128, 0.5); }
     .tag-cash .ratio-tag-val { color: var(--cash-color); text-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
 
-    /* 無白切線發光長條 (純色無縫動態過渡) */
+    /* 真光暈發光長條 (純霓虹光擴散，移除內陰影) */
     .glow-track {
-      height: 24px; width: 100%; border-radius: 12px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      position: relative; overflow: hidden;
+      height: 20px; width: 100%; border-radius: 10px;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      position: relative; overflow: visible;
       touch-action: none; cursor: pointer;
-      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
-      transition: background 0.05s linear;
+      transition: background 0.05s linear, box-shadow 0.05s linear;
     }
 
     .slider-hint {
-      font-size: 0.72rem; color: var(--sub-text); text-align: center; margin-top: 10px;
+      font-size: 0.72rem; color: var(--sub-text); text-align: center; margin-top: 14px;
     }
   </style>
 </head>
@@ -558,7 +557,7 @@
     </div>
   </div>
 
-  <!-- 抽屜二：理想配置比例設定 Bottom Sheet (無白切線發光分段滑桿) -->
+  <!-- 抽屜二：理想配置比例設定 Bottom Sheet (真霓虹光暈分段滑桿) -->
   <div class="bottom-sheet" id="ratio-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">設定理想配置目標 (%)</div>
@@ -593,7 +592,7 @@
         </div>
       </div>
 
-      <!-- 無白切線發光長條 -->
+      <!-- 真霓虹發光長條 -->
       <div class="glow-track" id="glow-track"></div>
 
       <div class="slider-hint">👉 在發光條上滑動 (10% 吸附) · 點擊原型/槓桿數字可輸入個位數</div>
@@ -675,7 +674,7 @@
       checkOverflow();
     }
 
-    /* 理想比例發光分段滑桿核心邏輯 */
+    /* 真光暈霓虹分段滑桿渲染邏輯 */
     function openRatioSheet() {
       document.documentElement.style.setProperty('--active-theme-color', '#38bdf8');
       document.documentElement.style.setProperty('--active-theme-rgb', '56, 189, 248');
@@ -694,14 +693,18 @@
       const p1 = orig;
       const p2 = orig + lev;
 
-      // 無白切線純色動態連續漸層過渡
+      // 真正的多重外擴光暈（Neon Glow）無內陰影
       const track = document.getElementById('glow-track');
       if (track) {
         track.style.background = `linear-gradient(90deg, 
           #38bdf8 0%, #38bdf8 ${p1}%, 
           #4ade80 ${p1}%, #4ade80 ${p2}%, 
           #facc15 ${p2}%, #facc15 100%)`;
-        track.style.boxShadow = `inset 0 2px 6px rgba(0, 0, 0, 0.6), 0 0 12px rgba(56, 189, 248, 0.3)`;
+        
+        track.style.boxShadow = `
+          0 0 12px rgba(56, 189, 248, 0.5),
+          0 0 24px rgba(74, 222, 128, 0.35),
+          0 0 36px rgba(250, 204, 21, 0.25)`;
       }
 
       // 更新數字標籤
