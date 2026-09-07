@@ -656,6 +656,7 @@
       editingAssetId = null;
     }
 
+    /* 並行發送所有股票 API 請求，極速加速更新 */
     async function refreshAllPrices() {
       const btn = document.getElementById('btn-refresh-all');
       const statusText = document.getElementById('refresh-status');
@@ -664,29 +665,34 @@
 
       btn.classList.add('spinning');
       statusText.style.display = 'block';
-      statusText.innerText = '⚡ 正在更新最新即時股價...';
+      statusText.innerText = '⚡ 正在同時更新最新即時股價...';
 
+      // 篩選出需要更新價位的資產與其索引
+      const fetchPromises = assets.map((item, index) => {
+        if ((item.type !== 'cash' || item.isSharesMode) && item.symbol) {
+          return fetch(`${GAS_API_URL}?symbol=${encodeURIComponent(item.symbol)}`)
+            .then(res => res.json())
+            .then(data => ({ index, data }))
+            .catch(err => ({ index, error: err }));
+        }
+        return Promise.resolve(null);
+      });
+
+      // 並行執行所有網路請求
+      const results = await Promise.allSettled(fetchPromises);
       let updateCount = 0;
 
-      for (let i = 0; i < assets.length; i++) {
-        const item = assets[i];
-        if (item.type !== 'cash' || item.isSharesMode) {
-          if (item.symbol) {
-            try {
-              const res = await fetch(`${GAS_API_URL}?symbol=${encodeURIComponent(item.symbol)}`);
-              const data = await res.json();
-              if (data.status === 'success' && data.price) {
-                assets[i].price = parseFloat(data.price);
-                if (data.currency) assets[i].currency = data.currency;
-                if (data.usdtwd && data.currency === 'USD') assets[i].rate = parseFloat(data.usdtwd);
-                updateCount++;
-              }
-            } catch (e) {
-              console.error(`更新 ${item.symbol} 失敗:`, e);
-            }
+      results.forEach(res => {
+        if (res.status === 'fulfilled' && res.value && res.value.data) {
+          const { index, data } = res.value;
+          if (data.status === 'success' && data.price) {
+            assets[index].price = parseFloat(data.price);
+            if (data.currency) assets[index].currency = data.currency;
+            if (data.usdtwd && data.currency === 'USD') assets[index].rate = parseFloat(data.usdtwd);
+            updateCount++;
           }
         }
-      }
+      });
 
       renderAssets();
       btn.classList.remove('spinning');
