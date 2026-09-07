@@ -50,7 +50,7 @@
       background-color: var(--bg-color);
       color: var(--text-color);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      overflow-y: hidden; /* 預設關閉捲動 */
+      overflow-y: hidden;
       overscroll-behavior: none;
       -webkit-overflow-scrolling: touch;
     }
@@ -117,7 +117,6 @@
       margin-top: 4px; min-height: 18px; display: none;
     }
 
-    /* 總資產金額改為純白色系 */
     .summary-value {
       font-size: 2.8rem; font-weight: 700;
       color: var(--total-color);
@@ -125,7 +124,6 @@
       margin: 4px 0;
     }
 
-    /* 顯示實際比例，點擊可開啟理想比例設定 */
     .summary-sub {
       font-size: 0.8rem; color: #94a3b8;
       display: flex; justify-content: center; gap: 12px;
@@ -162,7 +160,6 @@
 
     .section-action { display: flex; align-items: center; gap: 10px; }
     
-    /* 原型資產標題金額使用代表色 */
     #total-orig-val { font-size: 0.85rem; font-weight: 600; color: var(--accent-color); }
     #total-lev-val { font-size: 0.85rem; font-weight: 600; color: var(--leverage-color); }
     #total-cash-val { font-size: 0.85rem; font-weight: 600; color: var(--cash-color); }
@@ -229,7 +226,6 @@
     .asset-val { font-size: 1.05rem; font-weight: 600; color: #f8fafc; }
     .asset-pct-text { font-size: 0.72rem; color: #94a3b8; margin-top: 2px; font-weight: 600; }
 
-    /* 底部微型進度條 */
     .capsule-progress-track {
       position: absolute; bottom: 0; left: 0;
       width: 100%; height: 3px;
@@ -353,11 +349,90 @@
     }
     .delete-btn:active { transform: scale(0.95); }
 
-    .ratio-hint {
-      font-size: 0.75rem; text-align: center; margin-top: 6px; color: var(--sub-text);
+    /* 發光分段滑桿全新元件 CSS */
+    .ratio-slider-container {
+      width: 100%; max-width: 360px;
+      margin: 10px 0 24px 0; user-select: none;
     }
-    .ratio-hint.error { color: var(--danger-color); }
-    .ratio-hint.success { color: var(--leverage-color); }
+
+    .ratio-values-display {
+      display: flex; justify-content: space-between; gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .ratio-tag {
+      flex: 1; padding: 10px 8px; border-radius: 14px;
+      background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: center; display: flex; flex-direction: column; align-items: center;
+      transition: all 0.2s ease; position: relative;
+    }
+
+    .ratio-tag.editable { cursor: pointer; }
+    .ratio-tag.editable:active { transform: scale(0.96); background: rgba(30, 41, 59, 0.8); }
+
+    .ratio-tag-label { font-size: 0.72rem; color: var(--sub-text); margin-bottom: 2px; }
+    
+    .ratio-tag-val-wrapper {
+      display: flex; align-items: center; justify-content: center; width: 100%;
+    }
+
+    .ratio-tag-val { font-size: 1.15rem; font-weight: 700; }
+    .ratio-tag-unit { font-size: 0.8rem; font-weight: 600; margin-left: 2px; opacity: 0.8; }
+
+    /* 內嵌式點擊數字輸入框 */
+    .ratio-tag-input {
+      width: 52px; background: transparent; border: none;
+      border-bottom: 2px solid #ffffff; color: #ffffff;
+      font-size: 1.15rem; font-weight: 700; text-align: center; outline: none;
+      font-family: inherit; display: none;
+    }
+
+    .tag-orig .ratio-tag-val { color: var(--accent-color); text-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+    .tag-lev  .ratio-tag-val { color: var(--leverage-color); text-shadow: 0 0 10px rgba(74, 222, 128, 0.5); }
+    .tag-cash .ratio-tag-val { color: var(--cash-color); text-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
+
+    /* 發光分段長條 */
+    .glow-track {
+      height: 24px; width: 100%; border-radius: 12px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      position: relative; display: flex; overflow: hidden;
+      touch-action: none; cursor: pointer;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+    }
+
+    .glow-segment {
+      height: 100%; transition: width 0.05s linear; position: relative;
+    }
+
+    .glow-seg-orig {
+      background: linear-gradient(90deg, #0284c7, #38bdf8);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.6);
+      z-index: 3;
+    }
+
+    .glow-seg-lev {
+      background: linear-gradient(90deg, #16a34a, #4ade80);
+      box-shadow: 0 0 14px rgba(74, 222, 128, 0.6);
+      z-index: 2;
+    }
+
+    .glow-seg-cash {
+      background: linear-gradient(90deg, #ca8a04, #facc15);
+      box-shadow: 0 0 14px rgba(250, 204, 21, 0.6);
+      z-index: 1;
+    }
+
+    /* 區段分割發光切線 */
+    .glow-divider {
+      position: absolute; top: 0; width: 3px; height: 100%;
+      background: #ffffff; box-shadow: 0 0 8px #ffffff;
+      z-index: 5; transform: translateX(-50%); pointer-events: none;
+    }
+
+    .slider-hint {
+      font-size: 0.72rem; color: var(--sub-text); text-align: center; margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -376,7 +451,7 @@
       <div class="summary-value" id="total-net-worth">$0</div>
       <div class="refresh-status" id="refresh-status">⚡ 正在更新最新即時股價...</div>
       
-      <!-- 顯示真實比例，點擊開啟理想比例設定檔 -->
+      <!-- 顯示實際比例，點擊開啟理想比例設定檔 -->
       <div class="summary-sub" onclick="openRatioSheet()" title="點擊設定理想配置比例">
         <span>原 <strong id="pct-orig" style="color: var(--accent-color);">0%</strong></span>
         <span>槓 <strong id="pct-lev" style="color: var(--leverage-color);">0%</strong></span>
@@ -511,29 +586,54 @@
     </div>
   </div>
 
-  <!-- 抽屜二：理想配置比例設定 Bottom Sheet -->
+  <!-- 抽屜二：理想配置比例設定 Bottom Sheet (全新發光分段滑桿) -->
   <div class="bottom-sheet" id="ratio-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">設定理想配置目標 (%)</div>
 
-    <div class="form-group">
-      <label class="form-label">原型股票目標比例 (%)</label>
-      <input type="number" id="input-ratio-orig" class="form-input" placeholder="例如：50" oninput="validateRatios()">
+    <div class="ratio-slider-container">
+      <!-- 標籤與數字顯示區（支援點擊切換精確輸入） -->
+      <div class="ratio-values-display">
+        <div class="ratio-tag tag-orig editable" onclick="enableTagInput('orig')">
+          <span class="ratio-tag-label">原型股票</span>
+          <div class="ratio-tag-val-wrapper">
+            <span class="ratio-tag-val" id="tag-val-orig">50</span>
+            <input type="number" id="tag-input-orig" class="ratio-tag-input" onblur="disableTagInput('orig')" onkeyup="handleInputKey(event, 'orig')">
+            <span class="ratio-tag-unit" id="tag-unit-orig">%</span>
+          </div>
+        </div>
+
+        <div class="ratio-tag tag-lev editable" onclick="enableTagInput('lev')">
+          <span class="ratio-tag-label">槓桿資產</span>
+          <div class="ratio-tag-val-wrapper">
+            <span class="ratio-tag-val" id="tag-val-lev">30</span>
+            <input type="number" id="tag-input-lev" class="ratio-tag-input" onblur="disableTagInput('lev')" onkeyup="handleInputKey(event, 'lev')">
+            <span class="ratio-tag-unit" id="tag-unit-lev">%</span>
+          </div>
+        </div>
+
+        <div class="ratio-tag tag-cash">
+          <span class="ratio-tag-label">現金/房屋</span>
+          <div class="ratio-tag-val-wrapper">
+            <span class="ratio-tag-val" id="tag-val-cash">20</span>
+            <span class="ratio-tag-unit">%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 無控制桿發光長條 -->
+      <div class="glow-track" id="glow-track">
+        <div class="glow-segment glow-seg-orig" id="seg-orig" style="width: 50%;"></div>
+        <div class="glow-segment glow-seg-lev" id="seg-lev" style="width: 30%;"></div>
+        <div class="glow-segment glow-seg-cash" id="seg-cash" style="width: 20%;"></div>
+        <div class="glow-divider" id="divider-1" style="left: 50%;"></div>
+        <div class="glow-divider" id="divider-2" style="left: 80%;"></div>
+      </div>
+
+      <div class="slider-hint">👉 在發光條上滑動 (10% 吸附) · 點擊原型/槓桿數字可輸入個位數</div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">槓桿資產目標比例 (%)</label>
-      <input type="number" id="input-ratio-lev" class="form-input" placeholder="例如：30" oninput="validateRatios()">
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">現金與房屋目標比例 (%)</label>
-      <input type="number" id="input-ratio-cash" class="form-input" placeholder="例如：20" oninput="validateRatios()">
-    </div>
-
-    <div class="ratio-hint" id="ratio-status-text">總和必須為 100%</div>
-
-    <div class="action-btn-group" style="margin-top: 14px;">
+    <div class="action-btn-group" style="margin-top: 10px;">
       <button class="submit-btn" id="btn-save-ratio" onclick="saveRatios()">儲存目標比例</button>
     </div>
   </div>
@@ -557,7 +657,9 @@
     let editingAssetId = null;
     let canScroll = false;
 
-    // 精確檢測內容是否超出螢幕，決定滑動限制
+    // 滑桿拖拉狀態控制
+    let activeBoundary = null;
+
     function checkOverflow() {
       setTimeout(() => {
         const container = document.getElementById('main-container');
@@ -607,48 +709,170 @@
       checkOverflow();
     }
 
-    /* 理想比例 Bottom Sheet 邏輯 */
+    /* 理想比例發光分段滑桿核心邏輯 */
     function openRatioSheet() {
-      document.getElementById('input-ratio-orig').value = targetRatios.orig;
-      document.getElementById('input-ratio-lev').value = targetRatios.lev;
-      document.getElementById('input-ratio-cash').value = targetRatios.cash;
-
       document.documentElement.style.setProperty('--active-theme-color', '#38bdf8');
       document.documentElement.style.setProperty('--active-theme-rgb', '56, 189, 248');
 
-      validateRatios();
+      updateSliderUI(targetRatios.orig, targetRatios.lev, targetRatios.cash);
+
       document.getElementById('sheet-overlay').classList.add('active');
       document.getElementById('ratio-sheet').classList.add('active');
     }
 
-    function validateRatios() {
-      const orig = parseFloat(document.getElementById('input-ratio-orig').value) || 0;
-      const lev = parseFloat(document.getElementById('input-ratio-lev').value) || 0;
-      const cash = parseFloat(document.getElementById('input-ratio-cash').value) || 0;
+    function updateSliderUI(orig, lev, cash) {
+      orig = Math.max(0, Math.min(100, orig));
+      lev = Math.max(0, Math.min(100 - orig, lev));
+      cash = Math.max(0, 100 - orig - lev);
 
-      const sum = orig + lev + cash;
-      const statusText = document.getElementById('ratio-status-text');
-      const btnSave = document.getElementById('btn-save-ratio');
+      // 更新發光條區段與切線位置
+      document.getElementById('seg-orig').style.width = `${orig}%`;
+      document.getElementById('seg-lev').style.width = `${lev}%`;
+      document.getElementById('seg-cash').style.width = `${cash}%`;
 
-      if (Math.abs(sum - 100) < 0.01) {
-        statusText.innerText = "✓ 比例總和為 100%";
-        statusText.className = "ratio-hint success";
-        btnSave.disabled = false;
-      } else {
-        statusText.innerText = `✕ 總和必須為 100%（目前：${sum.toFixed(1)}%）`;
-        statusText.className = "ratio-hint error";
-        btnSave.disabled = true;
+      document.getElementById('divider-1').style.left = `${orig}%`;
+      document.getElementById('divider-2').style.left = `${orig + lev}%`;
+
+      // 更新數字標籤
+      document.getElementById('tag-val-orig').innerText = Math.round(orig);
+      document.getElementById('tag-val-lev').innerText = Math.round(lev);
+      document.getElementById('tag-val-cash').innerText = Math.round(cash);
+
+      targetRatios = { orig, lev, cash };
+    }
+
+    function initGlowSliderEvents() {
+      const track = document.getElementById('glow-track');
+      if (!track) return;
+
+      function handlePointerDown(e) {
+        const rect = track.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+        const percent = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+
+        const b1 = targetRatios.orig;
+        const b2 = targetRatios.orig + targetRatios.lev;
+
+        // 判定距離最近的邊界切線
+        if (Math.abs(percent - b1) < Math.abs(percent - b2)) {
+          activeBoundary = 1;
+        } else {
+          activeBoundary = 2;
+        }
+
+        updateBoundaryByPercent(percent, true);
+
+        document.addEventListener('mousemove', handlePointerMove);
+        document.addEventListener('touchmove', handlePointerMove, { passive: false });
+        document.addEventListener('mouseup', handlePointerUp);
+        document.addEventListener('touchend', handlePointerUp);
+      }
+
+      function handlePointerMove(e) {
+        if (!activeBoundary) return;
+        if (e.cancelable) e.preventDefault();
+
+        const rect = track.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+        const percent = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+
+        updateBoundaryByPercent(percent, true);
+      }
+
+      function handlePointerUp() {
+        activeBoundary = null;
+        document.removeEventListener('mousemove', handlePointerMove);
+        document.removeEventListener('touchmove', handlePointerMove);
+        document.removeEventListener('mouseup', handlePointerUp);
+        document.removeEventListener('touchend', handlePointerUp);
+      }
+
+      track.addEventListener('mousedown', handlePointerDown);
+      track.addEventListener('touchstart', handlePointerDown, { passive: true });
+    }
+
+    function updateBoundaryByPercent(percent, isSnap10) {
+      let val = percent;
+      if (isSnap10) {
+        val = Math.round(percent / 10) * 10;
+      }
+
+      let newOrig = targetRatios.orig;
+      let newLev = targetRatios.lev;
+
+      if (activeBoundary === 1) {
+        newOrig = Math.max(0, Math.min(100, val));
+        if (newOrig + newLev > 100) {
+          newLev = 100 - newOrig;
+        }
+      } else if (activeBoundary === 2) {
+        let b2 = Math.max(newOrig, Math.min(100, val));
+        newLev = b2 - newOrig;
+      }
+
+      let newCash = 100 - newOrig - newLev;
+      updateSliderUI(newOrig, newLev, newCash);
+    }
+
+    /* 點擊標籤切換輸入框與精確輸入 */
+    function enableTagInput(key) {
+      const valSpan = document.getElementById(`tag-val-${key}`);
+      const input = document.getElementById(`tag-input-${key}`);
+      const unitSpan = document.getElementById(`tag-unit-${key}`);
+
+      if (!valSpan || !input) return;
+
+      input.value = targetRatios[key];
+      valSpan.style.display = 'none';
+      if (unitSpan) unitSpan.style.display = 'none';
+      input.style.display = 'inline-block';
+      input.focus();
+      input.select();
+    }
+
+    function disableTagInput(key) {
+      const valSpan = document.getElementById(`tag-val-${key}`);
+      const input = document.getElementById(`tag-input-${key}`);
+      const unitSpan = document.getElementById(`tag-unit-${key}`);
+
+      if (!input || input.style.display === 'none') return;
+
+      let typedVal = parseFloat(input.value);
+      if (isNaN(typedVal)) typedVal = 0;
+      typedVal = Math.max(0, Math.min(100, typedVal));
+
+      let newOrig = targetRatios.orig;
+      let newLev = targetRatios.lev;
+
+      if (key === 'orig') {
+        newOrig = typedVal;
+        if (newOrig + newLev > 100) {
+          newLev = 100 - newOrig;
+        }
+      } else if (key === 'lev') {
+        newLev = typedVal;
+        if (newOrig + newLev > 100) {
+          newOrig = 100 - newLev;
+        }
+      }
+
+      let newCash = 100 - newOrig - newLev;
+
+      input.style.display = 'none';
+      valSpan.style.display = 'inline';
+      if (unitSpan) unitSpan.style.display = 'inline';
+
+      updateSliderUI(newOrig, newLev, newCash);
+    }
+
+    function handleInputKey(e, key) {
+      if (e.key === 'Enter') {
+        disableTagInput(key);
       }
     }
 
     function saveRatios() {
-      const orig = parseFloat(document.getElementById('input-ratio-orig').value) || 0;
-      const lev = parseFloat(document.getElementById('input-ratio-lev').value) || 0;
-      const cash = parseFloat(document.getElementById('input-ratio-cash').value) || 0;
-
-      targetRatios = { orig, lev, cash };
       localStorage.setItem('target_ratios', JSON.stringify(targetRatios));
-
       closeAllSheets();
     }
 
@@ -1082,6 +1306,7 @@
 
     window.onload = function() {
       renderAssets();
+      initGlowSliderEvents();
       checkOverflow();
     };
 
