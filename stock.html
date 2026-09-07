@@ -11,9 +11,13 @@
       --bg-color: #0f172a;
       --card-bg: rgba(30, 41, 59, 0.45);
       --input-bg: rgba(15, 23, 42, 0.6);
+      
+      /* 色彩分配：總資產為純白，原型股票為天藍 */
+      --total-color: #ffffff;
       --accent-color: #38bdf8;
       --leverage-color: #4ade80;
       --cash-color: #facc15;
+      
       --text-color: #f8fafc;
       --sub-text: #64748b;
       --border-color: rgba(255, 255, 255, 0.08);
@@ -93,7 +97,7 @@
     .icon-btn {
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.12);
-      color: var(--accent-color);
+      color: var(--text-color);
       width: 32px; height: 32px;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
@@ -109,14 +113,15 @@
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
     .refresh-status {
-      font-size: 0.72rem; color: var(--accent-color);
+      font-size: 0.72rem; color: var(--sub-text);
       margin-top: 4px; min-height: 18px; display: none;
     }
 
+    /* 總資產金額改為純白色系 */
     .summary-value {
       font-size: 2.8rem; font-weight: 700;
-      color: var(--accent-color);
-      text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+      color: var(--total-color);
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.45);
       margin: 4px 0;
     }
 
@@ -156,7 +161,11 @@
     }
 
     .section-action { display: flex; align-items: center; gap: 10px; }
-    .section-total { font-size: 0.85rem; font-weight: 600; color: #94a3b8; }
+    
+    /* 原型資產標題金額使用代表色 */
+    #total-orig-val { font-size: 0.85rem; font-weight: 600; color: var(--accent-color); }
+    #total-lev-val { font-size: 0.85rem; font-weight: 600; color: var(--leverage-color); }
+    #total-cash-val { font-size: 0.85rem; font-weight: 600; color: var(--cash-color); }
 
     .arrow-icon {
       font-size: 0.75rem; color: var(--sub-text);
@@ -175,7 +184,7 @@
     .add-btn {
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.12);
-      color: var(--accent-color);
+      color: #f8fafc;
       padding: 6px 12px; border-radius: 20px;
       font-size: 0.75rem; font-weight: 600;
       cursor: pointer; transition: all 0.2s;
@@ -369,9 +378,9 @@
       
       <!-- 顯示真實比例，點擊開啟理想比例設定檔 -->
       <div class="summary-sub" onclick="openRatioSheet()" title="點擊設定理想配置比例">
-        <span>原 <strong id="pct-orig">0%</strong></span>
-        <span>槓 <strong id="pct-lev">0%</strong></span>
-        <span>現 <strong id="pct-cash">0%</strong></span>
+        <span>原 <strong id="pct-orig" style="color: var(--accent-color);">0%</strong></span>
+        <span>槓 <strong id="pct-lev" style="color: var(--leverage-color);">0%</strong></span>
+        <span>現 <strong id="pct-cash" style="color: var(--cash-color);">0%</strong></span>
       </div>
     </div>
 
@@ -554,7 +563,6 @@
         const container = document.getElementById('main-container');
         const containerRect = container.getBoundingClientRect();
         
-        // 判定容器底端是否超過可見區域 (預留底部導覽列空間)
         canScroll = containerRect.bottom > (window.innerHeight - 80);
         
         if (canScroll) {
@@ -568,7 +576,7 @@
       }, 100);
     }
 
-    // 防範 iOS 下拉/上拉橡皮筋回彈 (若抽屜開啟時允許抽屜內部滑動)
+    // 防範 iOS 下拉/上拉橡皮筋回彈
     document.addEventListener('touchmove', function(e) {
       const isSheetActive = document.getElementById('bottom-sheet').classList.contains('active') ||
                             document.getElementById('ratio-sheet').classList.contains('active');
@@ -667,7 +675,6 @@
       statusText.style.display = 'block';
       statusText.innerText = '⚡ 正在同時更新最新即時股價...';
 
-      // 篩選出需要更新價位的資產與其索引
       const fetchPromises = assets.map((item, index) => {
         if ((item.type !== 'cash' || item.isSharesMode) && item.symbol) {
           return fetch(`${GAS_API_URL}?symbol=${encodeURIComponent(item.symbol)}`)
@@ -678,7 +685,6 @@
         return Promise.resolve(null);
       });
 
-      // 並行執行所有網路請求
       const results = await Promise.allSettled(fetchPromises);
       let updateCount = 0;
 
@@ -743,7 +749,6 @@
 
       let totalOrigTWD = 0, totalLevTWD = 0, totalCashTWD = 0;
 
-      // 第一階段：計算各類別總額
       assets.forEach(item => {
         const curr = item.currency || 'TWD';
         const fxRate = curr === 'USD' ? (item.rate || 32.0) : 1;
@@ -757,7 +762,6 @@
         else if (item.type === 'cash') totalCashTWD += twdVal;
       });
 
-      // 第二階段：計算佔比與渲染膠囊
       assets.forEach(item => {
         const curr = item.currency || 'TWD';
         const fxRate = curr === 'USD' ? (item.rate || 32.0) : 1;
@@ -856,7 +860,6 @@
       const totalNetWorthTWD = totalOrigTWD + totalLevTWD + totalCashTWD;
       document.getElementById('total-net-worth').innerText = isPrivate ? '****' : '$' + formatNumber(totalNetWorthTWD);
 
-      // 動態計算並顯示真實比例
       if (totalNetWorthTWD > 0) {
         document.getElementById('pct-orig').innerText = Math.round((totalOrigTWD / totalNetWorthTWD) * 100) + '%';
         document.getElementById('pct-lev').innerText = Math.round((totalLevTWD / totalNetWorthTWD) * 100) + '%';
