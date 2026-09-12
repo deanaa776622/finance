@@ -280,7 +280,7 @@
       padding: 24px; padding-bottom: 90px !important;
       z-index: 9999; transition: bottom 0.35s cubic-bezier(0.1, 0.9, 0.2, 1);
       display: flex; flex-direction: column; align-items: center;
-      max-height: 70vh;
+      max-height: 80vh;
       overflow-y: auto;
     }
     .bottom-sheet.active { bottom: 0; }
@@ -464,6 +464,49 @@
       font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
     }
     .calc-apply-btn:active { transform: scale(0.97); background: rgba(56, 189, 248, 0.25); }
+
+    /* 曝險天平填補水庫條 CSS */
+    .exposure-meter-box {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px; padding: 12px; margin-bottom: 12px;
+    }
+    .exposure-meter-track {
+      height: 14px; width: 100%; border-radius: 7px;
+      background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex; overflow: hidden; margin: 8px 0;
+    }
+    .meter-segment { height: 100%; transition: width 0.3s ease; position: relative; }
+    .meter-debt { background: #f43f5e; box-shadow: 0 0 6px rgba(244, 63, 94, 0.4); }
+    .meter-orig { background: #38bdf8; box-shadow: 0 0 6px rgba(56, 189, 248, 0.4); }
+    .meter-lev { background: #4ade80; box-shadow: 0 0 6px rgba(74, 222, 128, 0.4); }
+
+    .meter-legend {
+      display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--sub-text); gap: 4px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 4px; }
+    .legend-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+    /* 四階層樹狀細節摺疊卡片 */
+    .tree-details-toggle {
+      font-size: 0.75rem; color: #94a3b8; text-align: center;
+      padding: 6px; cursor: pointer; user-select: none;
+      display: flex; align-items: center; justify-content: center; gap: 4px;
+      margin-bottom: 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.03);
+    }
+    .tree-details-toggle:active { background: rgba(255, 255, 255, 0.08); }
+
+    .tree-details-container {
+      display: none; background: rgba(15, 23, 42, 0.7);
+      border: 1px dashed rgba(255, 255, 255, 0.12);
+      border-radius: 12px; padding: 12px; margin-bottom: 12px; font-size: 0.73rem;
+    }
+    .tree-details-container.open { display: block; }
+    .tree-node { margin-bottom: 8px; }
+    .tree-node:last-child { margin-bottom: 0; }
+    .tree-title { font-weight: 700; color: #cbd5e1; display: flex; justify-content: space-between; }
+    .tree-subnode { padding-left: 12px; margin-top: 4px; border-left: 2px solid rgba(255, 255, 255, 0.08); }
+    .tree-item { display: flex; justify-content: space-between; margin-bottom: 3px; color: #94a3b8; }
   </style>
 </head>
 <body>
@@ -688,6 +731,63 @@
         </div>
       </div>
 
+      <!-- 動態白話診斷標籤 -->
+      <div id="lc-diagnostic-tag" style="font-size: 0.75rem; padding: 10px; border-radius: 10px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; margin-bottom: 12px; font-weight: 600;">
+        ⚡ 正在計算最佳配置...
+      </div>
+
+      <!-- 視覺化：曝險水庫填補條 (Exposure Meter) -->
+      <div class="exposure-meter-box">
+        <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: #94a3b8; font-weight: 600;">
+          <span>🎯 目標總股票曝險填補水庫</span>
+          <span id="meter-total-exp-text" style="color: #f8fafc;">$0</span>
+        </div>
+        <div class="exposure-meter-track">
+          <div class="meter-segment meter-debt" id="meter-seg-debt" style="width: 0%;" title="信貸/質押槓桿"></div>
+          <div class="meter-segment meter-orig" id="meter-seg-orig" style="width: 0%;" title="原型股票曝險"></div>
+          <div class="meter-segment meter-lev" id="meter-seg-lev" style="width: 0%;" title="00631L 槓桿股票曝險"></div>
+        </div>
+        <div class="meter-legend">
+          <div class="legend-item"><div class="legend-dot" style="background: #f43f5e;"></div>信貸填補 (<span id="meter-pct-debt">0%</span>)</div>
+          <div class="legend-item"><div class="legend-dot" style="background: #38bdf8;"></div>原型填補 (<span id="meter-pct-orig">0%</span>)</div>
+          <div class="legend-item"><div class="legend-dot" style="background: #4ade80;"></div>槓桿填補 (<span id="meter-pct-lev">0%</span>)</div>
+        </div>
+      </div>
+
+      <!-- 四階層樹狀結構摺疊細節卡片 (1 ➔ 1-1 / 1-2) -->
+      <div class="tree-details-toggle" onclick="toggleTreeDetails()">
+        <span>🔍 查看 1-1 至 1-2 詳細資產負債拆解</span>
+        <span id="tree-toggle-arrow">▼</span>
+      </div>
+
+      <div class="tree-details-container" id="tree-details-container">
+        <div class="tree-node">
+          <div class="tree-title"><span>1. 淨資產 (Net Worth)</span><strong id="tree-val-networth" style="color: #ffffff;">$0</strong></div>
+          <div class="tree-subnode">
+            <div class="tree-node">
+              <div class="tree-title"><span>1-1 總資產</span><span id="tree-val-total-assets">$0</span></div>
+              <div class="tree-subnode">
+                <div class="tree-item"><span>1-1-1 金融資產池</span><span id="tree-val-fin-assets">$0</span></div>
+                <div class="tree-subnode" style="border-left-color: rgba(56, 189, 248, 0.2);">
+                  <div class="tree-item"><span>1-1-1-1 原型股票</span><span id="tree-val-orig">$0</span></div>
+                  <div class="tree-item"><span>1-1-1-2 槓桿股票</span><span id="tree-val-lev">$0</span></div>
+                  <div class="tree-item"><span>1-1-1-3 現金 Buffer</span><span id="tree-val-cash">$0</span></div>
+                </div>
+                <div class="tree-item" style="margin-top: 4px;"><span>1-1-2 實體資產 (房屋估值)</span><span id="tree-val-realestate">$0</span></div>
+              </div>
+            </div>
+
+            <div class="tree-node" style="margin-top: 6px;">
+              <div class="tree-title"><span>1-2 總負債</span><span id="tree-val-total-debt">$0</span></div>
+              <div class="tree-subnode">
+                <div class="tree-item" style="color: #f43f5e;"><span>1-2-1 金融負債 (信貸/質押 1X 曝險)</span><span id="tree-val-invest-debt">$0</span></div>
+                <div class="tree-item"><span>1-2-2 實體負債 (房屋貸款)</span><span id="tree-val-house-debt">$0</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <button class="calc-apply-btn" onclick="applyLifecycleCalculation()">⚡ 套用生命週期計算結果</button>
     </div>
 
@@ -806,6 +906,18 @@
       checkOverflow();
     }
 
+    function toggleTreeDetails() {
+      const container = document.getElementById('tree-details-container');
+      const arrow = document.getElementById('tree-toggle-arrow');
+      if (container.classList.contains('open')) {
+        container.classList.remove('open');
+        arrow.innerText = '▼';
+      } else {
+        container.classList.add('open');
+        arrow.innerText = '▲';
+      }
+    }
+
     /* 切換理想配置視窗計算模式 */
     function setRatioCalcMode(mode) {
       document.getElementById('mode-custom-ratio').classList.toggle('active', mode === 'custom');
@@ -820,10 +932,11 @@
       }
     }
 
-    /* 生命週期投資法解算邏輯（包含信貸與非房貸槓桿抵扣） */
+    /* 生命週期投資法解算邏輯（包含視覺化水庫與四階層細節卡片） */
     function calculateLifecycleRatios() {
       let totalOrigTWD = 0, totalLevTWD = 0, totalCashTWD = 0, totalRealestateTWD = 0, totalDebtTWD = 0;
-      let investDebtTWD = 0; // 用於投資/非房貸的信貸與質押金額
+      let investDebtTWD = 0; // 1-2-1 金融負債 (信貸/質押)
+      let houseDebtTWD = 0;  // 1-2-2 實體負債 (房貸)
 
       assets.forEach(item => {
         const curr = item.currency || 'TWD';
@@ -839,10 +952,11 @@
         else if (item.type === 'realestate') totalRealestateTWD += twdVal;
         else if (item.type === 'debt') {
           totalDebtTWD += twdVal;
-          // 判斷負債項目：若非房貸，視為直接提供 1X 股票曝險的信貸/質押/融資
           const sym = (item.symbol || '').toLowerCase();
           if (!sym.includes('房貸') && !sym.includes('房屋')) {
             investDebtTWD += twdVal;
+          } else {
+            houseDebtTWD += twdVal;
           }
         }
       });
@@ -853,7 +967,7 @@
 
       const targetLeverage = parseFloat(document.getElementById('input-target-leverage').value) || 1.5;
       const cashBufferPct = (parseFloat(document.getElementById('input-cash-buffer-pct').value) || 10) / 100;
-      const levMultiple = 2.0; // 00631L
+      const levMultiple = 2.0;
 
       // 1. 計算目標股票總曝險 E_target
       const targetExposure = netWorth * targetLeverage;
@@ -865,9 +979,7 @@
       const targetCashVal = totalFinancialAssets * cashBufferPct;
       const investableVal = Math.max(0, totalFinancialAssets - targetCashVal);
 
-      // 4. 解二元一次聯立方程:
-      // A_orig + A_lev = investableVal
-      // A_orig + m * A_lev = netStockExposureNeeded
+      // 4. 解二元一次聯立方程
       let aLev = (netStockExposureNeeded - investableVal) / (levMultiple - 1);
       let aOrig = investableVal - aLev;
 
@@ -891,8 +1003,59 @@
         cashPct = 100 - origPct - levPct;
       }
 
+      // 1️⃣ 更新主面板卡片
       document.getElementById('lc-val-exposure').innerText = '$' + formatNumber(targetExposure);
       document.getElementById('lc-val-lev-pct').innerText = levPct + '%';
+
+      // 2️⃣ 更新曝險水庫填補條 (Exposure Meter)
+      document.getElementById('meter-total-exp-text').innerText = '$' + formatNumber(targetExposure);
+      
+      let debtFilledVal = Math.min(targetExposure, investDebtTWD);
+      let origFilledVal = Math.min(targetExposure - debtFilledVal, aOrig);
+      let levFilledVal = Math.min(targetExposure - debtFilledVal - origFilledVal, aLev * 2.0);
+
+      let pDebt = targetExposure > 0 ? (debtFilledVal / targetExposure) * 100 : 0;
+      let pOrig = targetExposure > 0 ? (origFilledVal / targetExposure) * 100 : 0;
+      let pLev = targetExposure > 0 ? (levFilledVal / targetExposure) * 100 : 0;
+
+      document.getElementById('meter-seg-debt').style.width = pDebt.toFixed(1) + '%';
+      document.getElementById('meter-seg-orig').style.width = pOrig.toFixed(1) + '%';
+      document.getElementById('meter-seg-lev').style.width = pLev.toFixed(1) + '%';
+
+      document.getElementById('meter-pct-debt').innerText = Math.round(pDebt) + '%';
+      document.getElementById('meter-pct-orig').innerText = Math.round(pOrig) + '%';
+      document.getElementById('meter-pct-lev').innerText = Math.round(pLev) + '%';
+
+      // 3️⃣ 更新動態白話文診斷標籤
+      const diagTag = document.getElementById('lc-diagnostic-tag');
+      if (investDebtTWD > 0 && netStockExposureNeeded <= investableVal) {
+        diagTag.style.background = 'rgba(74, 222, 128, 0.1)';
+        diagTag.style.borderColor = 'rgba(74, 222, 128, 0.3)';
+        diagTag.style.color = '#4ade80';
+        diagTag.innerHTML = `🟢 <b>信貸已填補 ${Math.round(pDebt)}% 曝險</b>：信貸提供的槓桿已滿足主要需求，建議槓桿股票調低至 <b>${levPct}%</b>。`;
+      } else if (levPct > 0) {
+        diagTag.style.background = 'rgba(250, 204, 21, 0.1)';
+        diagTag.style.borderColor = 'rgba(250, 204, 21, 0.3)';
+        diagTag.style.color = '#facc15';
+        diagTag.innerHTML = `🟡 <b>需用 2X 槓桿補足缺口</b>：可用股票資金不足以滿足目標曝險，建議撥出 <b>${levPct}%</b> 配置 00631L。`;
+      } else {
+        diagTag.style.background = 'rgba(56, 189, 248, 0.1)';
+        diagTag.style.borderColor = 'rgba(56, 189, 248, 0.3)';
+        diagTag.style.color = '#38bdf8';
+        diagTag.innerHTML = `🔵 <b>自有資金極度充足</b>：無需開立槓桿 ETF，配置原型股票即可達成目標。`;
+      }
+
+      // 4️⃣ 更新 1 ➔ 1-1 / 1-2 四階層細節卡片
+      document.getElementById('tree-val-networth').innerText = '$' + formatNumber(netWorth);
+      document.getElementById('tree-val-total-assets').innerText = '$' + formatNumber(totalAssets);
+      document.getElementById('tree-val-fin-assets').innerText = '$' + formatNumber(totalFinancialAssets);
+      document.getElementById('tree-val-orig').innerText = '$' + formatNumber(aOrig);
+      document.getElementById('tree-val-lev').innerText = '$' + formatNumber(aLev);
+      document.getElementById('tree-val-cash').innerText = '$' + formatNumber(targetCashVal);
+      document.getElementById('tree-val-realestate').innerText = '$' + formatNumber(totalRealestateTWD);
+      document.getElementById('tree-val-total-debt').innerText = '$' + formatNumber(totalDebtTWD);
+      document.getElementById('tree-val-invest-debt').innerText = '$' + formatNumber(investDebtTWD);
+      document.getElementById('tree-val-house-debt').innerText = '$' + formatNumber(houseDebtTWD);
 
       computedLifecycleResult = { orig: origPct, lev: levPct, cash: cashPct };
     }
@@ -920,7 +1083,6 @@
       const p1 = orig;
       const p2 = orig + lev;
 
-      // 真正的多重外擴光暈（Neon Glow）無內陰影
       const track = document.getElementById('glow-track');
       if (track) {
         track.style.background = `linear-gradient(90deg, 
@@ -934,7 +1096,6 @@
           0 0 36px rgba(250, 204, 21, 0.25)`;
       }
 
-      // 更新數字標籤
       document.getElementById('tag-val-orig').innerText = Math.round(orig);
       document.getElementById('tag-val-lev').innerText = Math.round(lev);
       document.getElementById('tag-val-cash').innerText = Math.round(cash);
@@ -954,7 +1115,6 @@
         const b1 = targetRatios.orig;
         const b2 = targetRatios.orig + targetRatios.lev;
 
-        // 判定距離最近的顏色過渡點
         if (Math.abs(percent - b1) < Math.abs(percent - b2)) {
           activeBoundary = 1;
         } else {
@@ -1015,7 +1175,6 @@
       updateSliderUI(newOrig, newLev, newCash);
     }
 
-    /* 點擊標籤切換輸入框與精確輸入 */
     function enableTagInput(key) {
       const valSpan = document.getElementById(`tag-val-${key}`);
       const input = document.getElementById(`tag-input-${key}`);
@@ -1089,7 +1248,6 @@
       editingAssetId = null;
     }
 
-    /* 並行發送所有股票 API 請求，極速加速更新 */
     async function refreshAllPrices() {
       const btn = document.getElementById('btn-refresh-all');
       const statusText = document.getElementById('refresh-status');
@@ -1301,7 +1459,6 @@
       
       document.getElementById('total-net-worth').innerText = isPrivate ? '****' : '$' + formatNumber(netWorthTWD);
 
-      // 總覽卡片子標題（原 / 槓 / 現）：僅計算金融資產池的比例（對應生命週期流動資金）
       if (totalFinancialAssets > 0) {
         document.getElementById('pct-orig').innerText = Math.round((totalOrigTWD / totalFinancialAssets) * 100) + '%';
         document.getElementById('pct-lev').innerText = Math.round((totalLevTWD / totalFinancialAssets) * 100) + '%';
