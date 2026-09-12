@@ -17,7 +17,8 @@
       --accent-color: #38bdf8;
       --leverage-color: #4ade80;
       --cash-color: #facc15;
-      --debt-color: #94a3b8; /* 負債區塊主色調：質感中性灰 */
+      --realestate-color: #ffffff; /* 實體資產主色調：純白 */
+      --debt-color: #94a3b8;       /* 負債區塊主色調：質感中性灰 */
       
       --text-color: #f8fafc;
       --sub-text: #64748b;
@@ -164,6 +165,7 @@
     #total-orig-val { font-size: 0.85rem; font-weight: 600; color: var(--accent-color); }
     #total-lev-val { font-size: 0.85rem; font-weight: 600; color: var(--leverage-color); }
     #total-cash-val { font-size: 0.85rem; font-weight: 600; color: var(--cash-color); }
+    #total-realestate-val { font-size: 0.85rem; font-weight: 600; color: var(--realestate-color); }
     #total-debt-val { font-size: 0.85rem; font-weight: 600; color: var(--debt-color); }
 
     .arrow-icon {
@@ -179,6 +181,7 @@
     .dot-orig { background: var(--accent-color); box-shadow: 0 0 8px var(--accent-color); }
     .dot-lev { background: var(--leverage-color); box-shadow: 0 0 8px var(--leverage-color); }
     .dot-cash { background: var(--cash-color); box-shadow: 0 0 8px var(--cash-color); }
+    .dot-realestate { background: var(--realestate-color); box-shadow: 0 0 8px var(--realestate-color); }
     .dot-debt { background: var(--debt-color); box-shadow: 0 0 8px var(--debt-color); }
 
     .add-btn {
@@ -251,6 +254,10 @@
       background: linear-gradient(90deg, rgba(250, 204, 21, 0.4), #facc15);
       box-shadow: 0 0 6px rgba(250, 204, 21, 0.6);
     }
+    .capsule-progress-fill.realestate {
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.4), #ffffff);
+      box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+    }
     .capsule-progress-fill.debt {
       background: linear-gradient(90deg, rgba(148, 163, 184, 0.4), #94a3b8);
       box-shadow: 0 0 6px rgba(148, 163, 184, 0.6);
@@ -309,13 +316,14 @@
     }
 
     .type-selector, .lev-selector, .currency-selector, .mode-selector, .calc-mode-selector {
-      display: flex; gap: 8px; width: 100%; max-width: 360px;
+      display: flex; gap: 6px; width: 100%; max-width: 360px; flex-wrap: wrap;
     }
     .type-btn, .lev-btn, .curr-btn, .mode-btn, .calc-mode-btn {
-      flex: 1; padding: 10px; border-radius: 12px;
+      flex: 1 1 auto; padding: 10px 8px; border-radius: 12px;
       border: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.4);
-      color: var(--sub-text); font-size: 0.85rem; font-weight: 600;
+      color: var(--sub-text); font-size: 0.8rem; font-weight: 600;
       cursor: pointer; text-align: center; transition: all 0.3s ease;
+      white-space: nowrap;
     }
 
     .type-btn#type-orig.active {
@@ -326,6 +334,9 @@
     }
     .type-btn#type-cash.active {
       background: rgba(250, 204, 21, 0.2); border-color: var(--cash-color); color: var(--cash-color);
+    }
+    .type-btn#type-realestate.active {
+      background: rgba(255, 255, 255, 0.2); border-color: var(--realestate-color); color: var(--realestate-color);
     }
     .type-btn#type-debt.active {
       background: rgba(148, 163, 184, 0.2); border-color: var(--debt-color); color: var(--debt-color);
@@ -513,11 +524,11 @@
       </div>
     </div>
 
-    <!-- 3. 現金與房屋 -->
+    <!-- 3. 現金區塊 -->
     <div class="section-card">
       <div class="section-header" onclick="toggleSection('cash')">
         <span class="section-title">
-          <div class="dot dot-cash"></div> 現金/房屋
+          <div class="dot dot-cash"></div> 現金
           <span class="arrow-icon" id="arrow-cash">▼</span>
         </span>
         <div class="section-action">
@@ -530,7 +541,24 @@
       </div>
     </div>
 
-    <!-- 4. 負債區塊 -->
+    <!-- 4. 實體資產區塊 -->
+    <div class="section-card">
+      <div class="section-header" onclick="toggleSection('realestate')">
+        <span class="section-title">
+          <div class="dot dot-realestate"></div> 實體資產 (房屋/車輛)
+          <span class="arrow-icon" id="arrow-realestate">▼</span>
+        </span>
+        <div class="section-action">
+          <span class="section-total" id="total-realestate-val">NT$0</span>
+          <button class="add-btn" onclick="openSheet('realestate', event)">+ 新增</button>
+        </div>
+      </div>
+      <div class="section-body" id="body-realestate">
+        <div id="list-realestate"></div>
+      </div>
+    </div>
+
+    <!-- 5. 負債區塊 -->
     <div class="section-card">
       <div class="section-header" onclick="toggleSection('debt')">
         <span class="section-title">
@@ -562,7 +590,8 @@
       <div class="type-selector">
         <div class="type-btn active" id="type-orig" onclick="setType('original')">原型</div>
         <div class="type-btn" id="type-lev" onclick="setType('leverage')">槓桿</div>
-        <div class="type-btn" id="type-cash" onclick="setType('cash')">現金/房屋</div>
+        <div class="type-btn" id="type-cash" onclick="setType('cash')">現金</div>
+        <div class="type-btn" id="type-realestate" onclick="setType('realestate')">實體資產</div>
         <div class="type-btn" id="type-debt" onclick="setType('debt')">負債</div>
       </div>
     </div>
@@ -576,8 +605,8 @@
     </div>
 
     <div class="form-group" id="group-symbol">
-      <label class="form-label" id="label-symbol">標的代號 / 名稱 (例如：房屋貸款、0050)</label>
-      <input type="text" id="input-symbol" class="form-input" placeholder="例如：房貸、股票質押、0050" onblur="fetchStockPrice()">
+      <label class="form-label" id="label-symbol">標的代號 / 名稱 (例如：自住房產、0050)</label>
+      <input type="text" id="input-symbol" class="form-input" placeholder="例如：自住房產、房貸、0050" onblur="fetchStockPrice()">
       <div class="price-hint" id="price-hint">正在連線抓取最新股價...</div>
     </div>
 
@@ -624,7 +653,7 @@
     </div>
   </div>
 
-  <!-- 抽屜二：理想配置比例設定 Bottom Sheet (整合 Lifecycle Investing 計算器) -->
+  <!-- 抽屜二：理想配置比例設定 Bottom Sheet -->
   <div class="bottom-sheet" id="ratio-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">設定理想配置目標 (%)</div>
@@ -644,7 +673,7 @@
         <input type="number" id="input-target-leverage" class="form-input" placeholder="如：1.5代表150%淨值" value="1.5" step="0.1" min="1.0" max="2.0" oninput="calculateLifecycleRatios()">
       </div>
       <div class="form-group" style="margin-bottom: 12px;">
-        <label class="form-label">現金 Buffer 占總資產比例 $c$ (%)</label>
+        <label class="form-label">現金 Buffer 占金融資產比例 $c$ (%)</label>
         <input type="number" id="input-cash-buffer-pct" class="form-input" placeholder="如：10 代表 10%" value="10" step="1" min="0" max="50" oninput="calculateLifecycleRatios()">
       </div>
 
@@ -663,7 +692,7 @@
     </div>
 
     <div class="ratio-slider-container">
-      <!-- 標籤與數字顯示區（支援點擊切換精確輸入） -->
+      <!-- 標籤與數字顯示區 -->
       <div class="ratio-values-display">
         <div class="ratio-tag tag-orig editable" onclick="enableTagInput('orig')">
           <span class="ratio-tag-label">原型股票</span>
@@ -708,7 +737,8 @@
       { id: 1, type: 'original', symbol: '0050', shares: 20000, price: 190, currency: 'TWD', rate: 1 },
       { id: 2, type: 'leverage', symbol: '00631L', shares: 15000, price: 210, multiple: 2, currency: 'TWD', rate: 1 },
       { id: 3, type: 'cash', symbol: '銀行活存', val: 1200000, currency: 'TWD', rate: 1, isSharesMode: false },
-      { id: 4, type: 'debt', symbol: '房屋貸款', val: 5000000, currency: 'TWD', rate: 1, isSharesMode: false }
+      { id: 4, type: 'realestate', symbol: '自住房產', val: 15000000, currency: 'TWD', rate: 1, isSharesMode: false },
+      { id: 5, type: 'debt', symbol: '房屋貸款', val: 5000000, currency: 'TWD', rate: 1, isSharesMode: false }
     ];
 
     let targetRatios = JSON.parse(localStorage.getItem('target_ratios')) || { orig: 50, lev: 30, cash: 20 };
@@ -792,12 +822,12 @@
 
     /* 生命週期投資法解算邏輯 */
     function calculateLifecycleRatios() {
-      let totalOrigTWD = 0, totalLevTWD = 0, totalCashTWD = 0, totalDebtTWD = 0;
+      let totalOrigTWD = 0, totalLevTWD = 0, totalCashTWD = 0, totalRealestateTWD = 0, totalDebtTWD = 0;
 
       assets.forEach(item => {
         const curr = item.currency || 'TWD';
         const fxRate = curr === 'USD' ? (item.rate || 32.0) : 1;
-        let rawVal = (item.type === 'cash' || item.type === 'debt') && !item.isSharesMode 
+        let rawVal = (item.type === 'cash' || item.type === 'realestate' || item.type === 'debt') && !item.isSharesMode 
           ? (item.val || 0) 
           : ((item.shares || 0) * (item.price || 0));
         let twdVal = rawVal * fxRate;
@@ -805,19 +835,21 @@
         if (item.type === 'original') totalOrigTWD += twdVal;
         else if (item.type === 'leverage') totalLevTWD += twdVal;
         else if (item.type === 'cash') totalCashTWD += twdVal;
+        else if (item.type === 'realestate') totalRealestateTWD += twdVal;
         else if (item.type === 'debt') totalDebtTWD += twdVal;
       });
 
-      const totalAssets = totalOrigTWD + totalLevTWD + totalCashTWD;
+      const totalFinancialAssets = totalOrigTWD + totalLevTWD + totalCashTWD;
+      const totalAssets = totalFinancialAssets + totalRealestateTWD;
       const netWorth = Math.max(0, totalAssets - totalDebtTWD);
 
       const targetLeverage = parseFloat(document.getElementById('input-target-leverage').value) || 1.5;
       const cashBufferPct = (parseFloat(document.getElementById('input-cash-buffer-pct').value) || 10) / 100;
-      const levMultiple = 2.0; // 以 00631L 的 2X 槓桿為例
+      const levMultiple = 2.0;
 
       const targetExposure = netWorth * targetLeverage;
-      const targetCashVal = totalAssets * cashBufferPct;
-      const investableVal = Math.max(0, totalAssets - targetCashVal);
+      const targetCashVal = totalFinancialAssets * cashBufferPct;
+      const investableVal = Math.max(0, totalFinancialAssets - targetCashVal);
 
       // 解二元一次聯立方程：
       // A_orig + A_lev = investableVal
@@ -833,9 +865,9 @@
         aLev = investableVal;
       }
 
-      let origPct = totalAssets > 0 ? (aOrig / totalAssets) * 100 : 0;
-      let levPct = totalAssets > 0 ? (aLev / totalAssets) * 100 : 0;
-      let cashPct = totalAssets > 0 ? (targetCashVal / totalAssets) * 100 : 0;
+      let origPct = totalFinancialAssets > 0 ? (aOrig / totalFinancialAssets) * 100 : 0;
+      let levPct = totalFinancialAssets > 0 ? (aLev / totalFinancialAssets) * 100 : 0;
+      let cashPct = totalFinancialAssets > 0 ? (targetCashVal / totalFinancialAssets) * 100 : 0;
 
       // 歸一化補齊至 100%
       let totalPct = origPct + levPct + cashPct;
@@ -1055,7 +1087,7 @@
       statusText.innerText = '⚡ 正在同時更新最新即時股價...';
 
       const fetchPromises = assets.map((item, index) => {
-        if (item.type !== 'debt' && (item.type !== 'cash' || item.isSharesMode) && item.symbol) {
+        if (item.type !== 'debt' && item.type !== 'realestate' && (item.type !== 'cash' || item.isSharesMode) && item.symbol) {
           return fetch(`${GAS_API_URL}?symbol=${encodeURIComponent(item.symbol)}`)
             .then(res => res.json())
             .then(data => ({ index, data }))
@@ -1092,7 +1124,7 @@
       const priceInput = document.getElementById('input-price');
       const rateInput = document.getElementById('input-rate');
 
-      if (!symbolInput || ((currentType === 'cash' || currentType === 'debt') && currentCashMode === 'total')) return;
+      if (!symbolInput || ((currentType === 'cash' || currentType === 'realestate' || currentType === 'debt') && currentCashMode === 'total')) return;
       if (!GAS_API_URL || GAS_API_URL === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") return;
 
       hint.innerText = "⚡ 正在查詢即時股價與匯率...";
@@ -1123,16 +1155,18 @@
       const listOrig = document.getElementById('list-original');
       const listLev = document.getElementById('list-leverage');
       const listCash = document.getElementById('list-cash');
+      const listRealestate = document.getElementById('list-realestate');
       const listDebt = document.getElementById('list-debt');
 
-      listOrig.innerHTML = ''; listLev.innerHTML = ''; listCash.innerHTML = ''; listDebt.innerHTML = '';
+      listOrig.innerHTML = ''; listLev.innerHTML = ''; listCash.innerHTML = ''; 
+      listRealestate.innerHTML = ''; listDebt.innerHTML = '';
 
-      let totalOrigTWD = 0, totalLevTWD = 0, totalCashTWD = 0, totalDebtTWD = 0;
+      let totalOrigTWD = 0, totalLevTWD = 0, totalCashTWD = 0, totalRealestateTWD = 0, totalDebtTWD = 0;
 
       assets.forEach(item => {
         const curr = item.currency || 'TWD';
         const fxRate = curr === 'USD' ? (item.rate || 32.0) : 1;
-        let rawVal = (item.type === 'cash' || item.type === 'debt') && !item.isSharesMode 
+        let rawVal = (item.type === 'cash' || item.type === 'realestate' || item.type === 'debt') && !item.isSharesMode 
           ? (item.val || 0) 
           : ((item.shares || 0) * (item.price || 0));
         let twdVal = rawVal * fxRate;
@@ -1140,13 +1174,14 @@
         if (item.type === 'original') totalOrigTWD += twdVal;
         else if (item.type === 'leverage') totalLevTWD += twdVal;
         else if (item.type === 'cash') totalCashTWD += twdVal;
+        else if (item.type === 'realestate') totalRealestateTWD += twdVal;
         else if (item.type === 'debt') totalDebtTWD += twdVal;
       });
 
       assets.forEach(item => {
         const curr = item.currency || 'TWD';
         const fxRate = curr === 'USD' ? (item.rate || 32.0) : 1;
-        let rawVal = (item.type === 'cash' || item.type === 'debt') && !item.isSharesMode 
+        let rawVal = (item.type === 'cash' || item.type === 'realestate' || item.type === 'debt') && !item.isSharesMode 
           ? (item.val || 0) 
           : ((item.shares || 0) * (item.price || 0));
         let twdVal = rawVal * fxRate;
@@ -1160,6 +1195,8 @@
           categoryTotal = totalLevTWD; fillClass = 'lev';
         } else if (item.type === 'cash') {
           categoryTotal = totalCashTWD; fillClass = 'cash';
+        } else if (item.type === 'realestate') {
+          categoryTotal = totalRealestateTWD; fillClass = 'realestate';
         } else {
           categoryTotal = totalDebtTWD; fillClass = 'debt';
         }
@@ -1177,7 +1214,7 @@
 
         let html = '';
 
-        if (item.type === 'cash' || item.type === 'debt') {
+        if (item.type === 'cash' || item.type === 'realestate' || item.type === 'debt') {
           if (item.isSharesMode) {
             html = `
               <div class="asset-capsule" onclick="openEditSheet(${item.id})">
@@ -1205,6 +1242,7 @@
               </div>`;
           }
           if (item.type === 'cash') listCash.innerHTML += html;
+          else if (item.type === 'realestate') listRealestate.innerHTML += html;
           else listDebt.innerHTML += html;
         } else if (item.type === 'original') {
           html = `
@@ -1240,16 +1278,20 @@
       document.getElementById('total-orig-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalOrigTWD);
       document.getElementById('total-lev-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalLevTWD);
       document.getElementById('total-cash-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalCashTWD);
+      document.getElementById('total-realestate-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalRealestateTWD);
       document.getElementById('total-debt-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalDebtTWD);
 
-      const totalAssetsTWD = totalOrigTWD + totalLevTWD + totalCashTWD;
+      const totalFinancialAssets = totalOrigTWD + totalLevTWD + totalCashTWD;
+      const totalAssetsTWD = totalFinancialAssets + totalRealestateTWD;
       const netWorthTWD = totalAssetsTWD - totalDebtTWD;
+      
       document.getElementById('total-net-worth').innerText = isPrivate ? '****' : '$' + formatNumber(netWorthTWD);
 
-      if (totalAssetsTWD > 0) {
-        document.getElementById('pct-orig').innerText = Math.round((totalOrigTWD / totalAssetsTWD) * 100) + '%';
-        document.getElementById('pct-lev').innerText = Math.round((totalLevTWD / totalAssetsTWD) * 100) + '%';
-        document.getElementById('pct-cash').innerText = Math.round((totalCashTWD / totalAssetsTWD) * 100) + '%';
+      // 總覽卡片子標題（原 / 槓 / 現）：僅計算金融資產池的比例（對應生命週期流動資金）
+      if (totalFinancialAssets > 0) {
+        document.getElementById('pct-orig').innerText = Math.round((totalOrigTWD / totalFinancialAssets) * 100) + '%';
+        document.getElementById('pct-lev').innerText = Math.round((totalLevTWD / totalFinancialAssets) * 100) + '%';
+        document.getElementById('pct-cash').innerText = Math.round((totalCashTWD / totalFinancialAssets) * 100) + '%';
       } else {
         document.getElementById('pct-orig').innerText = '0%';
         document.getElementById('pct-lev').innerText = '0%';
@@ -1260,6 +1302,7 @@
       localStorage.setItem('alloc_original', totalOrigTWD);
       localStorage.setItem('alloc_leverage', totalLevTWD);
       localStorage.setItem('alloc_cash', totalCashTWD);
+      localStorage.setItem('alloc_realestate', totalRealestateTWD);
       localStorage.setItem('alloc_debt', totalDebtTWD);
 
       if (typeof updateGlowBackground === 'function') {
@@ -1278,7 +1321,7 @@
       
       setType(type);
       setCurrency('TWD');
-      if (type === 'cash' || type === 'debt') setCashMode('total');
+      if (type === 'cash' || type === 'realestate' || type === 'debt') setCashMode('total');
       else setCashMode('shares');
 
       document.getElementById('sheet-overlay').classList.add('active');
@@ -1300,7 +1343,7 @@
 
       document.getElementById('input-symbol').value = item.symbol || '';
 
-      if (item.type === 'cash' || item.type === 'debt') {
+      if (item.type === 'cash' || item.type === 'realestate' || item.type === 'debt') {
         if (item.isSharesMode) {
           setCashMode('shares');
           document.getElementById('input-shares').value = item.shares || '';
@@ -1325,7 +1368,8 @@
     function setType(type) {
       currentType = type;
       document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('active'));
-      const activeTypeBtn = document.getElementById(`type-${type === 'original' ? 'orig' : type === 'leverage' ? 'lev' : type === 'cash' ? 'cash' : 'debt'}`);
+      const keyMap = { original: 'orig', leverage: 'lev', cash: 'cash', realestate: 'realestate', debt: 'debt' };
+      const activeTypeBtn = document.getElementById(`type-${keyMap[type]}`);
       if (activeTypeBtn) activeTypeBtn.classList.add('active');
 
       const root = document.documentElement;
@@ -1339,6 +1383,9 @@
       } else if (type === 'cash') {
         root.style.setProperty('--active-theme-color', '#facc15');
         root.style.setProperty('--active-theme-rgb', '250, 204, 21');
+      } else if (type === 'realestate') {
+        root.style.setProperty('--active-theme-color', '#ffffff');
+        root.style.setProperty('--active-theme-rgb', '255, 255, 255');
       } else {
         root.style.setProperty('--active-theme-color', '#94a3b8');
         root.style.setProperty('--active-theme-rgb', '148, 163, 184');
@@ -1384,7 +1431,7 @@
       const inputPrice = document.getElementById('input-price');
       const inputTotal = document.getElementById('input-total-val');
 
-      if (mode === 'total' && (currentType === 'cash' || currentType === 'debt')) {
+      if (mode === 'total' && (currentType === 'cash' || currentType === 'realestate' || currentType === 'debt')) {
         groupShares.classList.add('disabled');
         groupPrice.classList.add('disabled');
         inputShares.disabled = true; inputPrice.disabled = true;
@@ -1424,7 +1471,7 @@
       const rate = currentCurrency === 'USD' ? (parseFloat(document.getElementById('input-rate').value) || 32.0) : 1;
 
       let newData = {};
-      if (currentType === 'cash' || currentType === 'debt') {
+      if (currentType === 'cash' || currentType === 'realestate' || currentType === 'debt') {
         if (currentCashMode === 'shares') {
           const shares = parseFloat(document.getElementById('input-shares').value) || 0;
           const price = parseFloat(document.getElementById('input-price').value) || 0;
@@ -1451,7 +1498,7 @@
       renderAssets();
       closeAllSheets();
 
-      const keyMap = { original: 'orig', leverage: 'lev', cash: 'cash', debt: 'debt' };
+      const keyMap = { original: 'orig', leverage: 'lev', cash: 'cash', realestate: 'realestate', debt: 'debt' };
       const targetKey = keyMap[currentType];
       if (targetKey) {
         const body = document.getElementById(`body-${targetKey}`);
