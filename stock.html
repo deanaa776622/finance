@@ -821,82 +821,87 @@
     }
 
     /* 生命週期投資法解算邏輯（包含信貸與非房貸槓桿抵扣） */
-function calculateLifecycleRatios() {
-  let totalOrigTWD = 0, totalLevTWD = 0, totalCashTWD = 0, totalRealestateTWD = 0, totalDebtTWD = 0;
-  let investDebtTWD = 0; // 用於投資/非房貸的信貸與質押金額
+    function calculateLifecycleRatios() {
+      let totalOrigTWD = 0, totalLevTWD = 0, totalCashTWD = 0, totalRealestateTWD = 0, totalDebtTWD = 0;
+      let investDebtTWD = 0; // 用於投資/非房貸的信貸與質押金額
 
-  assets.forEach(item => {
-    const curr = item.currency || 'TWD';
-    const fxRate = curr === 'USD' ? (item.rate || 32.0) : 1;
-    let rawVal = (item.type === 'cash' || item.type === 'realestate' || item.type === 'debt') && !item.isSharesMode 
-      ? (item.val || 0) 
-      : ((item.shares || 0) * (item.price || 0));
-    let twdVal = rawVal * fxRate;
+      assets.forEach(item => {
+        const curr = item.currency || 'TWD';
+        const fxRate = curr === 'USD' ? (item.rate || 32.0) : 1;
+        let rawVal = (item.type === 'cash' || item.type === 'realestate' || item.type === 'debt') && !item.isSharesMode 
+          ? (item.val || 0) 
+          : ((item.shares || 0) * (item.price || 0));
+        let twdVal = rawVal * fxRate;
 
-    if (item.type === 'original') totalOrigTWD += twdVal;
-    else if (item.type === 'leverage') totalLevTWD += twdVal;
-    else if (item.type === 'cash') totalCashTWD += twdVal;
-    else if (item.type === 'realestate') totalRealestateTWD += twdVal;
-    else if (item.type === 'debt') {
-      totalDebtTWD += twdVal;
-      // 判斷負債項目：若非房貸，視為直接提供 1X 股票曝險的信貸/質押/融資
-      const sym = (item.symbol || '').toLowerCase();
-      if (!sym.includes('房貸') && !sym.includes('房屋')) {
-        investDebtTWD += twdVal;
+        if (item.type === 'original') totalOrigTWD += twdVal;
+        else if (item.type === 'leverage') totalLevTWD += twdVal;
+        else if (item.type === 'cash') totalCashTWD += twdVal;
+        else if (item.type === 'realestate') totalRealestateTWD += twdVal;
+        else if (item.type === 'debt') {
+          totalDebtTWD += twdVal;
+          // 判斷負債項目：若非房貸，視為直接提供 1X 股票曝險的信貸/質押/融資
+          const sym = (item.symbol || '').toLowerCase();
+          if (!sym.includes('房貸') && !sym.includes('房屋')) {
+            investDebtTWD += twdVal;
+          }
+        }
+      });
+
+      const totalFinancialAssets = totalOrigTWD + totalLevTWD + totalCashTWD;
+      const totalAssets = totalFinancialAssets + totalRealestateTWD;
+      const netWorth = Math.max(0, totalAssets - totalDebtTWD);
+
+      const targetLeverage = parseFloat(document.getElementById('input-target-leverage').value) || 1.5;
+      const cashBufferPct = (parseFloat(document.getElementById('input-cash-buffer-pct').value) || 10) / 100;
+      const levMultiple = 2.0; // 00631L
+
+      // 1. 計算目標股票總曝險 E_target
+      const targetExposure = netWorth * targetLeverage;
+
+      // 2. 扣除信貸/質押已提供的實體槓桿曝險
+      const netStockExposureNeeded = Math.max(0, targetExposure - investDebtTWD);
+
+      // 3. 計算金融資產保留現金後的可用投資資金
+      const targetCashVal = totalFinancialAssets * cashBufferPct;
+      const investableVal = Math.max(0, totalFinancialAssets - targetCashVal);
+
+      // 4. 解二元一次聯立方程:
+      // A_orig + A_lev = investableVal
+      // A_orig + m * A_lev = netStockExposureNeeded
+      let aLev = (netStockExposureNeeded - investableVal) / (levMultiple - 1);
+      let aOrig = investableVal - aLev;
+
+      if (aLev < 0) {
+        aLev = 0;
+        aOrig = Math.min(investableVal, netStockExposureNeeded);
+      } else if (aOrig < 0) {
+        aOrig = 0;
+        aLev = investableVal;
+      }
+
+      let origPct = totalFinancialAssets > 0 ? (aOrig / totalFinancialAssets) * 100 : 0;
+      let levPct = totalFinancialAssets > 0 ? (aLev / totalFinancialAssets) * 100 : 0;
+      let cashPct = totalFinancialAssets > 0 ? (targetCashVal / totalFinancialAssets) * 100 : 0;
+
+      // 歸一化至 100%
+      let totalPct = origPct + levPct + cashPct;
+      if (totalPct > 0) {
+        origPct = Math.round((origPct / totalPct) * 100);
+        levPct = Math.round((levPct / totalPct) * 100);
+        cashPct = 100 - origPct - levPct;
+      }
+
+      document.getElementById('lc-val-exposure').innerText = '$' + formatNumber(targetExposure);
+      document.getElementById('lc-val-lev-pct').innerText = levPct + '%';
+
+      computedLifecycleResult = { orig: origPct, lev: levPct, cash: cashPct };
+    }
+
+    function applyLifecycleCalculation() {
+      if (computedLifecycleResult) {
+        updateSliderUI(computedLifecycleResult.orig, computedLifecycleResult.lev, computedLifecycleResult.cash);
       }
     }
-  });
-
-  const totalFinancialAssets = totalOrigTWD + totalLevTWD + totalCashTWD;
-  const totalAssets = totalFinancialAssets + totalRealestateTWD;
-  const netWorth = Math.max(0, totalAssets - totalDebtTWD);
-
-  const targetLeverage = parseFloat(document.getElementById('input-target-leverage').value) || 1.5;
-  const cashBufferPct = (parseFloat(document.getElementById('input-cash-buffer-pct').value) || 10) / 100;
-  const levMultiple = 2.0; // 00631L
-
-  // 1. 計算目標股票總曝險 E_target
-  const targetExposure = netWorth * targetLeverage;
-
-  // 2. 扣除信貸/質押已提供的實體槓桿曝險
-  const netStockExposureNeeded = Math.max(0, targetExposure - investDebtTWD);
-
-  // 3. 計算金融資產保留現金後的可用投資資金
-  const targetCashVal = totalFinancialAssets * cashBufferPct;
-  const investableVal = Math.max(0, totalFinancialAssets - targetCashVal);
-
-  // 4. 解二元一次聯立方程:
-  // A_orig + A_lev = investableVal
-  // A_orig + m * A_lev = netStockExposureNeeded
-  let aLev = (netStockExposureNeeded - investableVal) / (levMultiple - 1);
-  let aOrig = investableVal - aLev;
-
-  if (aLev < 0) {
-    aLev = 0;
-    aOrig = Math.min(investableVal, netStockExposureNeeded);
-  } else if (aOrig < 0) {
-    aOrig = 0;
-    aLev = investableVal;
-  }
-
-  let origPct = totalFinancialAssets > 0 ? (aOrig / totalFinancialAssets) * 100 : 0;
-  let levPct = totalFinancialAssets > 0 ? (aLev / totalFinancialAssets) * 100 : 0;
-  let cashPct = totalFinancialAssets > 0 ? (targetCashVal / totalFinancialAssets) * 100 : 0;
-
-  // 歸一化至 100%
-  let totalPct = origPct + levPct + cashPct;
-  if (totalPct > 0) {
-    origPct = Math.round((origPct / totalPct) * 100);
-    levPct = Math.round((levPct / totalPct) * 100);
-    cashPct = 100 - origPct - levPct;
-  }
-
-  document.getElementById('lc-val-exposure').innerText = '$' + formatNumber(targetExposure);
-  document.getElementById('lc-val-lev-pct').innerText = levPct + '%';
-
-  computedLifecycleResult = { orig: origPct, lev: levPct, cash: cashPct };
-}
-
 
     /* 真光暈霓虹分段滑桿渲染邏輯 */
     function openRatioSheet() {
