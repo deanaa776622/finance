@@ -9,10 +9,11 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* 頁面底層始終為深色底色 */
     html, body {
       width: 100%; height: 100%; height: 100dvh;
       overflow: hidden;
-      background-color: #0f172a; /* 底層基色 */
+      background-color: #0f172a; 
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: #f8fafc;
     }
@@ -23,14 +24,13 @@
       display: flex; flex-direction: column;
       align-items: center;
       position: relative; overflow: hidden;
-      touch-action: none; /* 防止原生頁面橡皮筋滾動 */
+      touch-action: none; /* 防止 iOS 橡皮筋回彈 */
     }
 
-    /* 核心卡片面板：預設滿版，背景與光暈都在內部 */
+    /* 核心卡片面板：預設全螢幕（滿版光暈），縮起後變圓弧矩形卡片 */
     .status-card {
       width: 100%;
-      height: 100vh; /* 預設佔滿全螢幕 */
-      background: #0f172a; /* 預設滿版背景色 */
+      height: 100vh; /* 預設滿版佔滿全螢幕 */
       border-radius: 0px; /* 預設無圓角 */
       border: 1px solid rgba(255, 255, 255, 0);
       display: flex;
@@ -40,29 +40,28 @@
       position: relative;
       z-index: 2;
       flex-shrink: 0;
-      overflow: hidden; /* 核心：鎖定內部背景與光暈，隨卡片邊界一併裁切縮放 */
+      overflow: hidden; /* 關鍵：鎖定光暈背景，讓其隨卡片輪廓進行裁切與變形 */
       box-shadow: 0 0 0 rgba(0,0,0,0);
       
       transition: height 0.45s cubic-bezier(0.16, 1, 0.3, 1),
                   width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
                   border-radius 0.45s cubic-bezier(0.16, 1, 0.3, 1),
                   margin 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-                  background 0.45s ease,
                   border-color 0.45s ease,
                   box-shadow 0.45s ease;
       cursor: pointer;
     }
 
-    /* 卡片內部的背景光暈承接層 (給 glow.js 或 CSS 光暈使用) */
+    /* 卡片內部的專屬光暈背景承接容器 */
     .card-glow-bg {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
       z-index: 0;
       pointer-events: none;
-      transition: opacity 0.45s ease;
+      background-color: #0f172a; /* 兜底深色 */
     }
 
-    /* 狀態文字內容層 */
+    /* 內容層 */
     .status-content {
       position: relative;
       z-index: 1;
@@ -76,34 +75,31 @@
       user-select: none;
     }
 
-    /* 底部引導小指示條 */
+    /* 底部提示 */
     .drag-hint {
       position: absolute; bottom: 20px;
-      font-size: 0.72rem; color: #64748b; letter-spacing: 0.1em;
+      font-size: 0.72rem; color: rgba(255, 255, 255, 0.5); letter-spacing: 0.1em;
       transition: opacity 0.3s ease;
       pointer-events: none;
       z-index: 1;
     }
 
-    /* ─── 往上滑動後的收折狀態 (.collapsed) ─── */
+    /* ─── 往上滑動後的縮起狀態 (.collapsed) ─── */
     .app-viewport.collapsed .status-card {
-      height: 180px; /* 向上縮為精緻面板 */
-      width: calc(100% - 40px); /* 兩側留出邊界 */
+      height: 180px; /* 向上縮為矩形面板 */
+      width: calc(100% - 40px); /* 兩側留出空間 */
       max-width: 400px;
       margin-top: 15px;
-      border-radius: 28px; /* 背景色與光暈跟著縮成圓弧矩形！ */
-      background: rgba(30, 41, 59, 0.65); /* 縮起後的玻璃感背景色 */
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 28px; /* 光暈背景跟著收縮裁切成圓弧矩形！ */
+      border: 1px solid rgba(255, 255, 255, 0.15);
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
     }
 
     .app-viewport.collapsed .drag-hint {
-      opacity: 0; /* 縮起後隱藏提示 */
+      opacity: 0;
     }
 
-    /* ─── 下方露出的內容區 ─── */
+    /* ─── 縮起後，矩形外的下方深色底內容區 ─── */
     .content-panel {
       width: 100%; max-width: 400px; flex: 1;
       padding: 16px 20px calc(85px + env(safe-area-inset-bottom)) 20px;
@@ -119,7 +115,7 @@
       transform: translateY(0);
     }
 
-    /* 下方卡片質感 */
+    /* 矩形外部深色區塊上的卡片樣式 */
     .info-card {
       background: rgba(30, 41, 59, 0.45);
       backdrop-filter: blur(20px);
@@ -142,9 +138,9 @@
 
   <div class="app-viewport" id="app-viewport">
     
-    <!-- 全螢幕卡片面板：內部包含背景與動態光暈容器 -->
+    <!-- 全螢幕 ➔ 縮成光暈圓弧矩形卡片 -->
     <div class="status-card" id="status-card">
-      <!-- 原本全螢幕的背景光暈層（被包裹在卡片內，隨卡片一同收縮） -->
+      <!-- 此處為光暈背景層，會跟隨 status-card 一起變形與裁切 -->
       <div class="card-glow-bg" id="card-glow-bg"></div>
 
       <!-- 文字內容 -->
@@ -155,7 +151,7 @@
       <div class="drag-hint">▲ 往上滑動展開儀表板</div>
     </div>
 
-    <!-- 縮起後下方顯示的資訊區 -->
+    <!-- 矩形卡片外部的深色底內容區 -->
     <div class="content-panel" id="content-panel">
       <div class="info-card">
         <div class="info-card-title">資產狀態總覽</div>
@@ -178,37 +174,36 @@
 
   <script>
     window.onload = function() {
-      // 呼叫 glow.js 的統一函式，並更新狀態文字
+      // 呼叫 glow.js 統一函式並更新狀態文字
       const maxDiff = typeof updateGlowBackground === 'function' ? updateGlowBackground() : 0;
       const statusText = document.getElementById('status-text');
       statusText.innerText = (maxDiff >= 10) ? 'ATTENTION' : 'BALANCED';
 
-      // 若 glow.js 生成了全頁 Canvas/Glow 元素，將其移動至 #card-glow-bg 或 #status-card 內部
-      adaptGlowToCard();
+      // 將原本掛載在 body 的 glow 元素搬移至 status-card 內
+      attachGlowToCard();
 
       initGestureEngine();
     };
 
-    /* 將 Glow 動態背景移入 status-card 內部的邏輯 */
-    function adaptGlowToCard() {
-      const card = document.getElementById('status-card');
+    /* 將 glow.js 動態產生的 Canvas/Glow 搬移至卡片內部 */
+    function attachGlowToCard() {
       const cardGlowContainer = document.getElementById('card-glow-bg');
       
-      // 搜尋 glow.js 在 body 下產生的背景元素 (例如 canvas 或 glow-container)
+      // 抓取 glow.js 產生的 canvas 或背景元素
       const glowElement = document.querySelector('canvas') || document.querySelector('.glow-container');
       
       if (glowElement && glowElement.parentElement !== cardGlowContainer) {
         cardGlowContainer.appendChild(glowElement);
-        // 確保 glow 元素覆蓋整個卡片內部
         glowElement.style.position = 'absolute';
         glowElement.style.top = '0';
         glowElement.style.left = '0';
         glowElement.style.width = '100%';
         glowElement.style.height = '100%';
+        glowElement.style.pointerEvents = 'none';
       }
     }
 
-    /* 觸控滑動手勢引擎 */
+    /* 觸控手勢滑動引擎 */
     function initGestureEngine() {
       const viewport = document.getElementById('app-viewport');
       const card = document.getElementById('status-card');
@@ -228,11 +223,11 @@
         const endY = e.changedTouches[0].clientY;
         const diffY = startY - endY;
 
-        // 向上滑動超過 30px ➔ 背景色與光暈一起壓縮成圓弧矩形卡片
+        // 向上滑動超過 30px ➔ 光暈隨卡片縮成圓弧矩形
         if (diffY > 30) {
           viewport.classList.add('collapsed');
         } 
-        // 向下滑動超過 30px ➔ 展開回滿版全螢幕
+        // 向下滑動超過 30px ➔ 光暈展開回滿版全螢幕
         else if (diffY < -30) {
           viewport.classList.remove('collapsed');
         }
