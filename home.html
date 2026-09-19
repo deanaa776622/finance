@@ -2,33 +2,136 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>首頁</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     html, body {
-      width: 100%; height: 100%; overflow: hidden;
+      width: 100%; height: 100%; height: 100dvh;
+      overflow: hidden;
       background-color: #0f172a;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #f8fafc;
     }
-    .status-overlay {
-      position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+
+    /* 全螢幕主容器 */
+    .app-viewport {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+      touch-action: none; /* 防止原生頁面彈跳 */
+    }
+
+    /* 上方動態面板 (原本的全頁 overlay 變身而來) */
+    .header-panel {
+      width: 100%;
+      height: 100vh; /* 預設全螢幕 */
+      min-height: 90px; /* 縮小後的最小面板高度 */
       display: flex; justify-content: center; align-items: center;
-      z-index: 2; pointer-events: none;
+      position: relative; z-index: 2;
+      flex-shrink: 0;
+      transition: height 0.3s cubic-bezier(0.25, 1, 0.5, 1), padding 0.3s ease;
+      cursor: pointer;
     }
+
+    /* 狀態文字：隨拖曳動態縮放 */
     .status-text {
       font-size: 1.1rem; font-weight: 600; letter-spacing: 0.2em;
       color: #f8fafc; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-      transition: color 0.5s ease;
+      transition: color 0.5s ease, transform 0.3s ease;
+      user-select: none;
+    }
+
+    /* 拖曳指示小拉條 */
+    .drag-handle {
+      position: absolute; bottom: 10px;
+      width: 36px; height: 4px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 2px;
+      transition: opacity 0.3s;
+    }
+
+    /* 下方新出現的內容資訊區 */
+    .content-panel {
+      width: 100%; flex: 1;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top-left-radius: 28px;
+      border-top-right-radius: 28px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 24px 20px 100px 20px; /* 留出底部導覽列空間 */
+      overflow-y: auto;
+      z-index: 3;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    /* 當面板處於縮小 (Collapsed) 狀態時的樣式 */
+    .app-viewport.collapsed .header-panel {
+      height: 100px; /* 向上縮成頂部 Header 面板的高度 */
+    }
+
+    .app-viewport.collapsed .status-text {
+      transform: scale(0.9); /* 文字微幅縮小保持精緻感 */
+    }
+
+    .app-viewport.collapsed .content-panel {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .app-viewport.collapsed .drag-handle {
+      opacity: 0.3;
+    }
+
+    /* 資訊卡片樣式範例 */
+    .info-card {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .info-card-title {
+      font-size: 0.85rem; font-weight: 600;
+      color: #94a3b8; margin-bottom: 8px;
+      letter-spacing: 0.05em;
+    }
+    .info-card-value {
+      font-size: 1.5rem; font-weight: 700; color: #ffffff;
     }
   </style>
 </head>
 <body>
 
-  <div class="status-overlay">
-    <span id="status-text" class="status-text">BALANCED</span>
+  <div class="app-viewport" id="app-viewport">
+    
+    <!-- 頂部面板：可向上縮小 -->
+    <div class="header-panel" id="header-panel">
+      <span id="status-text" class="status-text">BALANCED</span>
+      <div class="drag-handle"></div>
+    </div>
+
+    <!-- 底部資訊區：向上滑動後呈現 -->
+    <div class="content-panel" id="content-panel">
+      <div class="info-card">
+        <div class="info-card-title">資產狀態總覽</div>
+        <div class="info-card-value">系統運作正常</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-card-title">即時訊息通知</div>
+        <div style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
+          目前資產配置未達偏離警示門檻（10%），建議繼續保持當前策略。
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- 引入背景光暈與導覽列 -->
@@ -37,11 +140,54 @@
 
   <script>
     window.onload = function() {
-      // 呼叫 glow.js 的統一函式，並用回傳的最大偏離值更新狀態文字
-      const maxDiff = updateGlowBackground();
+      // 呼叫 glow.js 的統一函式，並更新狀態文字
+      const maxDiff = typeof updateGlowBackground === 'function' ? updateGlowBackground() : 0;
       const statusText = document.getElementById('status-text');
       statusText.innerText = (maxDiff >= 10) ? 'ATTENTION' : 'BALANCED';
+
+      initDragGesture();
     };
+
+    /* 觸控手勢拖曳邏輯 */
+    function initDragGesture() {
+      const viewport = document.getElementById('app-viewport');
+      const header = document.getElementById('header-panel');
+      
+      let startY = 0;
+      let currentY = 0;
+      let isDragging = false;
+
+      header.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+        isDragging = true;
+      }, { passive: true });
+
+      header.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        currentY = e.touches[0].clientY;
+      }, { passive: true });
+
+      header.addEventListener('touchend', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        
+        const diffY = startY - currentY;
+        
+        // 往上滑動超過 50px ➔ 縮小成頂部面板
+        if (diffY > 50) {
+          viewport.classList.add('collapsed');
+        } 
+        // 往下滑動超過 50px ➔ 展開回全螢幕
+        else if (diffY < -50) {
+          viewport.classList.remove('collapsed');
+        }
+      });
+
+      // 點擊頂部面板亦可切換展開/收折
+      header.addEventListener('click', () => {
+        viewport.classList.toggle('collapsed');
+      });
+    }
   </script>
 </body>
 </html>
