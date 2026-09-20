@@ -9,7 +9,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* 確保全頁底層死守深色背景 */
+    /* 頁面底層始終為深色底色 (#0f172a) */
     html, body {
       width: 100%; height: 100%; height: 100dvh;
       overflow: hidden;
@@ -26,7 +26,7 @@
     }
 
     /* 
-      1. 動態光暈矩形卡片 
+      動態光暈矩形卡片 
       預設 (滿版): 滿滿的全螢幕 (100vw x 100vh)
     */
     .glow-card-wrapper {
@@ -37,16 +37,15 @@
       width: 100vw; 
       height: 100vh;
       z-index: 2;
-      overflow: hidden; /* 硬體裁切：確保光暈 Canvas 不會超出此框線 */
+      overflow: hidden; /* 關鍵：嚴格將光暈 Canvas 裁切在卡片邊界內 */
       display: flex; flex-direction: column;
       justify-content: center; align-items: center;
       cursor: pointer;
       border-radius: 0px;
       border: 1px solid rgba(255, 255, 255, 0);
-      background-color: #0f172a; /* 底色為深色，供 Canvas 光暈鋪疊 */
-      isolation: isolate; /* 建立獨立獨立圖層混合情境 */
+      background: transparent; /* 透明底色，讓光暈完全透出 */
 
-      /* 平滑收縮與圓角動畫 */
+      /* 平滑縮收與圓角變形動畫 */
       transition: top 0.45s cubic-bezier(0.16, 1, 0.3, 1),
                   height 0.45s cubic-bezier(0.16, 1, 0.3, 1),
                   width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
@@ -72,17 +71,17 @@
     }
 
     /* 
-      2. 往上滑動後的縮起狀態 (.collapsed) 
-      卡片縮為頂部圓弧矩形，且光暈完全縮在內部
+      往上滑動後的縮起狀態 (.collapsed) 
+      光暈背景跟著收縮裁切成頂部圓弧矩形！
     */
     .app-viewport.collapsed .glow-card-wrapper {
       top: 15px;
       width: calc(100vw - 40px);
       max-width: 400px;
       height: 180px;
-      border-radius: 28px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 255, 255, 0.1);
+      border-radius: 28px; /* 明顯的圓弧邊角 */
+      border: 1px solid rgba(255, 255, 255, 0.25); /* 醒目的玻璃光邊框 */
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 25px rgba(255, 255, 255, 0.12);
     }
 
     .app-viewport.collapsed .drag-hint-text {
@@ -90,7 +89,7 @@
     }
 
     /* 
-      3. 矩形卡片外部的純深色底內容區 
+      矩形卡片外部露出的深色底內容區 
     */
     .content-panel {
       position: absolute;
@@ -166,35 +165,31 @@
       const statusText = document.getElementById('status-text');
       statusText.innerText = (maxDiff >= 10) ? 'ATTENTION' : 'BALANCED';
 
-      // 2. 將原本被掛載到 body/window 的光暈 Canvas 強制收納進矩形卡片內部
+      // 2. 將全頁 Canvas 移入卡片內，並讓 Canvas 自然保持滿版
       bindGlowCanvasToCard();
 
       // 3. 初始化滑動手勢
       initGestureEngine();
     };
 
-    /* 強制將全頁 Canvas 移入卡片內部，並清理全頁多餘圖層 */
+    /* 將 Canvas 捕捉並置於卡片內部 */
     function bindGlowCanvasToCard() {
       const wrapper = document.getElementById('glow-card-wrapper');
+      const canvas = document.querySelector('canvas');
       
-      // 獲取 glow.js 產生的所有 canvas
-      const canvases = document.querySelectorAll('canvas');
-      
-      canvases.forEach(canvas => {
-        // 將 canvas 從全頁移除並加進卡片最底層 (z-index: 1)
+      if (canvas) {
+        // 搬移 Canvas 到卡片內部的第一個節點
         wrapper.insertBefore(canvas, wrapper.firstChild);
         
-        // 樣式覆寫：強制讓 Canvas 滿版充填於卡片內，隨卡片一同縮放
+        // 讓 Canvas 在滿版或縮小卡片內部都自然佈滿
         canvas.style.position = 'absolute';
         canvas.style.top = '0';
         canvas.style.left = '0';
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
-        canvas.style.objectFit = 'cover';
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
         canvas.style.pointerEvents = 'none';
-        canvas.style.zIndex = '1';
-        canvas.style.opacity = '1';
-      });
+        canvas.style.zIndex = '0';
+      }
     }
 
     /* 觸控滑動手勢引擎 */
@@ -217,11 +212,11 @@
         const endY = e.changedTouches[0].clientY;
         const diffY = startY - endY;
 
-        // 向上滑動超過 30px ➔ 光暈卡片縮成圓弧矩形
+        // 向上滑動超過 30px ➔ 縮成圓弧光暈矩形
         if (diffY > 30) {
           viewport.classList.add('collapsed');
         } 
-        // 向下滑動超過 30px ➔ 展開回滿版
+        // 向下滑動超過 30px ➔ 展開回滿版光暈
         else if (diffY < -30) {
           viewport.classList.remove('collapsed');
         }
