@@ -6,8 +6,9 @@ struct FinanceApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            HomeView()
                 .environment(portfolio)
+                .preferredColorScheme(.dark)
         }
     }
 }

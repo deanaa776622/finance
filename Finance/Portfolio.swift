@@ -46,16 +46,32 @@ final class Portfolio {
             / NSDecimalNumber(decimal: allocableTotal).doubleValue * 100
     }
 
+    func drift(for kind: AssetKind) -> Double {
+        abs(actualPercent(for: kind) - targets.percent(for: kind))
+    }
+
+    /// 0 below 2% drift, 1 at 12% and beyond — used to tint the home glow.
+    func driftFactor(for kind: AssetKind) -> Double {
+        min(1, max(0, (drift(for: kind) - 2) / 10))
+    }
+
     var maxAllocationDrift: Double {
         AssetKind.allCases
             .filter(\.countsTowardAllocation)
-            .map { abs(actualPercent(for: $0) - targets.percent(for: $0)) }
+            .map { drift(for: $0) }
             .max() ?? 0
+    }
+
+    var isBalanced: Bool { maxAllocationDrift < 10 }
+
+    var statusTitle: String {
+        if allocableTotal <= 0 { return "尚無紀錄" }
+        return isBalanced ? "平衡" : "留意配置"
     }
 
     var allocationStatus: String {
         if allocableTotal <= 0 { return "新增資產後，會顯示與目標配置的差距" }
-        if maxAllocationDrift < 10 { return "配置大致平衡" }
+        if isBalanced { return "配置大致平衡" }
         return String(format: "與目標最多偏離約 %.0f%%，有空再平衡即可", maxAllocationDrift)
     }
 

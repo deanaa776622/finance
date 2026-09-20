@@ -2,21 +2,27 @@ import Foundation
 import Observation
 
 enum AssetKind: String, Codable, CaseIterable, Identifiable {
-    case investment, cash, realEstate, other, debt
+    case original, leverage, cash, realEstate, debt
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .investment: "投資"
+        case .original: "原型"
+        case .leverage: "槓桿"
         case .cash: "現金"
         case .realEstate: "實體資產"
-        case .other: "其他"
         case .debt: "負債"
         }
     }
 
-    var countsTowardAllocation: Bool { self != .debt }
+    /// Only the three financial buckets carry target weights; property and debt sit outside.
+    var countsTowardAllocation: Bool {
+        switch self {
+        case .original, .leverage, .cash: true
+        case .realEstate, .debt: false
+        }
+    }
 }
 
 struct AssetItem: Identifiable, Codable, Hashable {
@@ -34,28 +40,25 @@ struct AssetItem: Identifiable, Codable, Hashable {
 }
 
 struct TargetWeights: Codable, Equatable {
-    var investment: Double = 60
+    var original: Double = 50
+    var leverage: Double = 30
     var cash: Double = 20
-    var realEstate: Double = 15
-    var other: Double = 5
 
     func percent(for kind: AssetKind) -> Double {
         switch kind {
-        case .investment: investment
+        case .original: original
+        case .leverage: leverage
         case .cash: cash
-        case .realEstate: realEstate
-        case .other: other
-        case .debt: 0
+        case .realEstate, .debt: 0
         }
     }
 
     mutating func setPercent(_ value: Double, for kind: AssetKind) {
         switch kind {
-        case .investment: investment = value
+        case .original: original = value
+        case .leverage: leverage = value
         case .cash: cash = value
-        case .realEstate: realEstate = value
-        case .other: other = value
-        case .debt: break
+        case .realEstate, .debt: break
         }
     }
 }

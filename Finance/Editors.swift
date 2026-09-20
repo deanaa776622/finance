@@ -11,7 +11,7 @@ struct AssetEditor: View {
     init(item: AssetItem?, onSave: @escaping (AssetItem) -> Void) {
         existingID = item?.id
         _name = State(initialValue: item?.name ?? "")
-        _kind = State(initialValue: item?.kind ?? .investment)
+        _kind = State(initialValue: item?.kind ?? .original)
         if let amount = item?.amount {
             _amountText = State(initialValue: NSDecimalNumber(decimal: amount).stringValue)
         } else {
