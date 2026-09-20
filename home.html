@@ -2,156 +2,33 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>首頁</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    /* 頁面底層始終為深色底色 (#0f172a) */
     html, body {
-      width: 100%; height: 100%; height: 100dvh;
-      overflow: hidden;
-      background-color: #0f172a !important; 
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      color: #f8fafc;
-    }
-
-    .app-viewport {
-      width: 100%; height: 100%;
-      position: relative; overflow: hidden;
-      touch-action: none;
+      width: 100%; height: 100%; overflow: hidden;
       background-color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-
-    /* 
-      動態光暈矩形卡片 
-      預設 (滿版): 滿滿的全螢幕 (100vw x 100vh)
-    */
-    .glow-card-wrapper {
-      position: absolute;
-      top: 0; 
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100vw; 
-      height: 100vh;
-      z-index: 2;
-      overflow: hidden; /* 關鍵：嚴格將光暈 Canvas 裁切在卡片邊界內 */
-      display: flex; flex-direction: column;
-      justify-content: center; align-items: center;
-      cursor: pointer;
-      border-radius: 0px;
-      border: 1px solid rgba(255, 255, 255, 0);
-      background: transparent; /* 透明底色，讓光暈完全透出 */
-
-      /* 平滑縮收與圓角變形動畫 */
-      transition: top 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-                  height 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-                  width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-                  border-radius 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-                  border-color 0.45s ease,
-                  box-shadow 0.45s ease;
+    .status-overlay {
+      position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+      display: flex; justify-content: center; align-items: center;
+      z-index: 2; pointer-events: none;
     }
-
-    /* 中央狀態文字 */
     .status-text {
       font-size: 1.1rem; font-weight: 600; letter-spacing: 0.2em;
-      color: #f8fafc; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-      user-select: none;
-      z-index: 10;
-      position: relative;
-    }
-
-    .drag-hint-text {
-      position: absolute; bottom: 25px; z-index: 10;
-      font-size: 0.72rem; color: rgba(255, 255, 255, 0.5);
-      letter-spacing: 0.12em; transition: opacity 0.3s ease;
-      pointer-events: none;
-    }
-
-    /* 
-      往上滑動後的縮起狀態 (.collapsed) 
-      光暈背景跟著收縮裁切成頂部圓弧矩形！
-    */
-    .app-viewport.collapsed .glow-card-wrapper {
-      top: 15px;
-      width: calc(100vw - 40px);
-      max-width: 400px;
-      height: 180px;
-      border-radius: 28px; /* 明顯的圓弧邊角 */
-      border: 1px solid rgba(255, 255, 255, 0.25); /* 醒目的玻璃光邊框 */
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 25px rgba(255, 255, 255, 0.12);
-    }
-
-    .app-viewport.collapsed .drag-hint-text {
-      opacity: 0;
-    }
-
-    /* 
-      矩形卡片外部露出的深色底內容區 
-    */
-    .content-panel {
-      position: absolute;
-      top: 210px; left: 0; width: 100%;
-      height: calc(100dvh - 210px);
-      padding: 10px 20px calc(85px + env(safe-area-inset-bottom)) 20px;
-      overflow-y: auto;
-      z-index: 1;
-      opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.4s ease 0.1s, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.1s;
-    }
-
-    .app-viewport.collapsed .content-panel {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* 內容區內的卡片樣式 */
-    .info-card {
-      background: rgba(30, 41, 59, 0.45);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 24px;
-      padding: 20px;
-      margin-bottom: 14px;
-    }
-    .info-card-title {
-      font-size: 0.75rem; font-weight: 600; color: #64748b;
-      letter-spacing: 0.05em; margin-bottom: 6px;
-    }
-    .info-card-value {
-      font-size: 0.95rem; font-weight: 600; color: #cbd5e1; line-height: 1.4;
+      color: #f8fafc; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      transition: color 0.5s ease;
     }
   </style>
 </head>
 <body>
 
-  <div class="app-viewport" id="app-viewport">
-    
-    <!-- 圓弧光暈矩形面板 -->
-    <div class="glow-card-wrapper" id="glow-card-wrapper">
-      <span id="status-text" class="status-text">BALANCED</span>
-      <div class="drag-hint-text">▲ 往上滑動展開內容</div>
-    </div>
-
-    <!-- 矩形卡片外部的深色底內容區 -->
-    <div class="content-panel" id="content-panel">
-      <div class="info-card">
-        <div class="info-card-title">資產狀態總覽</div>
-        <div class="info-card-value">系統運作正常</div>
-      </div>
-
-      <div class="info-card">
-        <div class="info-card-title">即時訊息通知</div>
-        <div class="info-card-value">
-          目前資產配置未達偏離警示門檻（10%），建議繼續保持當前策略。
-        </div>
-      </div>
-    </div>
-
+  <div class="status-overlay">
+    <span id="status-text" class="status-text">BALANCED</span>
   </div>
 
   <!-- 引入背景光暈與導覽列 -->
@@ -160,73 +37,11 @@
 
   <script>
     window.onload = function() {
-      // 1. 呼叫 glow.js 統一函式並更新狀態文字
-      const maxDiff = typeof updateGlowBackground === 'function' ? updateGlowBackground() : 0;
+      // 呼叫 glow.js 的統一函式，並用回傳的最大偏離值更新狀態文字
+      const maxDiff = updateGlowBackground();
       const statusText = document.getElementById('status-text');
       statusText.innerText = (maxDiff >= 10) ? 'ATTENTION' : 'BALANCED';
-
-      // 2. 將全頁 Canvas 移入卡片內，並讓 Canvas 自然保持滿版
-      bindGlowCanvasToCard();
-
-      // 3. 初始化滑動手勢
-      initGestureEngine();
     };
-
-    /* 將 Canvas 捕捉並置於卡片內部 */
-    function bindGlowCanvasToCard() {
-      const wrapper = document.getElementById('glow-card-wrapper');
-      const canvas = document.querySelector('canvas');
-      
-      if (canvas) {
-        // 搬移 Canvas 到卡片內部的第一個節點
-        wrapper.insertBefore(canvas, wrapper.firstChild);
-        
-        // 讓 Canvas 在滿版或縮小卡片內部都自然佈滿
-        canvas.style.position = 'absolute';
-        canvas.style.top = '0';
-        canvas.style.left = '0';
-        canvas.style.width = '100vw';
-        canvas.style.height = '100vh';
-        canvas.style.pointerEvents = 'none';
-        canvas.style.zIndex = '0';
-      }
-    }
-
-    /* 觸控滑動手勢引擎 */
-    function initGestureEngine() {
-      const viewport = document.getElementById('app-viewport');
-      const wrapper = document.getElementById('glow-card-wrapper');
-      
-      let startY = 0;
-      let isDragging = false;
-
-      wrapper.addEventListener('touchstart', (e) => {
-        startY = e.touches[0].clientY;
-        isDragging = true;
-      }, { passive: true });
-
-      wrapper.addEventListener('touchend', (e) => {
-        if (!isDragging) return;
-        isDragging = false;
-        
-        const endY = e.changedTouches[0].clientY;
-        const diffY = startY - endY;
-
-        // 向上滑動超過 30px ➔ 縮成圓弧光暈矩形
-        if (diffY > 30) {
-          viewport.classList.add('collapsed');
-        } 
-        // 向下滑動超過 30px ➔ 展開回滿版光暈
-        else if (diffY < -30) {
-          viewport.classList.remove('collapsed');
-        }
-      });
-
-      // 點擊面板亦可切換開合
-      wrapper.addEventListener('click', () => {
-        viewport.classList.toggle('collapsed');
-      });
-    }
   </script>
 </body>
 </html>
