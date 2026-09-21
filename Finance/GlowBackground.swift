@@ -70,11 +70,13 @@ struct GlowBackground: View {
                 )
 
                 ForEach(orbs) { orb in
+                    let short = geo.size.height < geo.size.width
+                    let d = short ? min(orb.diameter, geo.size.width * 0.55) : orb.diameter
                     Circle()
                         .fill(orb.color)
-                        .frame(width: orb.diameter, height: orb.diameter)
-                        .blur(radius: 80)
-                        .opacity(0.55)
+                        .frame(width: d, height: d)
+                        .blur(radius: short ? 40 : 80)
+                        .opacity(short ? 0.62 : 0.55)
                         .position(
                             x: geo.size.width * orb.anchor.x + (drifting ? orb.sway.width : 0),
                             y: geo.size.height * orb.anchor.y + (drifting ? orb.sway.height : 0)
@@ -88,7 +90,6 @@ struct GlowBackground: View {
                 }
             }
         }
-        .ignoresSafeArea()
         .onAppear { drifting = true }
         .accessibilityHidden(true)
     }

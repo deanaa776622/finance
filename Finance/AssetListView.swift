@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AssetListView: View {
+    var showsChrome = true
     @Environment(Portfolio.self) private var portfolio
     @State private var editing: AssetItem?
     @State private var showAdd = false
@@ -38,18 +39,21 @@ struct AssetListView: View {
                 }
             }
         }
-        .navigationTitle("資產")
+        .navigationTitle(showsChrome ? "資產" : "")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("目標配置") { showTargets = true }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showAdd = true
-                } label: {
-                    Image(systemName: "plus")
+            if showsChrome {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("目標配置") { showTargets = true }
                 }
-                .accessibilityLabel("新增資產")
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showAdd = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityLabel("新增資產")
+                }
             }
         }
         .sheet(isPresented: $showAdd) {
