@@ -5,26 +5,33 @@ import Observation
 final class Portfolio {
     var items: [AssetItem]
     var targets: TargetWeights
+    /// Nil or ≤0 → orb sizing falls back to current allocable total (same as web).
+    var targetTotal: Decimal?
 
     private static var fileURL: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("portfolio.json")
     }
 
-    init(items: [AssetItem] = [], targets: TargetWeights = TargetWeights()) {
+    init(
+        items: [AssetItem] = [],
+        targets: TargetWeights = TargetWeights(),
+        targetTotal: Decimal? = nil
+    ) {
         self.items = items
         self.targets = targets
+        self.targetTotal = targetTotal
     }
 
     static func load() -> Portfolio {
         guard let data = try? Data(contentsOf: fileURL),
               let snap = try? JSONDecoder().decode(Snapshot.self, from: data)
         else { return Portfolio() }
-        return Portfolio(items: snap.items, targets: snap.targets)
+        return Portfolio(items: snap.items, targets: snap.targets, targetTotal: snap.targetTotal)
     }
 
     func save() {
-        let snap = Snapshot(items: items, targets: targets)
+        let snap = Snapshot(items: items, targets: targets, targetTotal: targetTotal)
         guard let data = try? JSONEncoder().encode(snap) else { return }
         try? data.write(to: Self.fileURL, options: [.atomic])
     }
@@ -39,11 +46,35 @@ final class Portfolio {
         items.filter(\.kind.countsTowardAllocation).reduce(0) { $0 + $1.amount }
     }
 
+    /// Baseline for per-bucket target amounts (web: `sav_target_total`).
+    var effectiveTargetTotal: Decimal {
+        if let targetTotal, targetTotal > 0 { return targetTotal }
+        return allocableTotal
+    }
+
+    func amount(for kind: AssetKind) -> Decimal {
+        items.filter { $0.kind == kind }.reduce(0) { $0 + $1.amount }
+    }
+
     func actualPercent(for kind: AssetKind) -> Double {
         guard kind.countsTowardAllocation, allocableTotal > 0 else { return 0 }
-        let sum = items.filter { $0.kind == kind }.reduce(Decimal(0)) { $0 + $1.amount }
-        return NSDecimalNumber(decimal: sum).doubleValue
+        return NSDecimalNumber(decimal: amount(for: kind)).doubleValue
             / NSDecimalNumber(decimal: allocableTotal).doubleValue * 100
+    }
+
+    /// 0…1 how far this bucket is toward its slice of the long-term total.
+    func achievement(for kind: AssetKind) -> Double {
+        guard kind.countsTowardAllocation else { return 0 }
+        let slice = effectiveTargetTotal * Decimal(targets.percent(for: kind) / 100)
+        let actual = amount(for: kind)
+        if slice > 0 {
+            return min(
+                1,
+                NSDecimalNumber(decimal: actual).doubleValue
+                    / NSDecimalNumber(decimal: slice).doubleValue
+            )
+        }
+        return actual > 0 ? 1 : 0
     }
 
     func drift(for kind: AssetKind) -> Double {

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// One soft light per asset kind: size = share of assets, hue = distance from target.
+/// One soft light per bucket: size = progress toward that slice of 目標總額, hue = allocation drift.
 struct GlowOrb: Identifiable {
     let id: String
     let color: Color
@@ -13,13 +13,13 @@ struct GlowOrb: Identifiable {
 extension GlowOrb {
     static func orbs(for portfolio: Portfolio) -> [GlowOrb] {
         AssetKind.allCases.filter(\.countsTowardAllocation).compactMap { kind in
-            let share = portfolio.actualPercent(for: kind) / 100
-            guard share > 0 else { return nil }
+            let achieve = portfolio.achievement(for: kind)
+            guard achieve > 0 else { return nil }
             let layout = kind.glowLayout
             return GlowOrb(
                 id: kind.rawValue,
                 color: kind.glowColor.mix(with: .driftWarning, by: portfolio.driftFactor(for: kind)),
-                diameter: 200 + 260 * share,
+                diameter: 520 * achieve,
                 anchor: layout.anchor,
                 sway: layout.sway,
                 duration: layout.duration

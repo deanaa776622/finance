@@ -66,6 +66,8 @@ struct TargetWeights: Codable, Equatable {
 struct Snapshot: Codable, Equatable {
     var items: [AssetItem]
     var targets: TargetWeights
+    /// Long-term total to grow toward; nil means size orbs against current holdings.
+    var targetTotal: Decimal?
 }
 
 enum MoneyFormat {
@@ -75,5 +77,29 @@ enum MoneyFormat {
         f.currencyCode = "TWD"
         f.maximumFractionDigits = 0
         return f.string(from: NSDecimalNumber(decimal: value)) ?? "\(value)"
+    }
+}
+
+enum NumberParse {
+    static func display(_ value: Decimal) -> String {
+        NSDecimalNumber(decimal: value).stringValue
+    }
+
+    static func displayPercent(_ value: Double) -> String {
+        if value.rounded() == value { return String(Int(value)) }
+        return String(value)
+    }
+
+    static func decimal(_ text: String) -> Decimal? {
+        let cleaned = text
+            .replacingOccurrences(of: ",", with: "")
+            .replacingOccurrences(of: " ", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { return nil }
+        return Decimal(string: cleaned)
+    }
+
+    static func double(_ text: String) -> Double? {
+        decimal(text).map { NSDecimalNumber(decimal: $0).doubleValue }
     }
 }
