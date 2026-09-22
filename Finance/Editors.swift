@@ -88,17 +88,27 @@ struct TargetEditor: View {
                     .listRowBackground(Color.clear)
 
                 Section {
-                    HStack {
-                        Text("目標總額")
-                        Spacer()
-                        TextField("選填", text: $totalText)
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.trailing)
-                            .focused($field, equals: .total)
-                            .frame(minWidth: 120)
+                    if portfolio.savings != nil {
+                        LabeledContent("目標總額") {
+                            Text(portfolio.targetFromSavings.map(MoneyFormat.string) ?? "—")
+                        }
+                    } else {
+                        HStack {
+                            Text("目標總額")
+                            Spacer()
+                            TextField("選填", text: $totalText)
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.trailing)
+                                .focused($field, equals: .total)
+                                .frame(minWidth: 120)
+                        }
                     }
                 } footer: {
-                    Text("光球依達成率長大。留空則以目前持有總額為基準。")
+                    Text(
+                        portfolio.savings == nil
+                            ? "光球依達成率長大。留空則以目前持有總額為基準。"
+                            : "由儲蓄目標的年花費 ÷ 報酬率推算。"
+                    )
                 }
 
                 Section("目標比例") {
@@ -145,10 +155,12 @@ struct TargetEditor: View {
     }
 
     private func commit() {
-        if totalText.trimmingCharacters(in: .whitespaces).isEmpty {
-            portfolio.targetTotal = nil
-        } else if let total = NumberParse.decimal(totalText), total > 0 {
-            portfolio.targetTotal = total
+        if portfolio.savings == nil {
+            if totalText.trimmingCharacters(in: .whitespaces).isEmpty {
+                portfolio.targetTotal = nil
+            } else if let total = NumberParse.decimal(totalText), total > 0 {
+                portfolio.targetTotal = total
+            }
         }
         if let v = NumberParse.double(originalText) { portfolio.targets.original = v }
         if let v = NumberParse.double(leverageText) { portfolio.targets.leverage = v }

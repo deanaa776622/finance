@@ -7,6 +7,7 @@ final class Portfolio {
     var targets: TargetWeights
     /// Nil or ≤0 → orb sizing falls back to current allocable total (same as web).
     var targetTotal: Decimal?
+    var savings: SavingsPlan?
 
     private static var fileURL: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -16,22 +17,29 @@ final class Portfolio {
     init(
         items: [AssetItem] = [],
         targets: TargetWeights = TargetWeights(),
-        targetTotal: Decimal? = nil
+        targetTotal: Decimal? = nil,
+        savings: SavingsPlan? = nil
     ) {
         self.items = items
         self.targets = targets
         self.targetTotal = targetTotal
+        self.savings = savings
     }
 
     static func load() -> Portfolio {
         guard let data = try? Data(contentsOf: fileURL),
               let snap = try? JSONDecoder().decode(Snapshot.self, from: data)
         else { return Portfolio() }
-        return Portfolio(items: snap.items, targets: snap.targets, targetTotal: snap.targetTotal)
+        return Portfolio(
+            items: snap.items,
+            targets: snap.targets,
+            targetTotal: snap.targetTotal,
+            savings: snap.savings
+        )
     }
 
     func save() {
-        let snap = Snapshot(items: items, targets: targets, targetTotal: targetTotal)
+        let snap = Snapshot(items: items, targets: targets, targetTotal: targetTotal, savings: savings)
         guard let data = try? JSONEncoder().encode(snap) else { return }
         try? data.write(to: Self.fileURL, options: [.atomic])
     }
@@ -46,10 +54,27 @@ final class Portfolio {
         items.filter(\.kind.countsTowardAllocation).reduce(0) { $0 + $1.amount }
     }
 
-    /// Baseline for per-bucket target amounts (web: `sav_target_total`).
+    /// Baseline for per-bucket target amounts (web: `sav_target_total` from cost ÷ rate).
+    var targetFromSavings: Decimal? {
+        guard let savings else { return nil }
+        return SavingsMath.targetAmount(cost: savings.annualCost, annualRatePercent: savings.annualRatePercent)
+    }
+
     var effectiveTargetTotal: Decimal {
+        if let targetFromSavings, targetFromSavings > 0 { return targetFromSavings }
         if let targetTotal, targetTotal > 0 { return targetTotal }
         return allocableTotal
+    }
+
+    var outlook: SavingsOutlook? {
+        guard let savings else { return nil }
+        return SavingsMath.outlook(plan: savings, presentValue: allocableTotal)
+    }
+
+    func setSavings(_ plan: SavingsPlan) {
+        savings = plan
+        if let fv = targetFromSavings { targetTotal = fv }
+        save()
     }
 
     func amount(for kind: AssetKind) -> Decimal {

@@ -68,6 +68,7 @@ struct Snapshot: Codable, Equatable {
     var targets: TargetWeights
     /// Long-term total to grow toward; nil means size orbs against current holdings.
     var targetTotal: Decimal?
+    var savings: SavingsPlan?
 }
 
 enum MoneyFormat {
@@ -83,6 +84,21 @@ enum MoneyFormat {
 enum NumberParse {
     static func display(_ value: Decimal) -> String {
         NSDecimalNumber(decimal: value).stringValue
+    }
+
+    static func grouped(_ value: Decimal) -> String {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.groupingSeparator = ","
+        f.usesGroupingSeparator = true
+        f.maximumFractionDigits = 0
+        return f.string(from: NSDecimalNumber(decimal: value)) ?? display(value)
+    }
+
+    static func grouped(_ text: String) -> String {
+        let digits = text.filter(\.isNumber)
+        guard !digits.isEmpty, let value = Decimal(string: digits) else { return "" }
+        return grouped(value)
     }
 
     static func displayPercent(_ value: Double) -> String {
