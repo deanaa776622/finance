@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(Portfolio.self) private var portfolio
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage("hideAmounts") private var hideAmounts = false
     /// -1 assets, 0 home, 1 savings
     @State private var panel: CGFloat = 0
     @State private var drag: CGFloat = 0
@@ -85,6 +86,10 @@ struct HomeView: View {
                 ?? SavingsMath.outlook(plan: .prototype, presentValue: portfolio.allocableTotal)
             return "距離目標 \(outlook.yearsText) 年，\(outlook.detailText)"
         }
+        if position < -0.5 {
+            if hideAmounts { return "總淨值已隱藏" }
+            return "總淨值 \(MoneyFormat.string(portfolio.netWorth))"
+        }
         return "\(portfolio.statusTitle)。\(portfolio.allocationStatus)"
     }
 }
@@ -92,9 +97,11 @@ struct HomeView: View {
 private struct HomeHero: View {
     let portfolio: Portfolio
     var position: CGFloat
+    @AppStorage("hideAmounts") private var hideAmounts = false
 
     private var reveal: CGFloat { abs(position) }
     private var toSavings: CGFloat { max(position, 0) }
+    private var toAssets: CGFloat { max(-position, 0) }
 
     var body: some View {
         ZStack {
@@ -110,7 +117,8 @@ private struct HomeHero: View {
                     .accessibilityHidden(true)
                 Spacer()
                 ZStack {
-                    statusCopy.opacity(1 - toSavings)
+                    statusCopy.opacity(1 - reveal)
+                    netWorthCopy.opacity(toAssets)
                     yearsCopy.opacity(toSavings)
                 }
                 Spacer()
@@ -160,6 +168,31 @@ private struct HomeHero: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 48 - 24 * reveal)
         }
+    }
+
+    private var netWorthCopy: some View {
+        VStack(spacing: 6) {
+            Text("總淨值")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .tracking(2)
+            Text(MoneyFormat.string(portfolio.netWorth, hidden: hideAmounts))
+                .font(.title.weight(.bold))
+                .fontDesign(.rounded)
+                .monospacedDigit()
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
+            Text(allocationPercents)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private var allocationPercents: String {
+        func pct(_ kind: AssetKind) -> Int { Int(portfolio.actualPercent(for: kind).rounded()) }
+        return "原 \(pct(.original))%　槓 \(pct(.leverage))%　現 \(pct(.cash))%"
     }
 
     private var yearsCopy: some View {

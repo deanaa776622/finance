@@ -23,19 +23,86 @@ enum AssetKind: String, Codable, CaseIterable, Identifiable {
         case .realEstate, .debt: false
         }
     }
+
+    var prefersSharePrice: Bool {
+        switch self {
+        case .original, .leverage: true
+        case .cash, .realEstate, .debt: false
+        }
+    }
+}
+
+enum AssetCurrency: String, Codable, CaseIterable, Identifiable {
+    case twd = "TWD"
+    case usd = "USD"
+
+    var id: String { rawValue }
 }
 
 struct AssetItem: Identifiable, Codable, Hashable {
     var id: UUID
     var name: String
     var kind: AssetKind
+    /// Native-currency lump sum when `usesSharePrice` is false.
     var amount: Decimal
+    var currency: AssetCurrency
+    var usdTwdRate: Decimal
+    var usesSharePrice: Bool
+    var shares: Decimal?
+    var price: Decimal?
+    var leverageMultiple: Double?
 
-    init(id: UUID = UUID(), name: String, kind: AssetKind, amount: Decimal) {
+    init(
+        id: UUID = UUID(),
+        name: String,
+        kind: AssetKind,
+        amount: Decimal,
+        currency: AssetCurrency = .twd,
+        usdTwdRate: Decimal = 32,
+        usesSharePrice: Bool = false,
+        shares: Decimal? = nil,
+        price: Decimal? = nil,
+        leverageMultiple: Double? = nil
+    ) {
         self.id = id
         self.name = name
         self.kind = kind
         self.amount = amount
+        self.currency = currency
+        self.usdTwdRate = usdTwdRate
+        self.usesSharePrice = usesSharePrice
+        self.shares = shares
+        self.price = price
+        self.leverageMultiple = leverageMultiple
+    }
+
+    var fxRate: Decimal { currency == .usd ? usdTwdRate : 1 }
+
+    var twdValue: Decimal {
+        let native = usesSharePrice ? (shares ?? 0) * (price ?? 0) : amount
+        return native * fxRate
+    }
+
+    var canRefreshQuote: Bool {
+        usesSharePrice && !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, kind, amount, currency, usdTwdRate, usesSharePrice, shares, price, leverageMultiple
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        kind = try c.decode(AssetKind.self, forKey: .kind)
+        amount = try c.decode(Decimal.self, forKey: .amount)
+        currency = try c.decodeIfPresent(AssetCurrency.self, forKey: .currency) ?? .twd
+        usdTwdRate = try c.decodeIfPresent(Decimal.self, forKey: .usdTwdRate) ?? 32
+        usesSharePrice = try c.decodeIfPresent(Bool.self, forKey: .usesSharePrice) ?? false
+        shares = try c.decodeIfPresent(Decimal.self, forKey: .shares)
+        price = try c.decodeIfPresent(Decimal.self, forKey: .price)
+        leverageMultiple = try c.decodeIfPresent(Double.self, forKey: .leverageMultiple)
     }
 }
 
@@ -73,6 +140,11 @@ struct Snapshot: Codable, Equatable {
 
 enum MoneyFormat {
     static func string(_ value: Decimal) -> String {
+        string(value, hidden: false)
+    }
+
+    static func string(_ value: Decimal, hidden: Bool) -> String {
+        if hidden { return "••••" }
         let f = NumberFormatter()
         f.numberStyle = .currency
         f.currencyCode = "TWD"

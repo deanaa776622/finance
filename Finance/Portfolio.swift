@@ -46,12 +46,12 @@ final class Portfolio {
 
     var netWorth: Decimal {
         items.reduce(0) { partial, item in
-            item.kind == .debt ? partial - item.amount : partial + item.amount
+            item.kind == .debt ? partial - item.twdValue : partial + item.twdValue
         }
     }
 
     var allocableTotal: Decimal {
-        items.filter(\.kind.countsTowardAllocation).reduce(0) { $0 + $1.amount }
+        items.filter(\.kind.countsTowardAllocation).reduce(0) { $0 + $1.twdValue }
     }
 
     /// Baseline for per-bucket target amounts (web: `sav_target_total` from cost ÷ rate).
@@ -77,8 +77,12 @@ final class Portfolio {
         save()
     }
 
+    func items(for kind: AssetKind) -> [AssetItem] {
+        items.filter { $0.kind == kind }
+    }
+
     func amount(for kind: AssetKind) -> Decimal {
-        items.filter { $0.kind == kind }.reduce(0) { $0 + $1.amount }
+        items(for: kind).reduce(0) { $0 + $1.twdValue }
     }
 
     func actualPercent(for kind: AssetKind) -> Double {
@@ -140,8 +144,22 @@ final class Portfolio {
         save()
     }
 
-    func delete(ids: IndexSet) {
-        for index in ids.sorted(by: >) { items.remove(at: index) }
+    func delete(ids: [UUID]) {
+        let set = Set(ids)
+        items.removeAll { set.contains($0.id) }
+        save()
+    }
+
+    func delete(_ subset: [AssetItem], at offsets: IndexSet) {
+        delete(ids: offsets.map { subset[$0].id })
+    }
+
+    func applyQuotes(_ quotes: [UUID: Quote]) {
+        guard !quotes.isEmpty else { return }
+        for i in items.indices {
+            guard let quote = quotes[items[i].id] else { continue }
+            items[i].apply(quote)
+        }
         save()
     }
 }

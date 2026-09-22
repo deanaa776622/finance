@@ -17,12 +17,16 @@
 		F2C5492553DF4B92AA92D16C /* Portfolio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473D2B4067D142F2A2C45A33 /* Portfolio.swift */; };
 		F449C90D5036484FB22DD932 /* AssetListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D4C730906A644DC837867DB /* AssetListView.swift */; };
 		D2B3F65064B840CEA5F455D6 /* SavingsMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AAE8E3DC34E89A9404102 /* SavingsMath.swift */; };
+		4E8A1B2C4D5E4F6A8B9C0D1E /* QuoteClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8A1B2C4D5E4F6A8B9C0D1E /* QuoteClient.swift */; };
+		6E8A1B2C4D5E4F6A8B9C0D1E /* AssetEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8A1B2C4D5E4F6A8B9C0D1E /* AssetEditor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0ACEF765DE7D48D9943D7D84 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		285FDE10B2E64BF885533CE6 /* Editors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Editors.swift; sourceTree = "<group>"; };
 		2D4C730906A644DC837867DB /* AssetListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetListView.swift; sourceTree = "<group>"; };
+		3E8A1B2C4D5E4F6A8B9C0D1E /* QuoteClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteClient.swift; sourceTree = "<group>"; };
+		5E8A1B2C4D5E4F6A8B9C0D1E /* AssetEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetEditor.swift; sourceTree = "<group>"; };
 		473D2B4067D142F2A2C45A33 /* Portfolio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Portfolio.swift; sourceTree = "<group>"; };
 		73726A8D522F4F929C007C02 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		B7D35F1908A24C62A91E3D75 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -51,6 +55,8 @@
 				B7D35F1908A24C62A91E3D75 /* HomeView.swift */,
 				D48F02C6AE514B75B60C287A /* GlowBackground.swift */,
 				2D4C730906A644DC837867DB /* AssetListView.swift */,
+				5E8A1B2C4D5E4F6A8B9C0D1E /* AssetEditor.swift */,
+				3E8A1B2C4D5E4F6A8B9C0D1E /* QuoteClient.swift */,
 				473D2B4067D142F2A2C45A33 /* Portfolio.swift */,
 				73726A8D522F4F929C007C02 /* Models.swift */,
 				C99AAE8E3DC34E89A9404102 /* SavingsMath.swift */,
@@ -146,6 +152,8 @@
 				A1C4E7B25D0F4E19C3B8D204 /* HomeView.swift in Sources */,
 				C2E6A94371B84D3E8F71A5C6 /* GlowBackground.swift in Sources */,
 				F449C90D5036484FB22DD932 /* AssetListView.swift in Sources */,
+				6E8A1B2C4D5E4F6A8B9C0D1E /* AssetEditor.swift in Sources */,
+				4E8A1B2C4D5E4F6A8B9C0D1E /* QuoteClient.swift in Sources */,
 				F2C5492553DF4B92AA92D16C /* Portfolio.swift in Sources */,
 				66B7520819D5483B958D0856 /* Models.swift in Sources */,
 				D2B3F65064B840CEA5F455D6 /* SavingsMath.swift in Sources */,
@@ -211,6 +219,7 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 596RB34FQK;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Finance;
@@ -283,6 +292,7 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 596RB34FQK;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Finance;
