@@ -10,6 +10,7 @@ struct AssetListView: View {
     @State private var showTargets = false
     @State private var isRefreshing = false
     @State private var refreshMessage: String?
+    @State private var expandedKinds: Set<AssetKind> = []
 
     var body: some View {
         List {
@@ -21,26 +22,44 @@ struct AssetListView: View {
             }
             ForEach(AssetKind.allCases) { kind in
                 let rows = portfolio.items(for: kind)
+                let open = expandedKinds.contains(kind)
                 Section {
-                    if rows.isEmpty {
-                        Text("尚無紀錄").foregroundStyle(.secondary)
-                    } else {
-                        ForEach(rows) { item in
-                            Button { editing = item } label: {
-                                AssetRow(item: item, hideAmounts: hideAmounts)
+                    if open {
+                        if rows.isEmpty {
+                            Text("尚無紀錄").foregroundStyle(.secondary)
+                        } else {
+                            ForEach(rows) { item in
+                                Button { editing = item } label: {
+                                    AssetRow(item: item, hideAmounts: hideAmounts)
+                                }
+                                .foregroundStyle(.primary)
                             }
-                            .foregroundStyle(.primary)
+                            .onDelete { portfolio.delete(rows, at: $0) }
                         }
-                        .onDelete { portfolio.delete(rows, at: $0) }
                     }
                 } header: {
                     HStack {
-                        Text(kind.title)
-                        Spacer()
-                        Text(MoneyFormat.string(portfolio.amount(for: kind), hidden: hideAmounts))
-                            .font(.subheadline)
-                            .monospacedDigit()
-                            .foregroundStyle(.secondary)
+                        Button {
+                            toggle(kind)
+                        } label: {
+                            HStack {
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .rotationEffect(.degrees(open ? 90 : 0))
+                                Text(kind.title)
+                                Spacer()
+                                Text(MoneyFormat.string(portfolio.amount(for: kind), hidden: hideAmounts))
+                                    .font(.subheadline)
+                                    .monospacedDigit()
+                                    .foregroundStyle(.secondary)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(kind.title)
+                        .accessibilityHint(open ? "收合" : "展開")
+                        .accessibilityAddTraits(.isButton)
                         if showsChrome {
                             Button("新增") {
                                 addKind = kind
@@ -92,16 +111,31 @@ struct AssetListView: View {
             }
         }
         .sheet(isPresented: $showAdd) {
-            AssetEditor(item: nil, defaultKind: addKind) { portfolio.upsert($0) }
+            AssetEditor(item: nil, defaultKind: addKind, onSave: saveItem)
         }
         .sheet(item: $editing) { item in
-            AssetEditor(item: item, onSave: { portfolio.upsert($0) }, onDelete: {
+            AssetEditor(item: item, onSave: saveItem, onDelete: {
                 portfolio.delete(ids: [item.id])
             })
         }
         .sheet(isPresented: $showTargets) {
             TargetEditor()
         }
+    }
+
+    private func toggle(_ kind: AssetKind) {
+        withAnimation {
+            if expandedKinds.contains(kind) {
+                expandedKinds.remove(kind)
+            } else {
+                expandedKinds.insert(kind)
+            }
+        }
+    }
+
+    private func saveItem(_ item: AssetItem) {
+        portfolio.upsert(item)
+        expandedKinds.insert(item.kind)
     }
 
     private func refreshQuotes() async {

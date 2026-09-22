@@ -16,6 +16,14 @@ enum AssetKind: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// Fits a five-segment control; list headers still use `title`.
+    var compactTitle: String {
+        switch self {
+        case .realEstate: "實體"
+        default: title
+        }
+    }
+
     /// Only the three financial buckets carry target weights; property and debt sit outside.
     var countsTowardAllocation: Bool {
         switch self {

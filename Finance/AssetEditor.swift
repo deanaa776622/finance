@@ -36,26 +36,44 @@ struct AssetEditor: View {
         _sharesText = State(initialValue: item?.shares.map(NumberParse.display) ?? "")
         _priceText = State(initialValue: item?.price.map(NumberParse.display) ?? "")
         _amountText = State(initialValue: item.map { NumberParse.display($0.amount) } ?? "")
-        _leverage = State(initialValue: item?.leverageMultiple ?? 2)
+        _leverage = State(initialValue: Self.clampedLeverage(kind: kind, value: item?.leverageMultiple))
         self.onSave = onSave
         self.onDelete = onDelete
+    }
+
+    /// Non-leverage is always 1×; leverage cannot be 1× (default 2×).
+    private static func clampedLeverage(kind: AssetKind, value: Double?) -> Double {
+        if kind == .leverage {
+            let multiple = value ?? 2
+            return multiple == 1 ? 2 : multiple
+        }
+        return 1
     }
 
     var body: some View {
         NavigationStack {
             Form {
-                Picker("類別", selection: $kind) {
-                    ForEach(AssetKind.allCases) { Text($0.title).tag($0) }
-                }
-                .onChange(of: kind) { _, new in
-                    if new.prefersSharePrice { usesSharePrice = true }
+                Section("類別") {
+                    Picker("類別", selection: $kind) {
+                        ForEach(AssetKind.allCases) { Text($0.compactTitle).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .onChange(of: kind) { _, new in
+                        if new.prefersSharePrice { usesSharePrice = true }
+                        leverage = Self.clampedLeverage(kind: new, value: leverage)
+                    }
                 }
 
-                Picker("輸入方式", selection: $usesSharePrice) {
-                    Text("總金額").tag(false)
-                    Text("股數與單價").tag(true)
+                Section("輸入方式") {
+                    Picker("輸入方式", selection: $usesSharePrice) {
+                        Text("總金額").tag(false)
+                        Text("股數單價").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .disabled(kind.prefersSharePrice)
                 }
-                .disabled(kind.prefersSharePrice && usesSharePrice)
 
                 TextField("名稱 / 代號", text: $name)
                     .textInputAutocapitalization(.never)
@@ -64,49 +82,55 @@ struct AssetEditor: View {
                     .onChange(of: focus) { _, new in
                         if new != .name { Task { await lookup() } }
                     }
+                Button("查價") { Task { await lookup() } }
+                    .disabled(!usesSharePrice || isQuoting || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                if isQuoting {
+                    Text("正在查詢現值…").font(.footnote).foregroundStyle(.secondary)
+                } else if let quoteHint {
+                    Text(quoteHint).font(.footnote).foregroundStyle(.secondary)
+                }
 
-                if usesSharePrice {
-                    Button("查價") { Task { await lookup() } }
-                        .disabled(isQuoting || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    if isQuoting {
-                        Text("正在查詢現值…").font(.footnote).foregroundStyle(.secondary)
-                    } else if let quoteHint {
-                        Text(quoteHint).font(.footnote).foregroundStyle(.secondary)
+                Section("幣別") {
+                    Picker("幣別", selection: $currency) {
+                        ForEach(AssetCurrency.allCases) { Text($0.rawValue).tag($0) }
                     }
-                }
-
-                Picker("幣別", selection: $currency) {
-                    ForEach(AssetCurrency.allCases) { Text($0.rawValue).tag($0) }
-                }
-                .pickerStyle(.segmented)
-
-                if currency == .usd {
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
                     TextField("USD → TWD 匯率", text: $rateText)
                         .keyboardType(.decimalPad)
                         .focused($focus, equals: .rate)
+                        .disabled(currency != .usd)
                 }
 
-                if kind == .leverage {
+                Section("槓桿倍數") {
                     Picker("槓桿倍數", selection: $leverage) {
+                        Text("1×").tag(1.0)
                         Text("1.5×").tag(1.5)
                         Text("2×").tag(2.0)
                         Text("3×").tag(3.0)
                     }
                     .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .disabled(kind != .leverage)
+                    .onChange(of: leverage) { old, new in
+                        if kind == .leverage, new == 1 {
+                            leverage = old == 1 ? 2 : old
+                        }
+                    }
                 }
 
-                if usesSharePrice {
-                    TextField("股數", text: $sharesText)
-                        .keyboardType(.decimalPad)
-                        .focused($focus, equals: .shares)
-                    TextField("單價", text: $priceText)
-                        .keyboardType(.decimalPad)
-                        .focused($focus, equals: .price)
-                } else {
-                    TextField("總金額", text: $amountText)
-                        .keyboardType(.decimalPad)
-                        .focused($focus, equals: .amount)
-                }
+                TextField("股數", text: $sharesText)
+                    .keyboardType(.decimalPad)
+                    .focused($focus, equals: .shares)
+                    .disabled(!usesSharePrice)
+                TextField("單價", text: $priceText)
+                    .keyboardType(.decimalPad)
+                    .focused($focus, equals: .price)
+                    .disabled(!usesSharePrice)
+                TextField("總金額", text: $amountText)
+                    .keyboardType(.decimalPad)
+                    .focused($focus, equals: .amount)
+                    .disabled(usesSharePrice)
 
                 if existingID != nil, onDelete != nil {
                     Button("刪除", role: .destructive) {
