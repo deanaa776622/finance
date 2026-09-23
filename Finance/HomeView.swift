@@ -112,10 +112,12 @@ struct HomeView: View {
                 drag = next - panel
             }
             .onEnded { value in
-                let projected = panel - value.predictedEndTranslation.height / range
-                if projected > 0.35 { snap(1) }
-                else if projected < -0.35 { snap(-1) }
-                else { snap(0) }
+                let end = min(1, max(-1, panel - value.translation.height / range))
+                let moved = end - panel
+                if abs(moved) <= 0.25 { snap(panel) }
+                else if panel == 0 { snap(moved > 0 ? 1 : -1) }
+                else if moved < 0 { snap(end < -0.25 ? -1 : 0) }
+                else { snap(end > 0.25 ? 1 : 0) }
             }
     }
 
