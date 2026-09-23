@@ -56,6 +56,8 @@ private extension AssetKind {
 
 struct GlowBackground: View {
     let orbs: [GlowOrb]
+    /// 0 = full-screen glow, 1 = the short docked card.
+    var compact: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var drifting = false
 
@@ -70,13 +72,13 @@ struct GlowBackground: View {
                 )
 
                 ForEach(orbs) { orb in
-                    let short = geo.size.height < geo.size.width
-                    let d = short ? min(orb.diameter, geo.size.width * 0.55) : orb.diameter
+                    let t = min(1, max(0, compact))
+                    let d = orb.diameter + (min(orb.diameter, geo.size.width * 0.55) - orb.diameter) * t
                     Circle()
                         .fill(orb.color)
                         .frame(width: d, height: d)
-                        .blur(radius: short ? 40 : 80)
-                        .opacity(short ? 0.62 : 0.55)
+                        .blur(radius: 80 + (40 - 80) * t)
+                        .opacity(0.55 + (0.62 - 0.55) * t)
                         .position(
                             x: geo.size.width * orb.anchor.x + (drifting ? orb.sway.width : 0),
                             y: geo.size.height * orb.anchor.y + (drifting ? orb.sway.height : 0)

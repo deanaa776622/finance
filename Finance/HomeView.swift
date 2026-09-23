@@ -145,7 +145,7 @@ private struct HomeHero: View {
 
     var body: some View {
         ZStack {
-            GlowBackground(orbs: GlowOrb.orbs(for: portfolio))
+            GlowBackground(orbs: GlowOrb.orbs(for: portfolio), compact: reveal)
 
             VStack(spacing: 14) {
                 Image(systemName: "chevron.compact.down")
