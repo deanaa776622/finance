@@ -7,6 +7,7 @@ struct HomeView: View {
     /// -1 assets, 0 home, 1 savings
     @State private var panel: CGFloat = 0
     @State private var drag: CGFloat = 0
+    @State private var safeTop: CGFloat = 0
 
     var body: some View {
         NavigationStack {
@@ -15,10 +16,12 @@ struct HomeView: View {
                 let range = max(geo.size.height - card, 1)
                 let position = min(1, max(-1, panel + drag / range))
                 let reveal = abs(position)
+                let topLift = safeTop * max(position, 0)
 
                 VStack(spacing: 12 * reveal) {
                     if position < 0 {
                         AssetListView(showsChrome: position < -0.5)
+                            .ignoresSafeArea(edges: panel < -0.5 ? .bottom : [.top, .bottom])
                             .frame(height: range * -position)
                             .opacity(-position)
                             .allowsHitTesting(position < -0.85)
@@ -40,17 +43,31 @@ struct HomeView: View {
 
                     if position > 0 {
                         SavingsTunerView()
-                            .frame(height: range * position)
+                            .ignoresSafeArea(edges: .top)
+                            .frame(height: max(0, range * position - topLift))
                             .opacity(position)
                             .allowsHitTesting(position > 0.85)
                     }
                 }
+                .padding(.top, topLift)
             }
-            .ignoresSafeArea(edges: abs(panel + drag) < 0.05 ? [.top, .bottom] : [])
+            .background {
+                Color.clear
+                    .onGeometryChange(for: CGFloat.self) { _ in Self.statusBarHeight } action: { safeTop = $0 }
+            }
+            .ignoresSafeArea(edges: [.top, .bottom])
             .background(Color(red: 0.03, green: 0.05, blue: 0.10).ignoresSafeArea())
             .toolbarBackground(panel < -0.5 ? .automatic : .hidden, for: .navigationBar)
             .toolbar(panel < -0.5 ? .visible : .hidden, for: .navigationBar)
         }
+    }
+
+    private static var statusBarHeight: CGFloat {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .map(\.safeAreaInsets.top)
+            .max() ?? 0
     }
 
     private func hint(_ position: CGFloat) -> String {
