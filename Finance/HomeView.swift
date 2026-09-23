@@ -15,7 +15,7 @@ struct HomeView: View {
             GeometryReader { geo in
                 let card: CGFloat = 168
                 let range = max(geo.size.height - card, 1)
-                let position = min(1, max(-1, panel + drag / range))
+                let position = min(1, max(-1, panel + drag))
                 let reveal = abs(position)
                 let drop = max(-position, 0)
                 let topLift = safeTop * max(position, 0)
