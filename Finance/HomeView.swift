@@ -85,7 +85,7 @@ struct HomeView: View {
                     .onGeometryChange(for: CGFloat.self) { _ in Self.windowSafeArea.bottom } action: { safeBottom = $0 }
             }
             .ignoresSafeArea(edges: [.top, .bottom])
-            .background(Color(red: 0.03, green: 0.05, blue: 0.10).ignoresSafeArea())
+            .background(Color.black.ignoresSafeArea())
             .toolbarBackground(panel < -0.5 ? .automatic : .hidden, for: .navigationBar)
             .toolbar(panel < -0.5 ? .visible : .hidden, for: .navigationBar)
         }
