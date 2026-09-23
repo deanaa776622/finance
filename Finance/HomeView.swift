@@ -28,11 +28,12 @@ struct HomeView: View {
 
                 VStack(spacing: 12 * reveal) {
                     if position < 0 {
-                        AssetListView(showsChrome: position < -0.5)
+                        AssetListView(showsChrome: panel < -0.5)
                             .ignoresSafeArea(edges: panel < -0.5 ? .bottom : [.top, .bottom])
                             .frame(height: max(0, range * -position - bottomLift - 12 * drop))
                             .opacity(-position)
-                            .allowsHitTesting(position < -0.85)
+                            .scrollDisabled(panel > -0.95)
+                            .allowsHitTesting(panel < -0.85)
                     }
 
                     HomeHero(portfolio: portfolio, position: position)
@@ -56,7 +57,6 @@ struct HomeView: View {
                         }
                         .padding(.horizontal, 16 * reveal)
                         .shadow(color: .black.opacity(0.35 * reveal), radius: 20 * reveal, y: 8 * reveal)
-                        .gesture(panelDrag(range: range))
                         .onTapGesture { if panel != 0 { snap(0) } }
                         .accessibilityAddTraits(.isButton)
                         .accessibilityHint(hint(position))
@@ -75,6 +75,8 @@ struct HomeView: View {
                 }
                 .padding(.top, topLift)
                 .padding(.bottom, bottomLift)
+                .contentShape(Rectangle())
+                .gesture(panelDrag(range: range))
             }
             .background {
                 Color.clear
