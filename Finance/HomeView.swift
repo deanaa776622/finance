@@ -21,6 +21,7 @@ struct HomeView: View {
                 let drop = max(-position, 0)
                 let topLift = safeTop * max(position, 0)
                 let bottomLift = safeBottom * drop
+                let assetTop = (safeTop + (panel < -0.5 ? 44 : 0)) * drop
                 let savingsProgress = SavingsMath.outlook(
                     plan: portfolio.savings ?? .prototype,
                     presentValue: portfolio.allocableTotal
@@ -30,7 +31,7 @@ struct HomeView: View {
                     if position < 0 {
                         AssetListView(showsChrome: panel < -0.5)
                             .ignoresSafeArea(edges: panel < -0.5 ? .bottom : [.top, .bottom])
-                            .frame(height: max(0, range * -position - bottomLift - 12 * drop))
+                            .frame(height: max(0, range * -position - bottomLift - 12 * drop - assetTop))
                             .opacity(-position)
                             .scrollDisabled(panel > -0.95)
                             .allowsHitTesting(panel < -0.85)
@@ -73,7 +74,7 @@ struct HomeView: View {
                             .allowsHitTesting(position > 0.85)
                     }
                 }
-                .padding(.top, topLift)
+                .padding(.top, topLift + assetTop)
                 .padding(.bottom, bottomLift)
                 .contentShape(Rectangle())
                 .gesture(panelDrag(range: range))
