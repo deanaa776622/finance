@@ -37,7 +37,7 @@ struct HomeView: View {
                             .allowsHitTesting(panel < -0.85)
                     }
 
-                    HomeHero(portfolio: portfolio, position: position)
+                    HomeHero(portfolio: portfolio, position: position, settled: panel)
                         .frame(height: geo.size.height - range * reveal)
                         .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
                         .overlay(alignment: .bottom) {
@@ -60,11 +60,11 @@ struct HomeView: View {
                         .shadow(color: .black.opacity(0.35 * reveal), radius: 20 * reveal, y: 8 * reveal)
                         .onTapGesture { if panel != 0 { snap(0) } }
                         .accessibilityAddTraits(.isButton)
-                        .accessibilityHint(hint(position))
+                        .accessibilityHint(hint(panel))
                         .accessibilityAction(named: "儲蓄目標") { snap(1) }
                         .accessibilityAction(named: "資產") { snap(-1) }
                         .accessibilityAction(named: "回到全螢幕") { snap(0) }
-                        .accessibilityLabel(heroLabel(position))
+                        .accessibilityLabel(heroLabel(panel))
 
                     if position > 0 {
                         SavingsTunerView()
@@ -145,11 +145,13 @@ struct HomeView: View {
 private struct HomeHero: View {
     let portfolio: Portfolio
     var position: CGFloat
+    var settled: CGFloat
     @AppStorage("hideAmounts") private var hideAmounts = false
 
     private var reveal: CGFloat { abs(position) }
-    private var toSavings: CGFloat { max(position, 0) }
-    private var toAssets: CGFloat { max(-position, 0) }
+    private var settledReveal: CGFloat { abs(settled) }
+    private var toSavings: CGFloat { max(settled, 0) }
+    private var toAssets: CGFloat { max(-settled, 0) }
 
     var body: some View {
         ZStack {
@@ -165,7 +167,7 @@ private struct HomeHero: View {
                     .accessibilityHidden(true)
                 Spacer()
                 ZStack {
-                    statusCopy.opacity(1 - reveal)
+                    statusCopy.opacity(1 - settledReveal)
                     netWorthCopy.opacity(toAssets)
                     yearsCopy.opacity(toSavings)
                 }
@@ -199,7 +201,7 @@ private struct HomeHero: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 48 - 24 * reveal)
+                .padding(.horizontal, 48 - 24 * settledReveal)
         }
     }
 
