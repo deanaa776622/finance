@@ -3,6 +3,7 @@ import SwiftUI
 
 struct SavingsTunerView: View {
     @Environment(Portfolio.self) private var portfolio
+    @AppStorage("hideAmounts") private var hideAmounts = false
     @FocusState private var field: Field?
     @State private var costText = ""
     @State private var rateText = ""
@@ -48,7 +49,7 @@ struct SavingsTunerView: View {
             }
 
             Section {
-                LabeledContent("目前資產", value: MoneyFormat.string(portfolio.allocableTotal))
+                LabeledContent("目前資產", value: MoneyFormat.string(portfolio.allocableTotal, hidden: hideAmounts))
                 LabeledContent("目標金額") {
                     Text(draftOutlook?.targetAmount.map(MoneyFormat.string) ?? "報酬率需大於 0")
                 }
