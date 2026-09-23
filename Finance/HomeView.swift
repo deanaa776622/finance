@@ -17,6 +17,7 @@ struct HomeView: View {
                 let range = max(geo.size.height - card, 1)
                 let position = min(1, max(-1, panel + drag))
                 let reveal = abs(position)
+                let corner = 28 * reveal
                 let drop = max(-position, 0)
                 let topLift = safeTop * max(position, 0)
                 let bottomLift = safeBottom * drop
@@ -36,17 +37,19 @@ struct HomeView: View {
 
                     HomeHero(portfolio: portfolio, position: position)
                         .frame(height: geo.size.height - range * reveal)
-                        .clipShape(RoundedRectangle(cornerRadius: 28 * reveal, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
                         .overlay(alignment: .bottom) {
                             if position > 0 {
-                                Rectangle()
+                                Capsule()
                                     .fill(.white.opacity(0.08))
                                     .frame(height: 3)
                                     .overlay(alignment: .leading) {
-                                        Rectangle()
+                                        Capsule()
                                             .fill(.white.opacity(0.85))
                                             .scaleEffect(x: savingsProgress, anchor: .leading)
                                     }
+                                    .padding(.horizontal, 24)
+                                    .padding(.bottom, 16)
                                     .opacity(position)
                                     .accessibilityHidden(true)
                             }
