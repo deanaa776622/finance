@@ -166,6 +166,11 @@ enum NumberParse {
         NSDecimalNumber(decimal: value).stringValue
     }
 
+    /// FX rate shown in the editor: one decimal, dot separator.
+    static func oneDecimal(_ value: Decimal) -> String {
+        String(format: "%.1f", NSDecimalNumber(decimal: value).doubleValue)
+    }
+
     static func grouped(_ value: Decimal) -> String {
         let f = NumberFormatter()
         f.numberStyle = .decimal

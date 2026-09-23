@@ -140,17 +140,27 @@ struct AssetListView: View {
 
     private func refreshQuotes() async {
         let targets = portfolio.items.filter(\.canRefreshQuote)
-        guard !targets.isEmpty else {
+        let hasUsd = portfolio.items.contains { $0.currency == .usd }
+        guard !targets.isEmpty || hasUsd else {
             refreshMessage = "沒有可更新的持股"
             return
         }
         isRefreshing = true
         defer { isRefreshing = false }
-        let quotes = await QuoteClient.fetchAll(
+        let quotes = targets.isEmpty ? [:] : await QuoteClient.fetchAll(
             symbols: Dictionary(uniqueKeysWithValues: targets.map { ($0.id, $0.name) })
         )
         portfolio.applyQuotes(quotes)
-        refreshMessage = quotes.isEmpty ? "更新失敗，現值未改" : "已更新 \(quotes.count) 筆現值"
+        let rate = hasUsd ? try? await QuoteClient.fetchUsdTwd() : nil
+        if let rate { portfolio.applyUsdTwd(rate) }
+        refreshMessage = statusAfterRefresh(quoteCount: quotes.count, attemptedQuotes: !targets.isEmpty, rateUpdated: rate != nil)
+    }
+
+    private func statusAfterRefresh(quoteCount: Int, attemptedQuotes: Bool, rateUpdated: Bool) -> String {
+        if quoteCount > 0, rateUpdated { return "已更新 \(quoteCount) 筆現值與匯率" }
+        if quoteCount > 0 { return "已更新 \(quoteCount) 筆現值" }
+        if rateUpdated { return attemptedQuotes ? "現值未改，已更新匯率" : "已更新匯率" }
+        return attemptedQuotes ? "更新失敗，現值未改" : "匯率更新失敗"
     }
 }
 

@@ -31,7 +31,7 @@ struct AssetEditor: View {
         _name = State(initialValue: item?.name ?? "")
         _kind = State(initialValue: kind)
         _currency = State(initialValue: item?.currency ?? .twd)
-        _rateText = State(initialValue: NumberParse.display(item?.usdTwdRate ?? 32))
+        _rateText = State(initialValue: NumberParse.oneDecimal(item?.usdTwdRate ?? 32))
         _usesSharePrice = State(initialValue: item?.usesSharePrice ?? kind.prefersSharePrice)
         _sharesText = State(initialValue: item?.shares.map(NumberParse.display) ?? "")
         _priceText = State(initialValue: item?.price.map(NumberParse.display) ?? "")
@@ -195,13 +195,21 @@ struct AssetEditor: View {
         isQuoting = true
         quoteHint = nil
         defer { isQuoting = false }
-        do {
-            let quote = try await QuoteClient.fetch(symbol: symbol)
+        let quote = try? await QuoteClient.fetch(symbol: symbol)
+        if let quote {
             priceText = NumberParse.display(quote.price)
             if let currency = quote.currency { self.currency = currency }
-            if let rate = quote.usdTwdRate { rateText = NumberParse.display(rate) }
+        }
+        var rate = quote?.usdTwdRate
+        if rate == nil { rate = try? await QuoteClient.fetchUsdTwd() }
+        if let rate { rateText = NumberParse.oneDecimal(rate) }
+        if quote != nil, rate != nil {
+            quoteHint = "已填入現值與匯率"
+        } else if quote != nil {
             quoteHint = "已填入現值"
-        } catch {
+        } else if rate != nil {
+            quoteHint = "已更新匯率"
+        } else {
             quoteHint = "查不到，請手動輸入單價"
         }
     }

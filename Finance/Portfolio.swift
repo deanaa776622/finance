@@ -162,4 +162,13 @@ final class Portfolio {
         }
         save()
     }
+
+    func applyUsdTwd(_ rate: Decimal) {
+        var changed = false
+        for i in items.indices where items[i].currency == .usd {
+            items[i].usdTwdRate = rate
+            changed = true
+        }
+        if changed { save() }
+    }
 }
