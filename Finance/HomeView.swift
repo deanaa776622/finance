@@ -20,6 +20,10 @@ struct HomeView: View {
                 let drop = max(-position, 0)
                 let topLift = safeTop * max(position, 0)
                 let bottomLift = safeBottom * drop
+                let savingsProgress = SavingsMath.outlook(
+                    plan: portfolio.savings ?? .prototype,
+                    presentValue: portfolio.allocableTotal
+                ).progress
 
                 VStack(spacing: 12 * reveal) {
                     if position < 0 {
@@ -33,6 +37,20 @@ struct HomeView: View {
                     HomeHero(portfolio: portfolio, position: position)
                         .frame(height: geo.size.height - range * reveal)
                         .clipShape(RoundedRectangle(cornerRadius: 28 * reveal, style: .continuous))
+                        .overlay(alignment: .bottom) {
+                            if position > 0 {
+                                Rectangle()
+                                    .fill(.white.opacity(0.08))
+                                    .frame(height: 3)
+                                    .overlay(alignment: .leading) {
+                                        Rectangle()
+                                            .fill(.white.opacity(0.85))
+                                            .scaleEffect(x: savingsProgress, anchor: .leading)
+                                    }
+                                    .opacity(position)
+                                    .accessibilityHidden(true)
+                            }
+                        }
                         .padding(.horizontal, 16 * reveal)
                         .shadow(color: .black.opacity(0.35 * reveal), radius: 20 * reveal, y: 8 * reveal)
                         .gesture(panelDrag(range: range))
@@ -151,21 +169,6 @@ private struct HomeHero: View {
                     .padding(.bottom, 8)
                     .safeAreaPadding(.bottom)
                     .accessibilityHidden(true)
-            }
-        }
-        .overlay(alignment: .bottom) {
-            if toSavings > 0 {
-                GeometryReader { bar in
-                    ZStack(alignment: .leading) {
-                        Rectangle().fill(.white.opacity(0.08))
-                        Rectangle()
-                            .fill(.white.opacity(0.85))
-                            .frame(width: bar.size.width * outlook.progress)
-                    }
-                }
-                .frame(height: 3)
-                .opacity(toSavings)
-                .accessibilityHidden(true)
             }
         }
         .contentShape(Rectangle())
