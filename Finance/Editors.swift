@@ -69,7 +69,7 @@ struct TargetEditor: View {
                     .foregroundStyle(.secondary)
             }
             .font(.title3.weight(.semibold))
-            .foregroundStyle(kind.glowColor)
+            .foregroundStyle(portfolio.glowColor(for: kind))
         }
         .frame(maxWidth: .infinity)
     }
@@ -100,6 +100,7 @@ struct TargetEditor: View {
 }
 
 private struct AllocationGlowTrack: View {
+    @Environment(Portfolio.self) private var portfolio
     var original: Double
     var leverage: Double
     var onChange: (Double, Double) -> Void
@@ -111,16 +112,29 @@ private struct AllocationGlowTrack: View {
         let lev = min(max(0, leverage), 100 - orig)
         let p1 = orig / 100
         let p2 = (orig + lev) / 100
+        let originalColor = portfolio.glowColor(for: .original)
+        let leverageColor = portfolio.glowColor(for: .leverage)
+        let cashColor = portfolio.glowColor(for: .cash)
         GeometryReader { geo in
             Capsule()
                 .fill(LinearGradient(stops: [
-                    .init(color: AssetKind.original.glowColor, location: 0),
-                    .init(color: AssetKind.original.glowColor, location: p1),
-                    .init(color: AssetKind.leverage.glowColor, location: p1),
-                    .init(color: AssetKind.leverage.glowColor, location: p2),
-                    .init(color: AssetKind.cash.glowColor, location: p2),
-                    .init(color: AssetKind.cash.glowColor, location: 1),
+                    .init(color: originalColor, location: 0),
+                    .init(color: originalColor, location: p1),
+                    .init(color: leverageColor, location: p1),
+                    .init(color: leverageColor, location: p2),
+                    .init(color: cashColor, location: p2),
+                    .init(color: cashColor, location: 1),
                 ], startPoint: .leading, endPoint: .trailing))
+                .overlay(alignment: .leading) {
+                    ZStack(alignment: .leading) {
+                        if orig > 0, lev > 0, colorsMatch(originalColor, leverageColor) {
+                            seam.offset(x: geo.size.width * p1)
+                        }
+                        if lev > 0, orig + lev < 100, colorsMatch(leverageColor, cashColor) {
+                            seam.offset(x: geo.size.width * p2)
+                        }
+                    }
+                }
                 .overlay(Capsule().strokeBorder(.white.opacity(0.2), lineWidth: 1))
                 .shadow(color: .white.opacity(0.28), radius: 8)
                 .highPriorityGesture(drag(width: geo.size.width))
@@ -130,6 +144,21 @@ private struct AllocationGlowTrack: View {
         .accessibilityElement()
         .accessibilityLabel("目標比例")
         .accessibilityValue("原型 \(Int(orig.rounded()))%，槓桿 \(Int(lev.rounded()))%，現金 \(Int((100 - orig - lev).rounded()))%")
+    }
+
+    private var seam: some View {
+        Rectangle()
+            .fill(.white.opacity(0.9))
+            .frame(width: 1)
+    }
+
+    private func colorsMatch(_ a: Color, _ b: Color) -> Bool {
+        let left = a.resolve(in: EnvironmentValues())
+        let right = b.resolve(in: EnvironmentValues())
+        let dr = left.red - right.red
+        let dg = left.green - right.green
+        let db = left.blue - right.blue
+        return dr * dr + dg * dg + db * db < 0.004
     }
 
     private func drag(width: CGFloat) -> some Gesture {

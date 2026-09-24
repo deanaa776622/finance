@@ -18,7 +18,7 @@ extension GlowOrb {
             let layout = kind.glowLayout
             return GlowOrb(
                 id: kind.rawValue,
-                color: kind.glowColor.mix(with: .driftWarning, by: portfolio.driftFactor(for: kind)),
+                color: portfolio.glowColor(for: kind),
                 diameter: 520 * achieve,
                 anchor: layout.anchor,
                 points: layout.points,
@@ -31,6 +31,13 @@ extension GlowOrb {
 private extension Color {
     /// Muted amber — a nudge to look, not an alarm.
     static let driftWarning = Color(red: 0.85, green: 0.58, blue: 0.42)
+}
+
+extension Portfolio {
+    /// Home orb hue for this bucket, including the drift tint.
+    func glowColor(for kind: AssetKind) -> Color {
+        kind.glowColor.mix(with: .driftWarning, by: driftFactor(for: kind))
+    }
 }
 
 extension AssetKind {
