@@ -14,7 +14,7 @@ struct TargetEditor: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("目標比例") {
+                Section {
                     AllocationGlowTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios)
                     HStack {
                         percentField("原型", text: $originalText, field: .original)
@@ -29,7 +29,7 @@ struct TargetEditor: View {
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { commit(); dismiss() }
+                    Button("儲存") { commit(); dismiss() }
                 }
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
@@ -38,7 +38,7 @@ struct TargetEditor: View {
             }
             .onAppear(perform: load)
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.height(280)])
         .presentationBackground(Color(.systemGroupedBackground))
         .presentationDragIndicator(.visible)
         .background(ScrollFitLock())
