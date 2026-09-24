@@ -56,6 +56,13 @@ struct SavingsTunerView: View {
             }
         }
         .scrollDismissesKeyboard(.interactively)
+        .mask {
+            VStack(spacing: 0) {
+                LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 40)
+                Color.black
+            }
+        }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()

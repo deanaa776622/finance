@@ -32,6 +32,13 @@ struct HomeView: View {
                         AssetListView(showsChrome: panel < -0.5)
                             .ignoresSafeArea(edges: panel < -0.5 ? .bottom : [.top, .bottom])
                             .frame(height: max(0, range * -position - bottomLift - 12 * drop - assetTop))
+                            .mask {
+                                VStack(spacing: 0) {
+                                    Color.black
+                                    LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                                        .frame(height: 40)
+                                }
+                            }
                             .opacity(-position)
                             .scrollDisabled(panel > -0.95)
                             .allowsHitTesting(panel < -0.85)
