@@ -72,7 +72,7 @@ struct AssetListView: View {
                 }
             }
         }
-        .contentMargins(.top, showsChrome ? 16 : 0, for: .scrollContent)
+        .contentMargins(.top, showsChrome ? 32 : 0, for: .scrollContent)
         .navigationTitle(showsChrome ? "資產" : "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
