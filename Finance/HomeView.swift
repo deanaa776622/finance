@@ -39,37 +39,32 @@ struct HomeView: View {
 
                     HomeHero(portfolio: portfolio, position: position, settled: panel)
                         .frame(height: geo.size.height - range * reveal)
-                        .overlay {
-                            if position > 0 {
-                                GeometryReader { bar in
-                                    VStack(spacing: 0) {
-                                        Spacer(minLength: 0)
-                                        ZStack(alignment: .leading) {
-                                            Rectangle()
-                                                .fill(.white.opacity(0.05))
-                                            if savingsProgress > 0 {
-                                                UnevenRoundedRectangle(
-                                                    topLeadingRadius: 0,
-                                                    bottomLeadingRadius: 0,
-                                                    bottomTrailingRadius: 2,
-                                                    topTrailingRadius: 2
-                                                )
-                                                .fill(LinearGradient(
-                                                    colors: [.white.opacity(0.3), .white],
-                                                    startPoint: .leading,
-                                                    endPoint: .trailing
-                                                ))
-                                                .frame(width: bar.size.width * savingsProgress)
-                                                .shadow(color: .white.opacity(0.7), radius: 8)
-                                            }
+                        .overlay(alignment: .bottom) {
+                            Rectangle()
+                                .fill(.white.opacity(0.05))
+                                .frame(height: 3)
+                                .overlay(alignment: .leading) {
+                                    GeometryReader { bar in
+                                        if savingsProgress > 0 {
+                                            UnevenRoundedRectangle(
+                                                topLeadingRadius: 0,
+                                                bottomLeadingRadius: 0,
+                                                bottomTrailingRadius: 2,
+                                                topTrailingRadius: 2
+                                            )
+                                            .fill(LinearGradient(
+                                                colors: [.white.opacity(0.3), .white],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            ))
+                                            .frame(width: bar.size.width * savingsProgress, height: 3)
+                                            .shadow(color: .white.opacity(0.7), radius: 8)
                                         }
-                                        .frame(height: 3)
                                     }
                                 }
-                                .opacity(position)
+                                .opacity(max(panel, 0))
                                 .accessibilityHidden(true)
                                 .allowsHitTesting(false)
-                            }
                         }
                         .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
                         .padding(.horizontal, 16 * reveal)
