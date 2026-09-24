@@ -157,6 +157,7 @@ struct AssetEditor: View {
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
+        .background(ScrollFitLock())
     }
 
     private var canSave: Bool {
