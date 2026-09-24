@@ -39,23 +39,39 @@ struct HomeView: View {
 
                     HomeHero(portfolio: portfolio, position: position, settled: panel)
                         .frame(height: geo.size.height - range * reveal)
-                        .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
-                        .overlay(alignment: .bottom) {
+                        .overlay {
                             if position > 0 {
-                                Capsule()
-                                    .fill(.white.opacity(0.08))
-                                    .frame(height: 3)
-                                    .overlay(alignment: .leading) {
-                                        Capsule()
-                                            .fill(.white.opacity(0.85))
-                                            .scaleEffect(x: savingsProgress, anchor: .leading)
+                                GeometryReader { bar in
+                                    VStack(spacing: 0) {
+                                        Spacer(minLength: 0)
+                                        ZStack(alignment: .leading) {
+                                            Rectangle()
+                                                .fill(.white.opacity(0.05))
+                                            if savingsProgress > 0 {
+                                                UnevenRoundedRectangle(
+                                                    topLeadingRadius: 0,
+                                                    bottomLeadingRadius: 0,
+                                                    bottomTrailingRadius: 2,
+                                                    topTrailingRadius: 2
+                                                )
+                                                .fill(LinearGradient(
+                                                    colors: [.white.opacity(0.3), .white],
+                                                    startPoint: .leading,
+                                                    endPoint: .trailing
+                                                ))
+                                                .frame(width: bar.size.width * savingsProgress)
+                                                .shadow(color: .white.opacity(0.7), radius: 8)
+                                            }
+                                        }
+                                        .frame(height: 3)
                                     }
-                                    .padding(.horizontal, 24)
-                                    .padding(.bottom, 16)
-                                    .opacity(position)
-                                    .accessibilityHidden(true)
+                                }
+                                .opacity(position)
+                                .accessibilityHidden(true)
+                                .allowsHitTesting(false)
                             }
                         }
+                        .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
                         .padding(.horizontal, 16 * reveal)
                         .shadow(color: .black.opacity(0.35 * reveal), radius: 20 * reveal, y: 8 * reveal)
                         .onTapGesture { if panel != 0 { snap(0) } }
