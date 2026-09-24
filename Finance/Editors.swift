@@ -55,6 +55,8 @@ struct TargetEditor: View {
             }
             .navigationTitle("目標配置")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("完成") { commit(); dismiss() }
@@ -66,7 +68,8 @@ struct TargetEditor: View {
             }
             .onAppear(perform: load)
         }
-        .presentationDetents([.large])
+        .presentationDetents([.medium])
+        .presentationBackground(Color(.systemGroupedBackground))
         .presentationDragIndicator(.visible)
     }
 
