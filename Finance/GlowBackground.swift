@@ -33,8 +33,8 @@ private extension Color {
     static let driftWarning = Color(red: 0.85, green: 0.58, blue: 0.42)
 }
 
-private extension AssetKind {
-    /// Same hues as the web prototype: 原型藍 / 槓桿綠 / 現金黃.
+extension AssetKind {
+    /// 原型藍 / 槓桿綠 / 現金黃. Same hues as the web prototype.
     var glowColor: Color {
         switch self {
         case .original: Color(red: 0.22, green: 0.74, blue: 0.97)
@@ -43,7 +43,9 @@ private extension AssetKind {
         case .realEstate, .debt: .clear
         }
     }
+}
 
+private extension AssetKind {
     var glowLayout: (anchor: UnitPoint, points: [CGSize], duration: Double) {
         switch self {
         case .original: (UnitPoint(x: 0.22, y: 0.24), [
