@@ -15,12 +15,16 @@ struct TargetEditor: View {
         NavigationStack {
             Form {
                 Section {
-                    AllocationGlowTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios)
-                    HStack {
-                        percentField("原型", text: $originalText, field: .original)
-                        percentField("槓桿", text: $leverageText, field: .leverage)
-                        percentField("現金", text: $cashText, field: .cash)
+                    HStack(spacing: 16) {
+                        percentField("原型", text: $originalText, field: .original, kind: .original)
+                        percentField("槓桿", text: $leverageText, field: .leverage, kind: .leverage)
+                        percentField("現金", text: $cashText, field: .cash, kind: .cash)
                     }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    AllocationGlowTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                 }
             }
             .navigationTitle("目標配置")
@@ -28,7 +32,9 @@ struct TargetEditor: View {
             .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItemGroup(placement: .bottomBar) {
+                    Button("取消") { dismiss() }
+                    Spacer()
                     Button("儲存") { commit(); dismiss() }
                 }
                 ToolbarItemGroup(placement: .keyboard) {
@@ -38,24 +44,32 @@ struct TargetEditor: View {
             }
             .onAppear(perform: load)
         }
-        .presentationDetents([.height(280)])
+        .presentationDetents([.height(300)])
         .presentationBackground(Color(.systemGroupedBackground))
         .presentationDragIndicator(.visible)
         .background(ScrollFitLock())
     }
 
-    private func percentField(_ title: String, text: Binding<String>, field: Field) -> some View {
-        HStack(spacing: 4) {
+    private func percentField(_ title: String, text: Binding<String>, field: Field, kind: AssetKind) -> some View {
+        VStack(spacing: 2) {
             Text(title)
-                .font(.subheadline)
-            TextField("％", text: text)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .monospacedDigit()
-                .focused($field, equals: field)
-                .frame(width: 44)
-            Text("%")
+                .font(.caption)
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            HStack(alignment: .firstTextBaseline, spacing: 1) {
+                TextField("0", text: text)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .monospacedDigit()
+                    .focused($field, equals: field)
+                    .frame(width: 36)
+                    .accessibilityLabel(title)
+                Text("%")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .font(.title3.weight(.semibold))
+            .foregroundStyle(kind.glowColor)
         }
         .frame(maxWidth: .infinity)
     }
@@ -90,6 +104,7 @@ private struct AllocationGlowTrack: View {
     var leverage: Double
     var onChange: (Double, Double) -> Void
     @State private var boundary = 0
+    @State private var hapticTick = 0
 
     var body: some View {
         let orig = min(100, max(0, original))
@@ -111,6 +126,7 @@ private struct AllocationGlowTrack: View {
                 .highPriorityGesture(drag(width: geo.size.width))
         }
         .frame(height: 20)
+        .sensoryFeedback(.selection, trigger: hapticTick)
         .accessibilityElement()
         .accessibilityLabel("目標比例")
         .accessibilityValue("原型 \(Int(orig.rounded()))%，槓桿 \(Int(lev.rounded()))%，現金 \(Int((100 - orig - lev).rounded()))%")
@@ -122,16 +138,20 @@ private struct AllocationGlowTrack: View {
                 let percent = min(100, max(0, value.location.x / max(width, 1) * 100))
                 var orig = min(100, max(0, original))
                 var lev = min(100 - orig, max(0, leverage))
+                let before = Int(orig.rounded()) * 100 + Int(lev.rounded())
                 if boundary == 0 {
                     boundary = abs(percent - orig) <= abs(percent - (orig + lev)) ? 1 : 2
                 }
                 let snapped = (percent / 10).rounded() * 10
                 if boundary == 1 {
-                    orig = min(100, max(0, snapped))
-                    if orig + lev > 100 { lev = 100 - orig }
+                    let edge = orig + lev
+                    orig = min(edge, max(0, snapped))
+                    lev = edge - orig
                 } else {
                     lev = min(100, max(orig, snapped)) - orig
                 }
+                let after = Int(orig.rounded()) * 100 + Int(lev.rounded())
+                if after != before { hapticTick += 1 }
                 onChange(orig, lev)
             }
             .onEnded { _ in boundary = 0 }
