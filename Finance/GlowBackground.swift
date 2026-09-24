@@ -65,7 +65,12 @@ struct GlowBackground: View {
         GeometryReader { geo in
             let t = min(1, max(0, compact))
             ZStack {
-                Color.black
+                LinearGradient(
+                    colors: [Color(red: 0.06, green: 0.09, blue: 0.16),
+                             Color(red: 0.03, green: 0.05, blue: 0.10)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
 
                 ForEach(orbs) { orb in
                     let d = orb.diameter + (min(orb.diameter, geo.size.width * 0.55) - orb.diameter) * t
