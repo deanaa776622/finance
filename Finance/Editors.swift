@@ -46,9 +46,11 @@ struct TargetEditor: View {
 
                 Section("目標比例") {
                     AllocationGlowTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios)
-                    percentRow("原型", text: $originalText, field: .original)
-                    percentRow("槓桿", text: $leverageText, field: .leverage)
-                    percentRow("現金", text: $cashText, field: .cash)
+                    HStack {
+                        percentField("原型", text: $originalText, field: .original)
+                        percentField("槓桿", text: $leverageText, field: .leverage)
+                        percentField("現金", text: $cashText, field: .cash)
+                    }
                 }
             }
             .navigationTitle("目標配置")
@@ -68,17 +70,20 @@ struct TargetEditor: View {
         .presentationDragIndicator(.visible)
     }
 
-    private func percentRow(_ title: String, text: Binding<String>, field: Field) -> some View {
-        HStack {
+    private func percentField(_ title: String, text: Binding<String>, field: Field) -> some View {
+        HStack(spacing: 4) {
             Text(title)
-            Spacer()
+                .font(.subheadline)
             TextField("％", text: text)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
+                .monospacedDigit()
                 .focused($field, equals: field)
-                .frame(width: 72)
-            Text("%").foregroundStyle(.secondary)
+                .frame(width: 44)
+            Text("%")
+                .foregroundStyle(.secondary)
         }
+        .frame(maxWidth: .infinity)
     }
 
     private var originalPercent: Double { NumberParse.double(originalText) ?? 0 }
