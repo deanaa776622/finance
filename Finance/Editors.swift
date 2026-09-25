@@ -32,9 +32,10 @@ struct TargetEditor: View {
             .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
-                ToolbarItemGroup(placement: .bottomBar) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }
-                    Spacer()
+                }
+                ToolbarItem(placement: .confirmationAction) {
                     Button("儲存") { commit(); dismiss() }
                 }
                 ToolbarItemGroup(placement: .keyboard) {
@@ -44,7 +45,7 @@ struct TargetEditor: View {
             }
             .onAppear(perform: load)
         }
-        .presentationDetents([.height(300)])
+        .presentationDetents([.height(240)])
         .presentationBackground(Color(.systemGroupedBackground))
         .presentationDragIndicator(.visible)
     }
