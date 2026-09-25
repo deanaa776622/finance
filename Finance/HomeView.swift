@@ -178,6 +178,15 @@ private struct HomeHero: View {
             GlowBackground(orbs: GlowOrb.orbs(for: portfolio), compact: reveal)
 
             VStack(spacing: 14) {
+                Spacer()
+                ZStack {
+                    statusCopy.opacity(1 - settledReveal)
+                    netWorthCopy.opacity(toAssets)
+                    yearsCopy.opacity(toSavings)
+                }
+                Spacer()
+            }
+            VStack {
                 Image(systemName: "chevron.compact.down")
                     .font(.title)
                     .foregroundStyle(.tertiary)
@@ -185,12 +194,6 @@ private struct HomeHero: View {
                     .padding(.top, 8)
                     .safeAreaPadding(.top)
                     .accessibilityHidden(true)
-                Spacer()
-                ZStack {
-                    statusCopy.opacity(1 - settledReveal)
-                    netWorthCopy.opacity(toAssets)
-                    yearsCopy.opacity(toSavings)
-                }
                 Spacer()
                 Image(systemName: "chevron.compact.up")
                     .font(.title)
@@ -200,6 +203,7 @@ private struct HomeHero: View {
                     .safeAreaPadding(.bottom)
                     .accessibilityHidden(true)
             }
+            .allowsHitTesting(false)
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
@@ -235,7 +239,6 @@ private struct HomeHero: View {
                 .font(.title.weight(.bold))
                 .fontDesign(.rounded)
                 .monospacedDigit()
-                .minimumScaleFactor(0.5)
                 .lineLimit(1)
             Text(allocationPercents)
                 .font(.footnote)
