@@ -47,7 +47,6 @@ struct TargetEditor: View {
         .presentationDetents([.height(300)])
         .presentationBackground(Color(.systemGroupedBackground))
         .presentationDragIndicator(.visible)
-        .background(ScrollFitLock())
     }
 
     private func percentField(_ title: String, text: Binding<String>, field: Field, kind: AssetKind) -> some View {
