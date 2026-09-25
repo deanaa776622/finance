@@ -171,6 +171,14 @@ enum NumberParse {
         String(format: "%.1f", NSDecimalNumber(decimal: value).doubleValue)
     }
 
+    /// Share price: at most two decimal places.
+    static func price(_ value: Decimal) -> String {
+        var input = value
+        var rounded = Decimal()
+        NSDecimalRound(&rounded, &input, 2, .plain)
+        return NSDecimalNumber(decimal: rounded).stringValue
+    }
+
     static func grouped(_ value: Decimal) -> String {
         let f = NumberFormatter()
         f.numberStyle = .decimal

@@ -184,7 +184,7 @@ private struct AssetRow: View {
                     }
                 }
                 if item.usesSharePrice, let shares = item.shares, let price = item.price {
-                    Text(hideAmounts ? "••••" : "\(NumberParse.grouped(shares)) 股 · \(NumberParse.display(price))")
+                    Text(hideAmounts ? "••••" : "\(NumberParse.grouped(shares)) 股 · \(NumberParse.price(price))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
