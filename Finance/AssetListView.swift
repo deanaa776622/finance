@@ -49,7 +49,11 @@ struct AssetListView: View {
                                     .rotationEffect(.degrees(open ? 90 : 0))
                                 Text(kind.title)
                                 Spacer()
-                                Text(MoneyFormat.string(portfolio.amount(for: kind), hidden: hideAmounts))
+                                Text(MoneyFormat.string(
+                                    portfolio.amount(for: kind),
+                                    hidden: hideAmounts,
+                                    maximumFractionDigits: kind.prefersSharePrice ? 2 : 0
+                                ))
                                     .font(.subheadline)
                                     .monospacedDigit()
                                     .foregroundStyle(.secondary)
@@ -184,13 +188,17 @@ private struct AssetRow: View {
                     }
                 }
                 if item.usesSharePrice, let shares = item.shares, let price = item.price {
-                    Text(hideAmounts ? "••••" : "\(NumberParse.grouped(shares)) 股 · \(NumberParse.display(price))")
+                    Text(hideAmounts ? "••••" : "\(NumberParse.grouped(shares)) 股 · \(NumberParse.upToTwoDecimals(price))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
             Spacer()
-            Text(MoneyFormat.string(item.twdValue, hidden: hideAmounts))
+            Text(MoneyFormat.string(
+                item.twdValue,
+                hidden: hideAmounts,
+                maximumFractionDigits: item.kind.prefersSharePrice ? 2 : 0
+            ))
                 .monospacedDigit()
                 .foregroundStyle(item.kind == .debt ? .secondary : .primary)
         }
