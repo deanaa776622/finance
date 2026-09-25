@@ -34,7 +34,7 @@ struct AssetEditor: View {
         _rateText = State(initialValue: NumberParse.oneDecimal(item?.usdTwdRate ?? 32))
         _usesSharePrice = State(initialValue: item?.usesSharePrice ?? kind.prefersSharePrice)
         _sharesText = State(initialValue: item?.shares.map(NumberParse.display) ?? "")
-        _priceText = State(initialValue: item?.price.map(NumberParse.display) ?? "")
+        _priceText = State(initialValue: item?.price.map(NumberParse.upToTwoDecimals) ?? "")
         _amountText = State(initialValue: item.map { NumberParse.display($0.amount) } ?? "")
         _leverage = State(initialValue: Self.clampedLeverage(kind: kind, value: item?.leverageMultiple))
         self.onSave = onSave
@@ -197,7 +197,7 @@ struct AssetEditor: View {
         defer { isQuoting = false }
         let quote = try? await QuoteClient.fetch(symbol: symbol)
         if let quote {
-            priceText = NumberParse.display(quote.price)
+            priceText = NumberParse.upToTwoDecimals(quote.price)
             if let currency = quote.currency { self.currency = currency }
         }
         var rate = quote?.usdTwdRate

@@ -151,12 +151,14 @@ enum MoneyFormat {
         string(value, hidden: false)
     }
 
-    static func string(_ value: Decimal, hidden: Bool) -> String {
+    static func string(_ value: Decimal, hidden: Bool, maximumFractionDigits: Int = 0) -> String {
         if hidden { return "••••" }
         let f = NumberFormatter()
         f.numberStyle = .currency
         f.currencyCode = "TWD"
-        f.maximumFractionDigits = 0
+        f.minimumFractionDigits = 0
+        f.maximumFractionDigits = maximumFractionDigits
+        f.roundingMode = .halfUp
         return f.string(from: NSDecimalNumber(decimal: value)) ?? "\(value)"
     }
 }
@@ -164,6 +166,26 @@ enum MoneyFormat {
 enum NumberParse {
     static func display(_ value: Decimal) -> String {
         NSDecimalNumber(decimal: value).stringValue
+    }
+
+    /// Stock NAV / unit price: at most two decimal places, no trailing zeros.
+    static func upToTwoDecimals(_ value: Decimal) -> String {
+        let rounded = rounded(value, scale: 2)
+        let f = NumberFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.numberStyle = .decimal
+        f.usesGroupingSeparator = false
+        f.minimumFractionDigits = 0
+        f.maximumFractionDigits = 2
+        f.roundingMode = .halfUp
+        return f.string(from: NSDecimalNumber(decimal: rounded)) ?? display(rounded)
+    }
+
+    static func rounded(_ value: Decimal, scale: Int) -> Decimal {
+        var input = value
+        var output = Decimal()
+        NSDecimalRound(&output, &input, Int16(scale), .plain)
+        return output
     }
 
     /// FX rate shown in the editor: one decimal, dot separator.

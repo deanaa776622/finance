@@ -889,6 +889,25 @@
       return Number(Math.round(num)).toLocaleString('en-US');
     }
 
+    function formatPrice(num) {
+      const n = Number(num);
+      if (!Number.isFinite(n)) return '0';
+      return n.toLocaleString('en-US', {
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 0,
+        useGrouping: false
+      });
+    }
+
+    function formatMoney(num) {
+      const n = Number(num);
+      if (!Number.isFinite(n)) return '0';
+      return n.toLocaleString('en-US', {
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 0
+      });
+    }
+
     function togglePrivacy() {
       isPrivate = !isPrivate;
       localStorage.setItem('user_privacy_mode', JSON.stringify(isPrivate));
@@ -1275,7 +1294,7 @@
         if (res.status === 'fulfilled' && res.value && res.value.data) {
           const { index, data } = res.value;
           if (data.status === 'success' && data.price) {
-            assets[index].price = parseFloat(data.price);
+            assets[index].price = Math.round(parseFloat(data.price) * 100) / 100;
             if (data.currency) assets[index].currency = data.currency;
             if (data.usdtwd && data.currency === 'USD') assets[index].rate = parseFloat(data.usdtwd);
             updateCount++;
@@ -1307,10 +1326,10 @@
         const data = await response.json();
 
         if (data.status === 'success' && data.price) {
-          priceInput.value = parseFloat(data.price).toFixed(2);
+          priceInput.value = formatPrice(data.price);
           if (data.currency) setCurrency(data.currency);
           if (data.usdtwd) rateInput.value = parseFloat(data.usdtwd).toFixed(2);
-          hint.innerText = `✓ 已更新最新股價 (${data.currency})：$${data.price}`;
+          hint.innerText = `✓ 已更新最新股價 (${data.currency})：$${formatPrice(data.price)}`;
         } else {
           hint.innerText = "✕ 未查得自動股價，請手動輸入";
         }
@@ -1381,8 +1400,11 @@
             <div class="capsule-progress-fill ${fillClass}" style="width: ${pct.toFixed(1)}%;"></div>
           </div>`;
 
-        const valText = isPrivate ? 'NT$ ****' : `NT$ ${formatNumber(twdVal)}`;
-        const priceText = isPrivate ? '****' : `$${item.price}`;
+        const amount = (item.type === 'original' || item.type === 'leverage')
+          ? formatMoney(twdVal)
+          : formatNumber(twdVal);
+        const valText = isPrivate ? 'NT$ ****' : `NT$ ${amount}`;
+        const priceText = isPrivate ? '****' : `$${formatPrice(item.price)}`;
 
         let html = '';
 
@@ -1447,8 +1469,8 @@
         }
       });
 
-      document.getElementById('total-orig-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalOrigTWD);
-      document.getElementById('total-lev-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalLevTWD);
+      document.getElementById('total-orig-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatMoney(totalOrigTWD);
+      document.getElementById('total-lev-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatMoney(totalLevTWD);
       document.getElementById('total-cash-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalCashTWD);
       document.getElementById('total-realestate-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalRealestateTWD);
       document.getElementById('total-debt-val').innerText = isPrivate ? 'NT$ ****' : 'NT$ ' + formatNumber(totalDebtTWD);
@@ -1518,7 +1540,7 @@
         if (item.isSharesMode) {
           setCashMode('shares');
           document.getElementById('input-shares').value = item.shares || '';
-          document.getElementById('input-price').value = item.price || '';
+          document.getElementById('input-price').value = item.price ? formatPrice(item.price) : '';
         } else {
           setCashMode('total');
           document.getElementById('input-total-val').value = item.val || '';
@@ -1526,7 +1548,7 @@
       } else {
         setCashMode('shares');
         document.getElementById('input-shares').value = item.shares || '';
-        document.getElementById('input-price').value = item.price || '';
+        document.getElementById('input-price').value = item.price ? formatPrice(item.price) : '';
         if (item.type === 'leverage') {
           setLev(item.multiple || 2);
         }

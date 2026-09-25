@@ -26,7 +26,7 @@ enum QuoteClient {
             throw QuoteError.unavailable
         }
         return Quote(
-            price: Decimal(price),
+            price: decimalPrice(price),
             currency: payload.currency.flatMap { AssetCurrency(rawValue: $0.uppercased()) },
             usdTwdRate: payload.usdtwd.map { Decimal($0) }
         )
@@ -45,6 +45,13 @@ enum QuoteClient {
             throw QuoteError.unavailable
         }
         return Decimal(twd)
+    }
+
+    /// Quote payloads are doubles; keep the stored NAV at two decimal places.
+    private static func decimalPrice(_ value: Double) -> Decimal {
+        let posix = Locale(identifier: "en_US_POSIX")
+        let text = String(format: "%.2f", locale: posix, value)
+        return Decimal(string: text, locale: posix) ?? Decimal(value)
     }
 
     static func fetchAll(symbols: [UUID: String]) async -> [UUID: Quote] {
