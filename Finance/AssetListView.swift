@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct AssetListView: View {
+    static let restingTopInset: CGFloat = 44
     var showsChrome = true
+    var topInset = restingTopInset
     @Environment(Portfolio.self) private var portfolio
     @AppStorage("hideAmounts") private var hideAmounts = false
     @State private var editing: AssetItem?
@@ -72,7 +74,7 @@ struct AssetListView: View {
                 }
             }
         }
-        .contentMargins(.top, showsChrome ? 44 : 0, for: .scrollContent)
+        .contentMargins(.top, topInset, for: .scrollContent)
         .scrollEdgeFade(edges: .bottom)
         .navigationTitle(showsChrome ? "資產" : "")
         .navigationBarTitleDisplayMode(.inline)

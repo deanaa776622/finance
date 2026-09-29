@@ -29,8 +29,11 @@ struct HomeView: View {
 
                 VStack(spacing: 12 * reveal) {
                     if position < 0 {
-                        AssetListView(showsChrome: panel < -0.5)
-                            .ignoresSafeArea(edges: panel < -0.5 ? .bottom : [.top, .bottom])
+                        AssetListView(
+                            showsChrome: panel < -0.5,
+                            topInset: AssetListView.restingTopInset * drop
+                        )
+                            .ignoresSafeArea(edges: .bottom)
                             .frame(height: max(0, range * -position - bottomLift - 12 * drop - assetTop))
                             .mask {
                                 VStack(spacing: 0) {
