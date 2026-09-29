@@ -4,6 +4,8 @@ struct AssetListView: View {
     static let restingTopInset: CGFloat = 44
     var showsChrome = true
     var topInset = restingTopInset
+    /// Keeps the action bar above the net-worth card while the list fades underneath.
+    var menuLift: CGFloat = 0
     @Environment(Portfolio.self) private var portfolio
     @AppStorage("hideAmounts") private var hideAmounts = false
     @State private var editing: AssetItem?
@@ -75,12 +77,10 @@ struct AssetListView: View {
             }
         }
         .contentMargins(.top, topInset, for: .scrollContent)
-        .contentMargins(.bottom, 64, for: .scrollContent)
-        .scrollEdgeFade(edges: .bottom)
         .navigationTitle(showsChrome ? "資產" : "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .navigationBar)
-        .modifier(AssetMenuBar(isShown: showsChrome) { menuBar })
+        .modifier(AssetMenuBar(isShown: showsChrome, lift: menuLift) { menuBar })
         .sheet(isPresented: $showAdd) {
             AssetEditor(item: nil, defaultKind: addKind, onSave: saveItem)
         }
@@ -208,6 +208,7 @@ private struct CapsuleGlass: ViewModifier {
 
 private struct AssetMenuBar<Bar: View>: ViewModifier {
     var isShown: Bool
+    var lift: CGFloat = 0
     @ViewBuilder var bar: () -> Bar
 
     func body(content: Content) -> some View {
@@ -215,7 +216,7 @@ private struct AssetMenuBar<Bar: View>: ViewModifier {
             if isShown {
                 bar()
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 8 + lift)
             }
         }
     }
