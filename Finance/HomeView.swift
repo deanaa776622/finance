@@ -27,20 +27,18 @@ struct HomeView: View {
                     presentValue: portfolio.allocableTotal
                 ).progress
 
-                VStack(spacing: position < 0 ? -ScrollFade.depth : 12 * reveal) {
+                VStack(spacing: position < 0 ? 0 : 12 * reveal) {
                     if position < 0 {
                         AssetListView(
                             showsChrome: position < -0.5,
-                            topInset: AssetListView.restingTopInset * drop,
-                            menuLift: ScrollFade.depth
+                            topInset: AssetListView.restingTopInset * drop
                         )
                             .ignoresSafeArea(edges: .bottom)
-                            .frame(height: max(0, range * -position - bottomLift - assetTop + ScrollFade.depth))
+                            .frame(height: max(0, range * -position - bottomLift - assetTop))
                             .mask {
                                 VStack(spacing: 0) {
                                     ScrollFade.top
                                     Color.black
-                                    ScrollFade.bottom
                                 }
                             }
                             .opacity(-position)
