@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>光暈面板左右滑 — 淨值 / 曝險</title>
+  <style>
+    :root {
+      --bg: #03060c;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --dim: #64748b;
+      --row: rgba(255, 255, 255, 0.04);
+      --line: rgba(255, 255, 255, 0.06);
+      --original: #38bdf8;
+      --leverage: #4ade80;
+      --cash: #facc15;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh; background: var(--bg); color: var(--text);
+      font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: 32px 20px 48px;
+    }
+    .page-title { text-align: center; margin-bottom: 24px; }
+    .badge {
+      display: inline-block; font-size: 11px; letter-spacing: 0.08em;
+      color: rgba(148, 163, 184, 0.85); border: 1px dashed rgba(148, 163, 184, 0.35);
+      padding: 4px 10px; border-radius: 6px; margin-bottom: 10px;
+    }
+    .page-title h1 { font-size: 17px; font-weight: 600; }
+    .page-title p { margin-top: 8px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .stage {
+      display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; align-items: flex-start;
+    }
+    .col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .col-label { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; color: var(--dim); text-align: center; }
+
+    .phone {
+      width: 320px; height: 700px; background: #000;
+      border-radius: 36px; border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 28px 70px rgba(0,0,0,0.55);
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .status-bar {
+      height: 44px; display: flex; align-items: flex-end; justify-content: center;
+      padding-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--muted); flex-shrink: 0;
+    }
+    /* List matches current git: 5 AssetKind sections */
+    .list {
+      flex: 1; overflow: hidden; padding: 4px 0 0;
+      background: #000;
+    }
+    .section { padding: 0 16px; margin-bottom: 2px; }
+    .header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 11px 4px; font-size: 14px;
+    }
+    .header .chev { font-size: 9px; color: var(--dim); width: 10px; }
+    .header .chev.open { display: inline-block; transform: rotate(90deg); color: var(--muted); }
+    .header .title { flex: 1; font-weight: 500; }
+    .header .amt { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .item {
+      display: flex; align-items: center; padding: 8px 4px 8px 22px;
+      border-top: 1px solid var(--line); font-size: 13px;
+    }
+    .item .n { flex: 1; }
+    .item .sub { font-size: 11px; color: var(--dim); margin-top: 2px; }
+    .item .amt { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .ghost { opacity: 0.28; pointer-events: none; }
+    .fade-note {
+      text-align: center; font-size: 11px; color: var(--dim);
+      padding: 8px 16px 4px; letter-spacing: 0.04em;
+    }
+
+    /* Docked glow panel — horizontal pages */
+    .dock {
+      flex-shrink: 0; margin: 6px 12px 14px; height: 158px;
+      border-radius: 22px; position: relative; overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+    }
+    .dock .glow-nw {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 22% 30%, rgba(56, 189, 248, 0.42), transparent 44%),
+        radial-gradient(circle at 78% 28%, rgba(74, 222, 128, 0.28), transparent 40%),
+        radial-gradient(circle at 48% 85%, rgba(250, 204, 21, 0.2), transparent 45%),
+        linear-gradient(180deg, #0f1a2e, #070b14);
+    }
+    .dock .glow-ex {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 30% 35%, rgba(56, 189, 248, 0.5), transparent 42%),
+        radial-gradient(circle at 72% 40%, rgba(74, 222, 128, 0.45), transparent 40%),
+        radial-gradient(circle at 50% 90%, rgba(217, 148, 107, 0.18), transparent 45%),
+        linear-gradient(180deg, #0f1a2e, #070b14);
+    }
+    .pager {
+      position: relative; z-index: 1; height: 100%;
+      display: flex; transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .phone[data-page="1"] .pager { transform: translateX(-100%); }
+    .page {
+      flex: 0 0 100%; width: 100%; height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 12px 16px 28px; text-align: center;
+    }
+    .page .label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
+      color: rgba(241, 245, 249, 0.65);
+    }
+    .page .value {
+      margin-top: 6px; font-size: 24px; font-weight: 700;
+      font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+    }
+    .page .alloc {
+      margin-top: 8px; font-size: 12px; color: rgba(148, 163, 184, 0.95);
+      font-variant-numeric: tabular-nums; min-height: 16px;
+    }
+    .page .hint-swipe {
+      margin-top: 6px; font-size: 10px; color: rgba(148, 163, 184, 0.45);
+      letter-spacing: 0.06em;
+    }
+    /* iOS-style page dots */
+    .dots {
+      position: absolute; z-index: 3; left: 0; right: 0; bottom: 10px;
+      display: flex; justify-content: center; gap: 7px; pointer-events: none;
+    }
+    .dots span {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.28);
+      transition: background 0.2s, transform 0.2s;
+    }
+    .phone[data-page="0"] .dots span:nth-child(1),
+    .phone[data-page="1"] .dots span:nth-child(2) {
+      background: rgba(255, 255, 255, 0.92);
+      transform: scale(1.15);
+    }
+    .edge-cue {
+      position: absolute; z-index: 2; top: 50%; transform: translateY(-50%);
+      font-size: 18px; color: rgba(255,255,255,0.2); pointer-events: none;
+    }
+    .edge-cue.r { right: 8px; }
+    .edge-cue.l { left: 8px; }
+  </style>
+</head>
+<body>
+  <div class="page-title">
+    <div class="badge">MOCK · 對齊目前 git · 非實作</div>
+    <h1>光暈面板左右滑：總淨值 ↔ 總曝險</h1>
+    <p>資產列表維持現有 5 類。面板換頁時列表跟著篩選；下方小點表示頁次。</p>
+  </div>
+
+  <div class="stage">
+    <!-- Page 0: 總淨值 -->
+    <div class="col">
+      <div class="col-label">預設 · 總淨值</div>
+      <div class="phone" data-page="0">
+        <div class="status-bar">9:41</div>
+        <div class="list">
+          <div class="section">
+            <div class="header"><span class="chev open">▶</span><span class="title">原型</span><span class="amt">$1,764,000</span></div>
+            <div class="item"><div class="n">0050<div class="sub">20,000 股 · 190</div></div><span class="amt">$1,216,000</span></div>
+          </div>
+          <div class="section">
+            <div class="header"><span class="chev">▶</span><span class="title">槓桿</span><span class="amt">$2,016,000</span></div>
+          </div>
+          <div class="section">
+            <div class="header"><span class="chev">▶</span><span class="title">現金</span><span class="amt">$420,000</span></div>
+          </div>
+          <div class="section">
+            <div class="header"><span class="chev">▶</span><span class="title">實體資產</span><span class="amt">$800,000</span></div>
+          </div>
+          <div class="section">
+            <div class="header"><span class="chev">▶</span><span class="title">負債</span><span class="amt">$380,000</span></div>
+          </div>
+        </div>
+        <div class="dock">
+          <div class="glow-nw"></div>
+          <div class="pager">
+            <div class="page">
+              <div class="label">總淨值</div>
+              <div class="value">$4,620,000</div>
+              <!-- 淨值頁：不顯示原槓現 -->
+              <div class="alloc"></div>
+              <div class="hint-swipe">← 滑向總曝險</div>
+            </div>
+            <div class="page">
+              <div class="label">總曝險</div>
+              <div class="value">$5,796,000</div>
+              <div class="alloc">原 42%　槓 48%　現 10%</div>
+            </div>
+          </div>
+          <div class="edge-cue r">‹</div>
+          <div class="dots" aria-label="第 1 頁，共 2 頁"><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page 1: 總曝險 -->
+    <div class="col">
+      <div class="col-label">往左滑 · 總曝險</div>
+      <div class="phone" data-page="1">
+        <div class="status-bar">9:41</div>
+        <div class="list">
+          <div class="fade-note">僅原／槓／現</div>
+          <div class="section">
+            <div class="header"><span class="chev open">▶</span><span class="title">原型</span><span class="amt">$1,764,000</span></div>
+            <div class="item"><div class="n">0050<div class="sub">20,000 股 · 190</div></div><span class="amt">$1,216,000</span></div>
+            <div class="item"><div class="n">VT<div class="sub">USD · 120 股</div></div><span class="amt">$432,000</span></div>
+          </div>
+          <div class="section">
+            <div class="header"><span class="chev open">▶</span><span class="title">槓桿</span><span class="amt">$2,016,000</span></div>
+            <div class="item"><div class="n">00631L<div class="sub">2×</div></div><span class="amt">$2,016,000</span></div>
+          </div>
+          <div class="section">
+            <div class="header"><span class="chev">▶</span><span class="title">現金</span><span class="amt">$420,000</span></div>
+          </div>
+          <!-- 實體、負債在曝險頁隱藏 -->
+        </div>
+        <div class="dock">
+          <div class="glow-ex"></div>
+          <div class="pager">
+            <div class="page">
+              <div class="label">總淨值</div>
+              <div class="value">$4,620,000</div>
+              <div class="alloc"></div>
+            </div>
+            <div class="page">
+              <div class="label">總曝險</div>
+              <div class="value">$5,796,000</div>
+              <div class="alloc">原 42%　槓 48%　現 10%</div>
+            </div>
+          </div>
+          <div class="edge-cue l">›</div>
+          <div class="dots" aria-label="第 2 頁，共 2 頁"><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
