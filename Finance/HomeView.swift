@@ -21,7 +21,7 @@ struct HomeView: View {
                 let drop = max(-position, 0)
                 let topLift = safeTop * max(position, 0)
                 let bottomLift = safeBottom * drop
-                let assetTop = (safeTop + (panel < -0.5 ? 44 : 0)) * drop
+                let assetTop = safeTop * drop
                 let savingsProgress = SavingsMath.outlook(
                     plan: portfolio.savings ?? .prototype,
                     presentValue: portfolio.allocableTotal
@@ -37,8 +37,10 @@ struct HomeView: View {
                                     LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
                                         .frame(height: 40)
                                     Color.black
-                                    LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
-                                        .frame(height: 40)
+                                    if panel >= -0.5 {
+                                        LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                                            .frame(height: 40)
+                                    }
                                 }
                             }
                             .opacity(-position)
@@ -106,8 +108,7 @@ struct HomeView: View {
             }
             .ignoresSafeArea(edges: [.top, .bottom])
             .background(Color.black.ignoresSafeArea())
-            .toolbarBackground(panel < -0.5 ? .automatic : .hidden, for: .navigationBar)
-            .toolbar(panel < -0.5 ? .visible : .hidden, for: .navigationBar)
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 

@@ -72,45 +72,11 @@ struct AssetListView: View {
                 }
             }
         }
-        .contentMargins(.top, showsChrome ? 32 : 0, for: .scrollContent)
+        .contentMargins(.top, showsChrome ? 44 : 0, for: .scrollContent)
         .navigationTitle(showsChrome ? "資產" : "")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if showsChrome {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        hideAmounts.toggle()
-                    } label: {
-                        Image(systemName: hideAmounts ? "eye.slash" : "eye")
-                    }
-                    .accessibilityLabel(hideAmounts ? "顯示金額" : "隱藏金額")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    if isRefreshing {
-                        ProgressView()
-                    } else {
-                        Button {
-                            Task { await refreshQuotes() }
-                        } label: {
-                            Image(systemName: "arrow.clockwise")
-                        }
-                        .accessibilityLabel("更新現值")
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("目標配置") { showTargets = true }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        addKind = .original
-                        showAdd = true
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .accessibilityLabel("新增資產")
-                }
-            }
-        }
+        .toolbar(.hidden, for: .navigationBar)
+        .modifier(AssetMenuBar(isShown: showsChrome) { menuBar })
         .sheet(isPresented: $showAdd) {
             AssetEditor(item: nil, defaultKind: addKind, onSave: saveItem)
         }
@@ -122,6 +88,55 @@ struct AssetListView: View {
         .sheet(isPresented: $showTargets) {
             TargetEditor()
         }
+    }
+
+    private var menuBar: some View {
+        HStack {
+            hideButton
+            Spacer(minLength: 16)
+            trailingCluster
+        }
+    }
+
+    private var hideButton: some View {
+        Button {
+            hideAmounts.toggle()
+        } label: {
+            Image(systemName: hideAmounts ? "eye.slash" : "eye")
+        }
+        .accessibilityLabel(hideAmounts ? "顯示金額" : "隱藏金額")
+        .modifier(CircleGlass())
+    }
+
+    private var trailingCluster: some View {
+        HStack(spacing: 0) {
+            Group {
+                if isRefreshing {
+                    ProgressView()
+                } else {
+                    Button {
+                        Task { await refreshQuotes() }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .accessibilityLabel("更新現值")
+                }
+            }
+            .frame(width: 44, height: 44)
+            Button("目標配置") { showTargets = true }
+                .padding(.horizontal, 4)
+            Button {
+                addKind = .original
+                showAdd = true
+            } label: {
+                Image(systemName: "plus")
+            }
+            .accessibilityLabel("新增資產")
+            .frame(width: 44, height: 44)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 4)
+        .modifier(CapsuleGlass())
     }
 
     private func toggle(_ kind: AssetKind) {
@@ -162,6 +177,45 @@ struct AssetListView: View {
         if quoteCount > 0 { return "已更新 \(quoteCount) 筆現值" }
         if rateUpdated { return attemptedQuotes ? "現值未改，已更新匯率" : "已更新匯率" }
         return attemptedQuotes ? "更新失敗，現值未改" : "匯率更新失敗"
+    }
+}
+
+private struct CircleGlass: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.buttonStyle(.glass)
+        } else {
+            content
+                .frame(width: 44, height: 44)
+                .background(.ultraThinMaterial, in: Circle())
+        }
+    }
+}
+
+private struct CapsuleGlass: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.glassEffect(.regular.interactive(), in: Capsule())
+        } else {
+            content.background(.ultraThinMaterial, in: Capsule())
+        }
+    }
+}
+
+private struct AssetMenuBar<Bar: View>: ViewModifier {
+    var isShown: Bool
+    @ViewBuilder var bar: () -> Bar
+
+    func body(content: Content) -> some View {
+        if isShown {
+            content.safeAreaInset(edge: .bottom, spacing: 0) {
+                bar()
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+            }
+        } else {
+            content
+        }
     }
 }
 
