@@ -73,6 +73,7 @@ struct AssetListView: View {
             }
         }
         .contentMargins(.top, showsChrome ? 44 : 0, for: .scrollContent)
+        .scrollEdgeFade(edges: .bottom)
         .navigationTitle(showsChrome ? "資產" : "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .navigationBar)

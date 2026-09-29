@@ -27,6 +27,7 @@ struct TargetEditor: View {
                         .listRowSeparator(.hidden)
                 }
             }
+            .scrollEdgeFade()
             .navigationTitle("目標配置")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)

@@ -34,12 +34,10 @@ struct HomeView: View {
                             .frame(height: max(0, range * -position - bottomLift - 12 * drop - assetTop))
                             .mask {
                                 VStack(spacing: 0) {
-                                    LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
-                                        .frame(height: 40)
+                                    ScrollFade.top
                                     Color.black
                                     if panel >= -0.5 {
-                                        LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
-                                            .frame(height: 40)
+                                        ScrollFade.bottom
                                     }
                                 }
                             }

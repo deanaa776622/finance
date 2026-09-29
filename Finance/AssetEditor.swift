@@ -139,6 +139,7 @@ struct AssetEditor: View {
                     }
                 }
             }
+            .scrollEdgeFade()
             .navigationTitle(existingID == nil ? "新增資產" : "編輯資產")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
