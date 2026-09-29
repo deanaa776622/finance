@@ -59,6 +59,8 @@ struct AssetEditor: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                     .onChange(of: kind) { _, new in
                         if new.prefersSharePrice { usesSharePrice = true }
                         leverage = Self.clampedLeverage(kind: new, value: leverage)
