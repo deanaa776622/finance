@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>資產階層 mock — L0 / L1 / L2</title>
+  <title>資產階層 mock — 淨值殘值感</title>
   <style>
     :root {
       --bg: #03060c;
@@ -16,7 +16,8 @@
       --leverage: #4ade80;
       --cash: #facc15;
       --estate: #c4b5fd;
-      --debt: #94a3b8;
+      --asset: #7dd3fc;
+      --debt-cut: rgba(8, 12, 20, 0.92);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -28,30 +29,24 @@
     }
     .page-title { text-align: center; margin-bottom: 28px; }
     .page-title .badge {
-      display: inline-block;
-      font-size: 11px;
-      letter-spacing: 0.08em;
+      display: inline-block; font-size: 11px; letter-spacing: 0.08em;
       color: rgba(148, 163, 184, 0.85);
       border: 1px dashed rgba(148, 163, 184, 0.35);
-      padding: 4px 10px;
-      border-radius: 6px;
-      margin-bottom: 12px;
+      padding: 4px 10px; border-radius: 6px; margin-bottom: 12px;
     }
     .page-title h1 { font-size: 18px; font-weight: 600; letter-spacing: 0.04em; }
-    .page-title p { margin-top: 8px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .page-title p { margin-top: 8px; font-size: 13px; color: var(--muted); line-height: 1.55; max-width: 520px; margin-left: auto; margin-right: auto; }
     .stage {
       display: flex; flex-wrap: wrap; gap: 28px;
       justify-content: center; align-items: flex-start;
     }
     .col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-    .col-label {
-      font-size: 12px; font-weight: 600; letter-spacing: 0.14em; color: var(--dim);
-    }
+    .col-label { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; color: var(--dim); text-align: center; }
     .phone {
       width: 320px; height: 700px; background: #000;
       border-radius: 36px; border: 1px solid rgba(255, 255, 255, 0.1);
       box-shadow: 0 28px 70px rgba(0, 0, 0, 0.55);
-      overflow: hidden; display: flex; flex-direction: column; position: relative;
+      overflow: hidden; display: flex; flex-direction: column;
     }
     .status-bar {
       height: 44px; display: flex; align-items: flex-end; justify-content: center;
@@ -61,150 +56,149 @@
       height: 40px; display: flex; align-items: center; justify-content: center;
       font-size: 15px; font-weight: 600; flex-shrink: 0; position: relative;
     }
-    .nav .eye {
-      position: absolute; left: 16px; color: var(--muted); display: flex;
-    }
-    .nav .tools {
-      position: absolute; right: 14px; font-size: 12px; color: var(--muted);
-      display: flex; gap: 10px;
-    }
+    .nav .eye { position: absolute; left: 16px; color: var(--muted); display: flex; }
+    .nav .tools { position: absolute; right: 14px; font-size: 12px; color: var(--muted); display: flex; gap: 10px; }
     .list {
-      flex: 1; overflow: hidden; padding: 6px 14px 0;
+      flex: 1; overflow: hidden; padding: 8px 14px 0;
       display: flex; flex-direction: column; gap: 10px;
     }
     .group-card {
-      background: var(--row);
-      border-radius: 16px;
-      border: 1px solid transparent;
-      overflow: hidden;
+      background: var(--row); border-radius: 16px;
+      border: 1px solid transparent; overflow: hidden;
     }
-    .group-card.tap { border-color: rgba(56, 189, 248, 0.28); }
-    .group-card.estate { border-color: rgba(196, 181, 253, 0.12); }
-    .group-card.debt { border-color: rgba(148, 163, 184, 0.1); }
+    .group-card.asset-parent { border-color: rgba(125, 211, 252, 0.22); }
+    .group-card.debt-parent { border-color: rgba(148, 163, 184, 0.14); }
+    .group-card.tap { border-color: rgba(56, 189, 248, 0.32); }
     .row {
-      padding: 13px 14px;
-      display: flex; align-items: center; gap: 10px;
+      padding: 14px; display: flex; align-items: center; gap: 10px;
     }
     .row.nested {
-      padding: 11px 14px 11px 12px;
-      border-top: 1px solid var(--line);
-      background: rgba(0, 0, 0, 0.18);
+      padding: 12px 14px; border-top: 1px solid var(--line);
+      background: rgba(0, 0, 0, 0.2);
     }
     .row.leaf {
-      padding: 10px 14px 10px 36px;
-      border-top: 1px solid var(--line);
-      background: rgba(0, 0, 0, 0.28);
+      padding: 10px 14px 10px 40px; border-top: 1px solid var(--line);
+      background: rgba(0, 0, 0, 0.3);
     }
-    .chev {
-      width: 12px; font-size: 9px; color: var(--dim); flex-shrink: 0;
-    }
+    .chev { width: 12px; font-size: 9px; color: var(--dim); flex-shrink: 0; }
     .chev.open { transform: rotate(90deg); color: var(--muted); display: inline-block; }
     .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .meta { flex: 1; min-width: 0; }
     .meta .name { font-size: 15px; font-weight: 500; }
     .meta .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .amount {
-      font-size: 14px; font-variant-numeric: tabular-nums; font-weight: 500;
-    }
+    .amount { font-size: 14px; font-variant-numeric: tabular-nums; font-weight: 500; }
     .amount.secondary { color: var(--muted); font-weight: 400; font-size: 13px; }
     .amount.debt { color: var(--muted); }
-    .amount.minus::before { content: "−"; margin-right: 2px; color: var(--dim); }
-    .hint-chip {
-      margin: 0 12px 10px 36px;
-      font-size: 11px; color: var(--original);
-      background: rgba(56, 189, 248, 0.1);
-      padding: 3px 8px; border-radius: 999px; display: inline-block;
-    }
-    .section-gap {
-      height: 1px; margin: 2px 4px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-    }
-
-    /* Net worth dock — formula first */
-    .dock {
-      flex-shrink: 0;
-      margin: 6px 12px 14px;
-      border-radius: 22px;
-      position: relative;
-      overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
-    }
-    .dock .glow {
-      position: absolute; inset: 0;
-      background:
-        radial-gradient(circle at 20% 28%, rgba(56, 189, 248, 0.4), transparent 42%),
-        radial-gradient(circle at 78% 30%, rgba(74, 222, 128, 0.28), transparent 40%),
-        radial-gradient(circle at 55% 90%, rgba(196, 181, 253, 0.22), transparent 45%),
-        linear-gradient(180deg, #0f1a2e, #070b14);
-    }
-    .dock .inner {
-      position: relative; z-index: 1;
-      padding: 14px 16px 18px;
-    }
-    .formula {
-      display: flex; flex-direction: column; gap: 5px;
-      font-size: 12px; font-variant-numeric: tabular-nums;
-      color: rgba(241, 245, 249, 0.72);
-      margin-bottom: 12px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .formula .line {
-      display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
-    }
-    .formula .line .k {
-      display: flex; align-items: center; gap: 6px;
-    }
-    .formula .op {
-      width: 12px; text-align: center; color: var(--dim); font-size: 11px;
-    }
-    .formula .v { letter-spacing: -0.01em; }
-    .formula .line.debt .v { color: rgba(148, 163, 184, 0.95); }
-    .net-block { text-align: center; }
-    .net-block .label {
-      font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
-      color: rgba(241, 245, 249, 0.65);
-    }
-    .net-block .value {
-      margin-top: 4px;
-      font-size: 22px; font-weight: 700;
-      font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
-    }
-    .net-block .eq {
-      margin-top: 4px;
-      font-size: 11px; color: rgba(148, 163, 184, 0.9);
-      letter-spacing: 0.02em;
-    }
-    .home-cue {
-      text-align: center; font-size: 14px;
-      color: rgba(148, 163, 184, 0.4); margin-top: 6px;
-    }
     .tag {
       font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
       padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
     }
-    .tag.alloc {
-      color: var(--original);
-      background: rgba(56, 189, 248, 0.12);
+    .tag.alloc { color: var(--original); background: rgba(56, 189, 248, 0.12); }
+    .tag.estate { color: var(--estate); background: rgba(196, 181, 253, 0.12); }
+
+    /* Dock: residual glow — assets fill, debt bites, remainder = net */
+    .dock {
+      flex-shrink: 0; margin: 8px 12px 14px; height: 168px;
+      border-radius: 22px; position: relative; overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
     }
-    .tag.estate {
-      color: var(--estate);
-      background: rgba(196, 181, 253, 0.12);
+    /* Full asset mass */
+    .dock .asset-mass {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 22% 30%, rgba(56, 189, 248, 0.55), transparent 45%),
+        radial-gradient(circle at 70% 35%, rgba(196, 181, 253, 0.35), transparent 42%),
+        radial-gradient(circle at 45% 80%, rgba(74, 222, 128, 0.22), transparent 50%),
+        linear-gradient(180deg, #122038, #080c14);
+    }
+    /* Debt bite from the right — proportion ≈ 380/5000 ≈ 7.6% of assets… 
+       For clarity in mock use ~18% visual bite so the cut is perceptible */
+    .dock .debt-bite {
+      position: absolute; top: 0; right: 0; bottom: 0; width: 18%;
+      background: linear-gradient(90deg, transparent, rgba(3, 6, 12, 0.55) 30%, rgba(3, 6, 12, 0.92));
+      border-left: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .dock .debt-bite::after {
+      content: "";
+      position: absolute; left: -1px; top: 18%; bottom: 18%; width: 2px;
+      background: rgba(148, 163, 184, 0.45);
+      border-radius: 1px;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+    }
+    .dock .copy {
+      position: relative; z-index: 2; height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 16px;
+    }
+    .dock .label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
+      color: rgba(241, 245, 249, 0.7);
+    }
+    .dock .value {
+      margin-top: 6px; font-size: 26px; font-weight: 700;
+      font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+      text-shadow: 0 2px 20px rgba(0, 0, 0, 0.35);
+    }
+    /* Silent composition bar under the number — no captions */
+    .compose {
+      margin-top: 16px; width: 78%; height: 6px;
+      border-radius: 999px; overflow: hidden; display: flex;
+      background: rgba(0, 0, 0, 0.35);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    }
+    .compose .a {
+      /* assets share of (assets) = full bar before debt cut visual */
+      width: 82%;
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.85), rgba(196, 181, 253, 0.75));
+    }
+    .compose .d {
+      width: 18%;
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(148, 163, 184, 0.22),
+        rgba(148, 163, 184, 0.22) 3px,
+        rgba(30, 40, 55, 0.5) 3px,
+        rgba(30, 40, 55, 0.5) 6px
+      );
+    }
+    .home-cue {
+      position: absolute; bottom: 8px; left: 0; right: 0; z-index: 3;
+      text-align: center; font-size: 14px; color: rgba(148, 163, 184, 0.4);
+    }
+
+    /* Align list rows with dock metaphor: asset row glows cool, debt is quieter */
+    .swatch {
+      width: 10px; height: 28px; border-radius: 4px; flex-shrink: 0;
+    }
+    .swatch.asset {
+      background: linear-gradient(180deg, #38bdf8, #c4b5fd);
+    }
+    .swatch.debt {
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(148, 163, 184, 0.35),
+        rgba(148, 163, 184, 0.35) 2px,
+        rgba(60, 70, 85, 0.5) 2px,
+        rgba(60, 70, 85, 0.5) 4px
+      );
+      border: 1px solid rgba(148, 163, 184, 0.25);
     }
   </style>
 </head>
 <body>
   <div class="page-title">
-    <div class="badge">MOCK · 非實作 · v2</div>
-    <h1>資產頁 · 兩群分開 + 淨值組成</h1>
-    <p>原槓現一群 · 實體一群 · 負債一群<br>下方淨值用加減式對應上方三列</p>
+    <div class="badge">MOCK · 非實作 · v3</div>
+    <h1>淨值用「殘值」感覺，不靠說明文字</h1>
+    <p>L0 只留總資產／總負債兩列（同色語言接到面板）。<br>
+      面板光暈＝資產質量，右側被負債「咬掉」；底下靜默色條重複同一關係。<br>
+      原槓現與實體仍在總資產內部，互不同群。</p>
   </div>
 
   <div class="stage">
     <!-- L0 -->
     <div class="col">
-      <div class="col-label">L0 · 預設三群</div>
+      <div class="col-label">L0 · 兩列對淨值</div>
       <div class="phone">
         <div class="status-bar">9:41</div>
         <div class="nav">
@@ -217,71 +211,46 @@
           <span class="tools"><span>目標</span><span>＋</span></span>
         </div>
         <div class="list">
-          <div class="group-card tap">
+          <div class="group-card asset-parent tap">
             <div class="row">
               <span class="chev">▶</span>
-              <span class="tag alloc">配置</span>
+              <span class="swatch asset" aria-hidden="true"></span>
               <div class="meta">
-                <div class="name">原／槓／現</div>
-                <div class="sub">點擊展開三桶</div>
+                <div class="name">總資產</div>
               </div>
-              <div class="amount">$4,200,000</div>
+              <div class="amount">$5,000,000</div>
             </div>
           </div>
-
-          <div class="group-card estate">
-            <div class="row">
-              <span class="chev">▶</span>
-              <span class="tag estate">實體</span>
-              <div class="meta">
-                <div class="name">實體資產</div>
-              </div>
-              <div class="amount">$800,000</div>
-            </div>
-          </div>
-
-          <div class="group-card debt">
+          <div class="group-card debt-parent">
             <div class="row">
               <span class="chev" style="opacity:0">▶</span>
+              <span class="swatch debt" aria-hidden="true"></span>
               <div class="meta">
-                <div class="name">負債</div>
+                <div class="name">總負債</div>
               </div>
-              <div class="amount debt minus">$380,000</div>
+              <div class="amount debt">$380,000</div>
             </div>
           </div>
         </div>
-
         <div class="dock">
-          <div class="glow"></div>
-          <div class="inner">
-            <div class="formula">
-              <div class="line">
-                <span class="k"><span class="op">＋</span>原／槓／現</span>
-                <span class="v">$4,200,000</span>
-              </div>
-              <div class="line">
-                <span class="k"><span class="op">＋</span>實體資產</span>
-                <span class="v">$800,000</span>
-              </div>
-              <div class="line debt">
-                <span class="k"><span class="op">−</span>負債</span>
-                <span class="v">$380,000</span>
-              </div>
+          <div class="asset-mass"></div>
+          <div class="debt-bite" aria-hidden="true"></div>
+          <div class="copy">
+            <div class="label">總淨值</div>
+            <div class="value">$4,620,000</div>
+            <div class="compose" aria-hidden="true">
+              <div class="a"></div>
+              <div class="d"></div>
             </div>
-            <div class="net-block">
-              <div class="label">總淨值</div>
-              <div class="value">$4,620,000</div>
-              <div class="eq">配置 + 實體 − 負債</div>
-            </div>
-            <div class="home-cue">⌃</div>
           </div>
+          <div class="home-cue">⌃</div>
         </div>
       </div>
     </div>
 
     <!-- L1 -->
     <div class="col">
-      <div class="col-label">L1 · 展開原槓現</div>
+      <div class="col-label">L1 · 總資產內兩群</div>
       <div class="phone">
         <div class="status-bar">9:41</div>
         <div class="nav">
@@ -294,85 +263,60 @@
           <span class="tools"><span>目標</span><span>＋</span></span>
         </div>
         <div class="list">
-          <div class="group-card tap">
+          <div class="group-card asset-parent tap">
             <div class="row">
               <span class="chev open">▶</span>
+              <span class="swatch asset" aria-hidden="true"></span>
+              <div class="meta"><div class="name">總資產</div></div>
+              <div class="amount">$5,000,000</div>
+            </div>
+            <!-- 配置群 -->
+            <div class="row nested">
+              <span class="chev">▶</span>
               <span class="tag alloc">配置</span>
               <div class="meta">
                 <div class="name">原／槓／現</div>
               </div>
-              <div class="amount">$4,200,000</div>
+              <div class="amount secondary">$4,200,000</div>
             </div>
-            <div class="hint-chip">實際 vs 目標 · 放這層</div>
+            <!-- 實體群 — sibling, not same as 配置 -->
             <div class="row nested">
-              <span class="chev">▶</span>
-              <span class="dot" style="background: var(--original)"></span>
-              <div class="meta"><div class="name">原型</div></div>
-              <div class="amount secondary">$1,764,000</div>
-            </div>
-            <div class="row nested">
-              <span class="chev">▶</span>
-              <span class="dot" style="background: var(--leverage)"></span>
-              <div class="meta"><div class="name">槓桿</div></div>
-              <div class="amount secondary">$2,016,000</div>
-            </div>
-            <div class="row nested">
-              <span class="chev">▶</span>
-              <span class="dot" style="background: var(--cash)"></span>
-              <div class="meta"><div class="name">現金</div></div>
-              <div class="amount secondary">$420,000</div>
-            </div>
-          </div>
-
-          <div class="group-card estate">
-            <div class="row">
               <span class="chev">▶</span>
               <span class="tag estate">實體</span>
-              <div class="meta"><div class="name">實體資產</div></div>
-              <div class="amount">$800,000</div>
+              <div class="meta">
+                <div class="name">實體資產</div>
+              </div>
+              <div class="amount secondary">$800,000</div>
             </div>
           </div>
-
-          <div class="group-card debt">
+          <div class="group-card debt-parent">
             <div class="row">
               <span class="chev" style="opacity:0">▶</span>
-              <div class="meta"><div class="name">負債</div></div>
-              <div class="amount debt minus">$380,000</div>
+              <span class="swatch debt" aria-hidden="true"></span>
+              <div class="meta"><div class="name">總負債</div></div>
+              <div class="amount debt">$380,000</div>
             </div>
           </div>
         </div>
-
         <div class="dock">
-          <div class="glow"></div>
-          <div class="inner">
-            <div class="formula">
-              <div class="line">
-                <span class="k"><span class="op">＋</span>原／槓／現</span>
-                <span class="v">$4,200,000</span>
-              </div>
-              <div class="line">
-                <span class="k"><span class="op">＋</span>實體資產</span>
-                <span class="v">$800,000</span>
-              </div>
-              <div class="line debt">
-                <span class="k"><span class="op">−</span>負債</span>
-                <span class="v">$380,000</span>
-              </div>
+          <div class="asset-mass"></div>
+          <div class="debt-bite" aria-hidden="true"></div>
+          <div class="copy">
+            <div class="label">總淨值</div>
+            <div class="value">$4,620,000</div>
+            <div class="compose" aria-hidden="true">
+              <div class="a"></div>
+              <div class="d"></div>
             </div>
-            <div class="net-block">
-              <div class="label">總淨值</div>
-              <div class="value">$4,620,000</div>
-              <div class="eq">配置 + 實體 − 負債</div>
-            </div>
-            <div class="home-cue">⌃</div>
           </div>
+          <div class="home-cue">⌃</div>
         </div>
       </div>
     </div>
 
     <!-- L2 -->
     <div class="col">
-      <div class="col-label">L2 · 點原型 → 持股</div>
+      <div class="col-label">L2 · 配置 → 持股</div>
       <div class="phone">
         <div class="status-bar">9:41</div>
         <div class="nav">
@@ -385,88 +329,75 @@
           <span class="tools"><span>目標</span><span>＋</span></span>
         </div>
         <div class="list">
-          <div class="group-card tap">
+          <div class="group-card asset-parent tap">
             <div class="row">
+              <span class="chev open">▶</span>
+              <span class="swatch asset" aria-hidden="true"></span>
+              <div class="meta"><div class="name">總資產</div></div>
+              <div class="amount">$5,000,000</div>
+            </div>
+            <div class="row nested" style="border-color: rgba(56,189,248,0.2);">
               <span class="chev open">▶</span>
               <span class="tag alloc">配置</span>
               <div class="meta"><div class="name">原／槓／現</div></div>
-              <div class="amount">$4,200,000</div>
+              <div class="amount secondary">$4,200,000</div>
             </div>
-            <div class="row nested" style="border-color: rgba(56,189,248,0.25);">
-              <span class="chev open">▶</span>
+            <div class="row leaf">
               <span class="dot" style="background: var(--original)"></span>
-              <div class="meta"><div class="name">原型</div></div>
+              <div class="meta">
+                <div class="name" style="font-size:14px">原型</div>
+              </div>
               <div class="amount secondary">$1,764,000</div>
             </div>
             <div class="row leaf">
-              <div class="meta">
-                <div class="name" style="font-size:14px">0050</div>
+              <div class="meta" style="padding-left: 18px;">
+                <div class="name" style="font-size:13px">0050</div>
                 <div class="sub">20,000 股 · 190</div>
               </div>
               <div class="amount secondary">$1,216,000</div>
             </div>
             <div class="row leaf">
-              <div class="meta">
-                <div class="name" style="font-size:14px">VT</div>
-                <div class="sub">USD · 120 股 · 112.5</div>
-              </div>
-              <div class="amount secondary">$432,000</div>
-            </div>
-            <div class="row leaf">
-              <div class="meta">
-                <div class="name" style="font-size:14px">全球債券 ETF</div>
-                <div class="sub">尚未用股價計價</div>
-              </div>
-              <div class="amount secondary">$116,000</div>
-            </div>
-            <div class="row nested">
-              <span class="chev">▶</span>
               <span class="dot" style="background: var(--leverage)"></span>
-              <div class="meta"><div class="name">槓桿</div></div>
+              <div class="meta">
+                <div class="name" style="font-size:14px">槓桿</div>
+              </div>
               <div class="amount secondary">$2,016,000</div>
             </div>
-            <div class="row nested">
-              <span class="chev">▶</span>
+            <div class="row leaf">
               <span class="dot" style="background: var(--cash)"></span>
-              <div class="meta"><div class="name">現金</div></div>
+              <div class="meta">
+                <div class="name" style="font-size:14px">現金</div>
+              </div>
               <div class="amount secondary">$420,000</div>
             </div>
-          </div>
-
-          <div class="group-card estate">
-            <div class="row">
+            <div class="row nested">
               <span class="chev">▶</span>
               <span class="tag estate">實體</span>
               <div class="meta"><div class="name">實體資產</div></div>
-              <div class="amount">$800,000</div>
+              <div class="amount secondary">$800,000</div>
+            </div>
+          </div>
+          <div class="group-card debt-parent">
+            <div class="row">
+              <span class="chev" style="opacity:0">▶</span>
+              <span class="swatch debt" aria-hidden="true"></span>
+              <div class="meta"><div class="name">總負債</div></div>
+              <div class="amount debt">$380,000</div>
             </div>
           </div>
         </div>
-
         <div class="dock">
-          <div class="glow"></div>
-          <div class="inner">
-            <div class="formula">
-              <div class="line">
-                <span class="k"><span class="op">＋</span>原／槓／現</span>
-                <span class="v">$4,200,000</span>
-              </div>
-              <div class="line">
-                <span class="k"><span class="op">＋</span>實體資產</span>
-                <span class="v">$800,000</span>
-              </div>
-              <div class="line debt">
-                <span class="k"><span class="op">−</span>負債</span>
-                <span class="v">$380,000</span>
-              </div>
+          <div class="asset-mass"></div>
+          <div class="debt-bite" aria-hidden="true"></div>
+          <div class="copy">
+            <div class="label">總淨值</div>
+            <div class="value">$4,620,000</div>
+            <div class="compose" aria-hidden="true">
+              <div class="a"></div>
+              <div class="d"></div>
             </div>
-            <div class="net-block">
-              <div class="label">總淨值</div>
-              <div class="value">$4,620,000</div>
-              <div class="eq">配置 + 實體 − 負債</div>
-            </div>
-            <div class="home-cue">⌃</div>
           </div>
+          <div class="home-cue">⌃</div>
         </div>
       </div>
     </div>
