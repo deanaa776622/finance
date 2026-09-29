@@ -40,36 +40,27 @@ struct AssetListView: View {
                         }
                     }
                 } header: {
-                    HStack {
-                        Button {
-                            toggle(kind)
-                        } label: {
-                            HStack {
-                                Image(systemName: "chevron.right")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-                                    .rotationEffect(.degrees(open ? 90 : 0))
-                                Text(kind.title)
-                                Spacer()
-                                Text(MoneyFormat.string(portfolio.amount(for: kind), hidden: hideAmounts))
-                                    .font(.subheadline)
-                                    .monospacedDigit()
-                                    .foregroundStyle(.secondary)
-                            }
-                            .contentShape(Rectangle())
+                    Button {
+                        toggle(kind)
+                    } label: {
+                        HStack {
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .rotationEffect(.degrees(open ? 90 : 0))
+                            Text(kind.title)
+                            Spacer()
+                            Text(MoneyFormat.string(portfolio.amount(for: kind), hidden: hideAmounts))
+                                .font(.subheadline)
+                                .monospacedDigit()
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(kind.title)
-                        .accessibilityHint(open ? "收合" : "展開")
-                        .accessibilityAddTraits(.isButton)
-                        if showsChrome {
-                            Button("新增") {
-                                addKind = kind
-                                showAdd = true
-                            }
-                            .font(.subheadline)
-                        }
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(kind.title)
+                    .accessibilityHint(open ? "收合" : "展開")
+                    .accessibilityAddTraits(.isButton)
                     .textCase(nil)
                 }
             }
