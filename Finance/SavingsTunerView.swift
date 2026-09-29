@@ -55,7 +55,7 @@ struct SavingsTunerView: View {
                 }
             }
         }
-        .scrollEdgeFade(pinsTop: true)
+        .scrollEdgeFade()
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
