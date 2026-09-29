@@ -30,7 +30,7 @@ struct HomeView: View {
                 VStack(spacing: 12 * reveal) {
                     if position < 0 {
                         AssetListView(
-                            showsChrome: panel < -0.5,
+                            showsChrome: position < -0.5,
                             topInset: AssetListView.restingTopInset * drop
                         )
                             .ignoresSafeArea(edges: .bottom)
@@ -39,7 +39,7 @@ struct HomeView: View {
                                 VStack(spacing: 0) {
                                     ScrollFade.top
                                     Color.black
-                                    if panel >= -0.5 {
+                                    if position >= -0.5 {
                                         ScrollFade.bottom
                                     }
                                 }
@@ -144,9 +144,16 @@ struct HomeView: View {
     }
 
     private func snap(_ to: CGFloat) {
-        withAnimation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.48, dampingFraction: 0.88)) {
-            panel = to
-            drag = 0
+        let current = min(1, max(-1, panel + drag))
+        panel = current
+        drag = 0
+        let animation: Animation = reduceMotion
+            ? .easeInOut(duration: 0.2)
+            : .spring(response: 0.48, dampingFraction: 0.88)
+        DispatchQueue.main.async {
+            withAnimation(animation) {
+                panel = to
+            }
         }
     }
 

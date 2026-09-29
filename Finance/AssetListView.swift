@@ -75,6 +75,7 @@ struct AssetListView: View {
             }
         }
         .contentMargins(.top, topInset, for: .scrollContent)
+        .contentMargins(.bottom, 64, for: .scrollContent)
         .scrollEdgeFade(edges: .bottom)
         .navigationTitle(showsChrome ? "資產" : "")
         .navigationBarTitleDisplayMode(.inline)
@@ -210,14 +211,12 @@ private struct AssetMenuBar<Bar: View>: ViewModifier {
     @ViewBuilder var bar: () -> Bar
 
     func body(content: Content) -> some View {
-        if isShown {
-            content.safeAreaInset(edge: .bottom, spacing: 0) {
+        content.overlay(alignment: .bottom) {
+            if isShown {
                 bar()
                     .padding(.horizontal, 16)
                     .padding(.bottom, 8)
             }
-        } else {
-            content
         }
     }
 }
