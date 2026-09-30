@@ -113,6 +113,7 @@ struct AssetEditor: View {
                         ForEach(AssetCurrency.allCases) { Text($0.title).tag($0) }
                     }
                     .pickerStyle(.menu)
+                    .tint(.white)
                     TextField("\(currency.rawValue) → TWD 匯率", text: $rateText)
                         .keyboardType(.decimalPad)
                         .focused($focus, equals: .rate)
