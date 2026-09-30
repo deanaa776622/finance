@@ -97,9 +97,6 @@ struct AssetEditor: View {
                         .accessibilityLabel(quoteButtonTitle)
                         .disabled(!canQuote)
                     }
-                }
-
-                Section("幣別") {
                     Picker("幣別", selection: $currency) {
                         ForEach(AssetCurrency.allCases) { Text($0.rawValue).tag($0) }
                     }
