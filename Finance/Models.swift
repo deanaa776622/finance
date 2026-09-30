@@ -49,7 +49,10 @@ enum AssetCurrency: String, Codable, CaseIterable, Identifiable {
 
 struct AssetItem: Identifiable, Codable, Hashable {
     var id: UUID
+    /// Display name. Every kind can have one.
     var name: String
+    /// Ticker used for quotes. Empty for assets that are not priced by symbol.
+    var symbol: String
     var kind: AssetKind
     /// Native-currency lump sum when `usesSharePrice` is false.
     var amount: Decimal
@@ -63,6 +66,7 @@ struct AssetItem: Identifiable, Codable, Hashable {
     init(
         id: UUID = UUID(),
         name: String,
+        symbol: String = "",
         kind: AssetKind,
         amount: Decimal,
         currency: AssetCurrency = .twd,
@@ -74,6 +78,7 @@ struct AssetItem: Identifiable, Codable, Hashable {
     ) {
         self.id = id
         self.name = name
+        self.symbol = symbol
         self.kind = kind
         self.amount = amount
         self.currency = currency
@@ -92,17 +97,18 @@ struct AssetItem: Identifiable, Codable, Hashable {
     }
 
     var canRefreshQuote: Bool {
-        usesSharePrice && !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        usesSharePrice && !symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, name, kind, amount, currency, usdTwdRate, usesSharePrice, shares, price, leverageMultiple
+        case id, name, symbol, kind, amount, currency, usdTwdRate, usesSharePrice, shares, price, leverageMultiple
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(UUID.self, forKey: .id)
         name = try c.decode(String.self, forKey: .name)
+        symbol = try c.decodeIfPresent(String.self, forKey: .symbol) ?? name
         kind = try c.decode(AssetKind.self, forKey: .kind)
         amount = try c.decode(Decimal.self, forKey: .amount)
         currency = try c.decodeIfPresent(AssetCurrency.self, forKey: .currency) ?? .twd

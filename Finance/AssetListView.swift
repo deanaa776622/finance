@@ -158,7 +158,7 @@ struct AssetListView: View {
         isRefreshing = true
         defer { isRefreshing = false }
         let quotes = targets.isEmpty ? [:] : await QuoteClient.fetchAll(
-            symbols: Dictionary(uniqueKeysWithValues: targets.map { ($0.id, $0.name) })
+            symbols: Dictionary(uniqueKeysWithValues: targets.map { ($0.id, $0.symbol) })
         )
         portfolio.applyQuotes(quotes)
         let rate = hasUsd ? try? await QuoteClient.fetchUsdTwd() : nil

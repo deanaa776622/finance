@@ -4,6 +4,7 @@ struct AssetEditor: View {
     @Environment(\.dismiss) private var dismiss
     @FocusState private var focus: Field?
     @State private var name: String
+    @State private var symbol: String
     @State private var kind: AssetKind
     @State private var currency: AssetCurrency
     @State private var rateText: String
@@ -17,7 +18,7 @@ struct AssetEditor: View {
     var onSave: (AssetItem) -> Void
     var onDelete: (() -> Void)?
 
-    private enum Field: Hashable { case name, shares, price, amount, rate }
+    private enum Field: Hashable { case symbol, shares, price, amount, rate }
 
     init(
         item: AssetItem?,
@@ -28,6 +29,7 @@ struct AssetEditor: View {
         existingID = item?.id
         let kind = item?.kind ?? defaultKind
         _name = State(initialValue: item?.name ?? "")
+        _symbol = State(initialValue: item?.symbol ?? "")
         _kind = State(initialValue: kind)
         _currency = State(initialValue: item?.currency ?? .twd)
         _rateText = State(initialValue: NumberParse.oneDecimal(item?.usdTwdRate ?? 32))
@@ -75,16 +77,17 @@ struct AssetEditor: View {
                     .labelsHidden()
                     .disabled(kind.prefersSharePrice)
                     HStack {
-                        TextField("名稱 / 代號", text: $name)
+                        TextField("股票代號", text: $symbol)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-                            .focused($focus, equals: .name)
-                            .onChange(of: name) { old, new in
+                            .focused($focus, equals: .symbol)
+                            .onChange(of: symbol) { old, new in
                                 if old.trimmingCharacters(in: .whitespacesAndNewlines)
                                     != new.trimmingCharacters(in: .whitespacesAndNewlines) {
                                     quoteState = .idle
                                 }
                             }
+                            .disabled(!usesSharePrice)
                         Button { Task { await lookup() } } label: {
                             if quoteState == .quoting {
                                 ProgressView()
@@ -96,6 +99,15 @@ struct AssetEditor: View {
                         .tint(.white)
                         .accessibilityLabel(quoteButtonTitle)
                         .disabled(!canQuote)
+                    }
+                    HStack {
+                        TextField("資產名稱", text: $name)
+                        Button("使用股票代號") {
+                            name = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.white)
+                        .disabled(symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                     Picker("幣別", selection: $currency) {
                         ForEach(AssetCurrency.allCases) { Text($0.rawValue).tag($0) }
@@ -184,6 +196,7 @@ struct AssetEditor: View {
         onSave(AssetItem(
             id: existingID ?? UUID(),
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+            symbol: symbol.trimmingCharacters(in: .whitespacesAndNewlines),
             kind: kind,
             amount: amount,
             currency: currency,
@@ -205,17 +218,17 @@ struct AssetEditor: View {
     }
 
     private var canQuote: Bool {
-        usesSharePrice && quoteState == .idle && !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        usesSharePrice && quoteState == .idle && !symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private func lookup() async {
-        let symbol = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let ticker = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
         guard canQuote else { return }
         quoteState = .quoting
-        let quote = try? await QuoteClient.fetch(symbol: symbol)
+        let quote = try? await QuoteClient.fetch(symbol: ticker)
         var rate = quote?.usdTwdRate
         if quote != nil, rate == nil { rate = try? await QuoteClient.fetchUsdTwd() }
-        guard name.trimmingCharacters(in: .whitespacesAndNewlines) == symbol else { return }
+        guard symbol.trimmingCharacters(in: .whitespacesAndNewlines) == ticker else { return }
         guard let quote else {
             quoteState = .missing
             return
