@@ -43,8 +43,35 @@ enum AssetKind: String, Codable, CaseIterable, Identifiable {
 enum AssetCurrency: String, Codable, CaseIterable, Identifiable {
     case twd = "TWD"
     case usd = "USD"
+    case hkd = "HKD"
+    case cny = "CNY"
+    case jpy = "JPY"
+    case eur = "EUR"
+    case gbp = "GBP"
+    case aud = "AUD"
+    case sgd = "SGD"
+    case krw = "KRW"
+    case cad = "CAD"
+    case chf = "CHF"
 
     var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .twd: "TWD 新台幣"
+        case .usd: "USD 美元"
+        case .hkd: "HKD 港幣"
+        case .cny: "CNY 人民幣"
+        case .jpy: "JPY 日圓"
+        case .eur: "EUR 歐元"
+        case .gbp: "GBP 英鎊"
+        case .aud: "AUD 澳幣"
+        case .sgd: "SGD 新加坡幣"
+        case .krw: "KRW 韓元"
+        case .cad: "CAD 加幣"
+        case .chf: "CHF 瑞士法郎"
+        }
+    }
 }
 
 struct AssetItem: Identifiable, Codable, Hashable {
@@ -89,7 +116,8 @@ struct AssetItem: Identifiable, Codable, Hashable {
         self.leverageMultiple = leverageMultiple
     }
 
-    var fxRate: Decimal { currency == .usd ? usdTwdRate : 1 }
+    /// Rate of this currency into TWD. TWD itself is 1.
+    var fxRate: Decimal { currency == .twd ? 1 : usdTwdRate }
 
     var twdValue: Decimal {
         let native = usesSharePrice ? (shares ?? 0) * (price ?? 0) : amount

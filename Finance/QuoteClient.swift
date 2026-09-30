@@ -71,6 +71,6 @@ extension AssetItem {
     mutating func apply(_ quote: Quote) {
         price = quote.price
         if let currency = quote.currency { self.currency = currency }
-        if let rate = quote.usdTwdRate { usdTwdRate = rate }
+        if self.currency == .usd, let rate = quote.usdTwdRate { usdTwdRate = rate }
     }
 }

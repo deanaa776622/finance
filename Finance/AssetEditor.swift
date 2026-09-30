@@ -110,14 +110,13 @@ struct AssetEditor: View {
                         .disabled(symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                     Picker("幣別", selection: $currency) {
-                        ForEach(AssetCurrency.allCases) { Text($0.rawValue).tag($0) }
+                        ForEach(AssetCurrency.allCases) { Text($0.title).tag($0) }
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    TextField("USD → TWD 匯率", text: $rateText)
+                    .pickerStyle(.menu)
+                    TextField("\(currency.rawValue) → TWD 匯率", text: $rateText)
                         .keyboardType(.decimalPad)
                         .focused($focus, equals: .rate)
-                        .disabled(currency != .usd)
+                        .disabled(currency == .twd)
                 }
 
                 Section("槓桿倍數") {
@@ -180,7 +179,7 @@ struct AssetEditor: View {
 
     private var canSave: Bool {
         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
-        if currency == .usd, NumberParse.decimal(rateText) == nil { return false }
+        if currency != .twd, NumberParse.decimal(rateText) == nil { return false }
         if usesSharePrice {
             return NumberParse.decimal(sharesText) != nil && NumberParse.decimal(priceText) != nil
         }
@@ -188,7 +187,7 @@ struct AssetEditor: View {
     }
 
     private func save() {
-        let rate = currency == .usd ? (NumberParse.decimal(rateText) ?? 32) : 1
+        let rate = currency == .twd ? 1 : (NumberParse.decimal(rateText) ?? 32)
         let shares = NumberParse.decimal(sharesText)
         let price = NumberParse.decimal(priceText)
         let amount = usesSharePrice ? 0 : (NumberParse.decimal(amountText) ?? 0)
@@ -226,8 +225,6 @@ struct AssetEditor: View {
         guard canQuote else { return }
         quoteState = .quoting
         let quote = try? await QuoteClient.fetch(symbol: ticker)
-        var rate = quote?.usdTwdRate
-        if quote != nil, rate == nil { rate = try? await QuoteClient.fetchUsdTwd() }
         guard symbol.trimmingCharacters(in: .whitespacesAndNewlines) == ticker else { return }
         guard let quote else {
             quoteState = .missing
@@ -235,7 +232,12 @@ struct AssetEditor: View {
         }
         priceText = NumberParse.price(quote.price)
         if let currency = quote.currency { self.currency = currency }
-        if let rate { rateText = NumberParse.oneDecimal(rate) }
+        if self.currency == .usd {
+            var rate = quote.usdTwdRate
+            if rate == nil { rate = try? await QuoteClient.fetchUsdTwd() }
+            guard symbol.trimmingCharacters(in: .whitespacesAndNewlines) == ticker else { return }
+            if let rate { rateText = NumberParse.oneDecimal(rate) }
+        }
         quoteState = .found
     }
 }
