@@ -12,8 +12,7 @@ struct AssetEditor: View {
     @State private var priceText: String
     @State private var amountText: String
     @State private var leverage: Double
-    @State private var quoteHint: String?
-    @State private var isQuoting = false
+    @State private var quoteState: QuoteState = .idle
     private let existingID: UUID?
     var onSave: (AssetItem) -> Void
     var onDelete: (() -> Void)?
@@ -80,25 +79,23 @@ struct AssetEditor: View {
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .focused($focus, equals: .name)
-                            .onChange(of: name) { _, _ in quoteHint = nil }
-                            .onChange(of: focus) { _, new in
-                                if new != .name { Task { await lookup() } }
+                            .onChange(of: name) { old, new in
+                                if old.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    != new.trimmingCharacters(in: .whitespacesAndNewlines) {
+                                    quoteState = .idle
+                                }
                             }
-                        if let quoteHint {
-                            Text(quoteHint)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.trailing)
-                        }
                         Button { Task { await lookup() } } label: {
-                            if isQuoting {
+                            if quoteState == .quoting {
                                 ProgressView()
                             } else {
-                                Text("查價")
+                                Text(quoteButtonTitle)
                             }
                         }
                         .buttonStyle(.bordered)
-                        .disabled(!usesSharePrice || isQuoting || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .tint(.white)
+                        .accessibilityLabel(quoteButtonTitle)
+                        .disabled(!canQuote)
                     }
                 }
 
@@ -202,22 +199,37 @@ struct AssetEditor: View {
         dismiss()
     }
 
-    private func lookup() async {
-        let symbol = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard usesSharePrice, !symbol.isEmpty else { return }
-        isQuoting = true
-        quoteHint = nil
-        defer { isQuoting = false }
-        let quote = try? await QuoteClient.fetch(symbol: symbol)
-        if let quote {
-            priceText = NumberParse.price(quote.price)
-            if let currency = quote.currency { self.currency = currency }
-        }
-        var rate = quote?.usdTwdRate
-        if rate == nil { rate = try? await QuoteClient.fetchUsdTwd() }
-        if let rate { rateText = NumberParse.oneDecimal(rate) }
-        if quote == nil {
-            quoteHint = "查不到，請手動輸入單價"
+    private var quoteButtonTitle: String {
+        switch quoteState {
+        case .idle, .quoting: "查價"
+        case .found: "已查得價格"
+        case .missing: "查無價格"
         }
     }
+
+    private var canQuote: Bool {
+        usesSharePrice && quoteState == .idle && !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func lookup() async {
+        let symbol = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard canQuote else { return }
+        quoteState = .quoting
+        let quote = try? await QuoteClient.fetch(symbol: symbol)
+        var rate = quote?.usdTwdRate
+        if quote != nil, rate == nil { rate = try? await QuoteClient.fetchUsdTwd() }
+        guard name.trimmingCharacters(in: .whitespacesAndNewlines) == symbol else { return }
+        guard let quote else {
+            quoteState = .missing
+            return
+        }
+        priceText = NumberParse.price(quote.price)
+        if let currency = quote.currency { self.currency = currency }
+        if let rate { rateText = NumberParse.oneDecimal(rate) }
+        quoteState = .found
+    }
+}
+
+private enum QuoteState {
+    case idle, quoting, found, missing
 }
