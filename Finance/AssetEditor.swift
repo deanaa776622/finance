@@ -109,32 +109,43 @@ struct AssetEditor: View {
                         .tint(.white)
                         .disabled(symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
-                    LabeledContent("幣別") {
-                        Menu {
-                            ForEach(AssetCurrency.allCases) { option in
-                                Button {
-                                    currency = option
-                                } label: {
-                                    if option == currency {
-                                        Label(option.title, systemImage: "checkmark")
-                                    } else {
-                                        Text(option.title)
+                    HStack(spacing: 8) {
+                        HStack(spacing: 8) {
+                            Text("幣別")
+                            Menu {
+                                ForEach(AssetCurrency.allCases) { option in
+                                    Button {
+                                        currency = option
+                                    } label: {
+                                        if option == currency {
+                                            Label(option.title, systemImage: "checkmark")
+                                        } else {
+                                            Text(option.title)
+                                        }
                                     }
                                 }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Text(currency.rawValue)
+                                    Image(systemName: "chevron.up.chevron.down")
+                                        .imageScale(.small)
+                                }
                             }
-                        } label: {
-                            HStack(spacing: 4) {
-                                Text(currency.rawValue)
-                                Image(systemName: "chevron.up.chevron.down")
-                                    .imageScale(.small)
+                            .tint(.white)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        HStack(spacing: 8) {
+                            Text("幣值")
+                            if currency == .twd {
+                                Text("1")
+                            } else {
+                                TextField("匯率", text: $rateText)
+                                    .keyboardType(.decimalPad)
+                                    .focused($focus, equals: .rate)
                             }
                         }
-                        .tint(.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    TextField("\(currency.rawValue) → TWD 匯率", text: $rateText)
-                        .keyboardType(.decimalPad)
-                        .focused($focus, equals: .rate)
-                        .disabled(currency == .twd)
                 }
 
                 Section("槓桿倍數") {
