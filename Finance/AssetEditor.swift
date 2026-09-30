@@ -69,7 +69,7 @@ struct AssetEditor: View {
                 Section("輸入方式") {
                     Picker("輸入方式", selection: $usesSharePrice) {
                         Text("總金額").tag(false)
-                        Text("股數單價").tag(true)
+                        Text("股數與單價").tag(true)
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
