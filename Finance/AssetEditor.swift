@@ -75,19 +75,30 @@ struct AssetEditor: View {
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     .disabled(kind.prefersSharePrice)
-                    TextField("名稱 / 代號", text: $name)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .focused($focus, equals: .name)
-                        .onChange(of: focus) { _, new in
-                            if new != .name { Task { await lookup() } }
+                    HStack {
+                        TextField("名稱 / 代號", text: $name)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .focused($focus, equals: .name)
+                            .onChange(of: name) { _, _ in quoteHint = nil }
+                            .onChange(of: focus) { _, new in
+                                if new != .name { Task { await lookup() } }
+                            }
+                        if let quoteHint {
+                            Text(quoteHint)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.trailing)
                         }
-                    Button("查價") { Task { await lookup() } }
+                        Button { Task { await lookup() } } label: {
+                            if isQuoting {
+                                ProgressView()
+                            } else {
+                                Text("查價")
+                            }
+                        }
+                        .buttonStyle(.bordered)
                         .disabled(!usesSharePrice || isQuoting || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    if isQuoting {
-                        Text("正在查詢現值…").font(.footnote).foregroundStyle(.secondary)
-                    } else if let quoteHint {
-                        Text(quoteHint).font(.footnote).foregroundStyle(.secondary)
                     }
                 }
 
@@ -205,13 +216,7 @@ struct AssetEditor: View {
         var rate = quote?.usdTwdRate
         if rate == nil { rate = try? await QuoteClient.fetchUsdTwd() }
         if let rate { rateText = NumberParse.oneDecimal(rate) }
-        if quote != nil, rate != nil {
-            quoteHint = "已填入現值與匯率"
-        } else if quote != nil {
-            quoteHint = "已填入現值"
-        } else if rate != nil {
-            quoteHint = "已更新匯率"
-        } else {
+        if quote == nil {
             quoteHint = "查不到，請手動輸入單價"
         }
     }
