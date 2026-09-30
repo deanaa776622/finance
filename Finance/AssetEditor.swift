@@ -109,11 +109,28 @@ struct AssetEditor: View {
                         .tint(.white)
                         .disabled(symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
-                    Picker("幣別", selection: $currency) {
-                        ForEach(AssetCurrency.allCases) { Text($0.title).tag($0) }
+                    LabeledContent("幣別") {
+                        Menu {
+                            ForEach(AssetCurrency.allCases) { option in
+                                Button {
+                                    currency = option
+                                } label: {
+                                    if option == currency {
+                                        Label(option.title, systemImage: "checkmark")
+                                    } else {
+                                        Text(option.title)
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text(currency.rawValue)
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .imageScale(.small)
+                            }
+                        }
+                        .tint(.white)
                     }
-                    .pickerStyle(.menu)
-                    .tint(.white)
                     TextField("\(currency.rawValue) → TWD 匯率", text: $rateText)
                         .keyboardType(.decimalPad)
                         .focused($focus, equals: .rate)
