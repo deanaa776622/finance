@@ -75,21 +75,20 @@ struct AssetEditor: View {
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     .disabled(kind.prefersSharePrice)
-                }
-
-                TextField("名稱 / 代號", text: $name)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .focused($focus, equals: .name)
-                    .onChange(of: focus) { _, new in
-                        if new != .name { Task { await lookup() } }
+                    TextField("名稱 / 代號", text: $name)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .focused($focus, equals: .name)
+                        .onChange(of: focus) { _, new in
+                            if new != .name { Task { await lookup() } }
+                        }
+                    Button("查價") { Task { await lookup() } }
+                        .disabled(!usesSharePrice || isQuoting || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    if isQuoting {
+                        Text("正在查詢現值…").font(.footnote).foregroundStyle(.secondary)
+                    } else if let quoteHint {
+                        Text(quoteHint).font(.footnote).foregroundStyle(.secondary)
                     }
-                Button("查價") { Task { await lookup() } }
-                    .disabled(!usesSharePrice || isQuoting || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                if isQuoting {
-                    Text("正在查詢現值…").font(.footnote).foregroundStyle(.secondary)
-                } else if let quoteHint {
-                    Text(quoteHint).font(.footnote).foregroundStyle(.secondary)
                 }
 
                 Section("幣別") {
