@@ -165,10 +165,10 @@ struct AssetEditor: View {
                             if currency == .twd {
                                 Text("1")
                                     .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             } else {
                                 TextField("匯率", text: $rateText)
                                     .keyboardType(.decimalPad)
-                                    .multilineTextAlignment(.trailing)
                                     .focused($focus, equals: .rate)
                             }
                             Button { Task { await lookupRate() } } label: {
