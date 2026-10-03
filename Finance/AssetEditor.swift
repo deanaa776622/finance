@@ -18,7 +18,7 @@ struct AssetEditor: View {
     var onSave: (AssetItem) -> Void
     var onDelete: (() -> Void)?
 
-    private enum Field: Hashable { case symbol, shares, price, amount, rate }
+    private enum Field: Hashable { case symbol, name, shares, price, amount, rate }
 
     init(
         item: AssetItem?,
@@ -100,6 +100,7 @@ struct AssetEditor: View {
                     LabeledContent("資產名稱") {
                         HStack {
                             TextField("", text: $name)
+                                .focused($focus, equals: .name)
                             Button("使用股票代號") {
                                 name = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
                             }
