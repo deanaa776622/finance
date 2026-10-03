@@ -266,27 +266,20 @@ struct AssetEditor: View {
         currency == .twd ? 1 : (NumberParse.decimal(rateText) ?? 0)
     }
 
-    private var canRefreshTotal: Bool {
-        if isRefreshingTotal { return false }
-        if usesSharePrice {
-            let ticker = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
-            return !ticker.isEmpty || currency != .twd
-        }
-        guard NumberParse.decimal(amountText) != nil else { return false }
-        return currency == .twd || NumberParse.decimal(rateText) != nil
-    }
+    private var canRefreshTotal: Bool { !isRefreshingTotal }
 
     private func refreshTotal() async {
-        guard canRefreshTotal else { return }
-        if !usesSharePrice {
-            lumpShowsTwd = true
-            return
-        }
+        guard !isRefreshingTotal else { return }
         isRefreshingTotal = true
         defer { isRefreshingTotal = false }
-        let ticker = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !ticker.isEmpty { await lookup(force: true) }
-        if currency != .twd { await lookupRate(force: true) }
+        if usesSharePrice {
+            let ticker = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !ticker.isEmpty { await lookup(force: true) }
+        }
+        let rateUpdated = await lookupRate(force: true)
+        if !usesSharePrice, rateUpdated, NumberParse.decimal(amountText) != nil {
+            lumpShowsTwd = true
+        }
     }
 
     private var canSave: Bool {
@@ -364,19 +357,28 @@ struct AssetEditor: View {
         currency != .twd && rateState == .idle
     }
 
-    private func lookupRate(force: Bool = false) async {
+    private func lookupRate(force: Bool = false) async -> Bool {
         let code = currency
-        guard code != .twd, force || rateState == .idle else { return }
+        guard force || (code != .twd && rateState == .idle) else { return false }
         rateState = .quoting
         let rates = try? await QuoteClient.fetchTwdRates()
-        guard currency == code else { return }
-        guard let rates, let rate = rates[code] else {
+        guard currency == code else { return false }
+        guard let rates else {
             rateState = .missing
-            return
+            return false
         }
         RateBook.merge(rates)
+        if code == .twd {
+            rateState = .found
+            return true
+        }
+        guard let rate = rates[code] else {
+            rateState = .missing
+            return false
+        }
         rateText = NumberParse.fx(rate)
         rateState = .found
+        return true
     }
 }
 
