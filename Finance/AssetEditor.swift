@@ -19,6 +19,8 @@ struct AssetEditor: View {
     @State private var isRefreshingTotal = false
     @State private var lumpShowsTwd = false
     @State private var labelWidth: CGFloat = 0
+    /// "medium" or "large". Missing key stays full height.
+    @AppStorage("assetSheetDetent") private var detentID = "large"
     private let existingID: UUID?
     var onSave: (AssetItem) -> Void
     var onDelete: (() -> Void)?
@@ -250,6 +252,8 @@ struct AssetEditor: View {
             .scrollEdgeFade()
             .navigationTitle(existingID == nil ? "新增資產與負債" : "編輯資產")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }
@@ -264,8 +268,16 @@ struct AssetEditor: View {
                 }
             }
         }
-        .presentationDetents([.large])
+        .presentationDetents([.medium, .large], selection: sheetDetent)
+        .presentationContentInteraction(.scrolls)
+        .presentationBackground(Color(.systemGroupedBackground))
         .presentationDragIndicator(.visible)
+    }
+
+    private var sheetDetent: Binding<PresentationDetent> {
+        Binding {
+            detentID == "medium" ? .medium : .large
+        } set: { detentID = $0 == .medium ? "medium" : "large" }
     }
 
     /// TWD total from shares, price, and the currency rate. Matches `AssetItem.twdValue`.
