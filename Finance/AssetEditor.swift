@@ -153,21 +153,20 @@ struct AssetEditor: View {
                                 .focused($focus, equals: .rate)
                         }
                     }
-                }
-
-                Section("槓桿倍數") {
-                    Picker("槓桿倍數", selection: $leverage) {
-                        Text("1×").tag(1.0)
-                        Text("1.5×").tag(1.5)
-                        Text("2×").tag(2.0)
-                        Text("3×").tag(3.0)
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .disabled(kind != .leverage)
-                    .onChange(of: leverage) { old, new in
-                        if kind == .leverage, new == 1 {
-                            leverage = old == 1 ? 2 : old
+                    LabeledContent("槓桿倍數") {
+                        Picker("槓桿倍數", selection: $leverage) {
+                            Text("1×").tag(1.0)
+                            Text("1.5×").tag(1.5)
+                            Text("2×").tag(2.0)
+                            Text("3×").tag(3.0)
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .disabled(kind != .leverage)
+                        .onChange(of: leverage) { old, new in
+                            if kind == .leverage, new == 1 {
+                                leverage = old == 1 ? 2 : old
+                            }
                         }
                     }
                 }
