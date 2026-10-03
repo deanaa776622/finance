@@ -15,6 +15,7 @@ struct AssetEditor: View {
     @State private var amountText: String
     @State private var leverage: Double
     @State private var quoteState: QuoteState = .idle
+    @State private var rateState: QuoteState = .idle
     private let existingID: UUID?
     var onSave: (AssetItem) -> Void
     var onDelete: (() -> Void)?
@@ -155,16 +156,32 @@ struct AssetEditor: View {
                         }
                         .tint(.white)
                     }
+                    .onChange(of: currency) { _, _ in
+                        rateState = .idle
+                    }
                     .listRowSeparator(.hidden)
                     LabeledContent("幣值") {
-                        if currency == .twd {
-                            Text("1")
-                                .foregroundStyle(.secondary)
-                        } else {
-                            TextField("匯率", text: $rateText)
-                                .keyboardType(.decimalPad)
-                                .multilineTextAlignment(.trailing)
-                                .focused($focus, equals: .rate)
+                        HStack {
+                            if currency == .twd {
+                                Text("1")
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                TextField("匯率", text: $rateText)
+                                    .keyboardType(.decimalPad)
+                                    .multilineTextAlignment(.trailing)
+                                    .focused($focus, equals: .rate)
+                            }
+                            Button { Task { await lookupRate() } } label: {
+                                if rateState == .quoting {
+                                    ProgressView()
+                                } else {
+                                    Text(rateButtonTitle)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(.white)
+                            .accessibilityLabel(rateButtonTitle)
+                            .disabled(!canLookupRate)
                         }
                     }
                 }
@@ -260,6 +277,32 @@ struct AssetEditor: View {
         priceText = NumberParse.price(quote.price)
         if let currency = quote.currency { self.currency = currency }
         quoteState = .found
+    }
+
+    private var rateButtonTitle: String {
+        switch rateState {
+        case .idle, .quoting: "查詢幣值"
+        case .found: "已查得幣值"
+        case .missing: "查無幣值"
+        }
+    }
+
+    private var canLookupRate: Bool {
+        currency != .twd && rateState == .idle
+    }
+
+    private func lookupRate() async {
+        let code = currency
+        guard canLookupRate else { return }
+        rateState = .quoting
+        let rate = try? await QuoteClient.fetchTwdRate(for: code)
+        guard currency == code else { return }
+        guard let rate else {
+            rateState = .missing
+            return
+        }
+        rateText = NumberParse.oneDecimal(rate)
+        rateState = .found
     }
 }
 

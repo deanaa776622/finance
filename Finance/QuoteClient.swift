@@ -34,11 +34,18 @@ enum QuoteClient {
 
     /// Mid-market USD→TWD. The quote endpoint does not send a rate.
     static func fetchUsdTwd() async throws -> Decimal {
+        try await fetchTwdRate(for: .usd)
+    }
+
+    /// How many TWD one unit of `currency` buys. TWD itself is 1.
+    /// ponytail: quote currency stays TWD until the user can choose one.
+    static func fetchTwdRate(for currency: AssetCurrency) async throws -> Decimal {
+        if currency == .twd { return 1 }
         struct Payload: Decodable {
             var result: String
             var rates: [String: Double]
         }
-        let url = URL(string: "https://open.er-api.com/v6/latest/USD")!
+        let url = URL(string: "https://open.er-api.com/v6/latest/\(currency.rawValue)")!
         let (data, _) = try await URLSession.shared.data(from: url)
         let payload = try JSONDecoder().decode(Payload.self, from: data)
         guard payload.result == "success", let twd = payload.rates["TWD"] else {
