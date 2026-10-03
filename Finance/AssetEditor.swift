@@ -139,7 +139,7 @@ struct AssetEditor: View {
                             }
                             .buttonStyle(.bordered)
                             .tint(.white)
-                            .disabled(symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            .disabled(!canCopySymbol)
                         }
                     }
                     LabeledContent("幣別") {
@@ -326,6 +326,11 @@ struct AssetEditor: View {
         case .found: "已查得價格"
         case .missing: "查無價格"
         }
+    }
+
+    private var canCopySymbol: Bool {
+        let ticker = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !ticker.isEmpty && name.trimmingCharacters(in: .whitespacesAndNewlines) != ticker
     }
 
     private var canQuote: Bool {
