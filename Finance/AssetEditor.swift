@@ -156,8 +156,10 @@ struct AssetEditor: View {
                         }
                         .tint(.white)
                     }
-                    .onChange(of: currency) { _, _ in
+                    .onChange(of: currency) { _, new in
                         rateState = .idle
+                        guard new != .twd, let rate = RateBook.rate(for: new) else { return }
+                        rateText = NumberParse.fx(rate)
                     }
                     .listRowSeparator(.hidden)
                     LabeledContent("幣值") {
@@ -295,13 +297,14 @@ struct AssetEditor: View {
         let code = currency
         guard canLookupRate else { return }
         rateState = .quoting
-        let rate = try? await QuoteClient.fetchTwdRate(for: code)
+        let rates = try? await QuoteClient.fetchTwdRates()
         guard currency == code else { return }
-        guard let rate else {
+        guard let rates, let rate = rates[code] else {
             rateState = .missing
             return
         }
-        rateText = NumberParse.oneDecimal(rate)
+        RateBook.merge(rates)
+        rateText = NumberParse.fx(rate)
         rateState = .found
     }
 }

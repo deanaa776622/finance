@@ -205,6 +205,13 @@ enum NumberParse {
         String(format: "%.1f", NSDecimalNumber(decimal: value).doubleValue)
     }
 
+    /// Same as `oneDecimal` for rates ≥ 1. Smaller rates (JPY, KRW) keep four places.
+    static func fx(_ value: Decimal) -> String {
+        let number = NSDecimalNumber(decimal: value).doubleValue
+        if number >= 1 { return oneDecimal(value) }
+        return String(format: "%.4f", number)
+    }
+
     /// Share price: at most two decimal places.
     static func price(_ value: Decimal) -> String {
         var input = value

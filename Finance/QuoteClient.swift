@@ -40,18 +40,28 @@ enum QuoteClient {
     /// How many TWD one unit of `currency` buys. TWD itself is 1.
     /// ponytail: quote currency stays TWD until the user can choose one.
     static func fetchTwdRate(for currency: AssetCurrency) async throws -> Decimal {
-        if currency == .twd { return 1 }
+        guard let rate = try await fetchTwdRates()[currency] else { throw QuoteError.unavailable }
+        return rate
+    }
+
+    /// TWD value of one unit of every supported currency. One USD-based quote covers the menu.
+    static func fetchTwdRates() async throws -> [AssetCurrency: Decimal] {
         struct Payload: Decodable {
             var result: String
             var rates: [String: Double]
         }
-        let url = URL(string: "https://open.er-api.com/v6/latest/\(currency.rawValue)")!
+        let url = URL(string: "https://open.er-api.com/v6/latest/USD")!
         let (data, _) = try await URLSession.shared.data(from: url)
         let payload = try JSONDecoder().decode(Payload.self, from: data)
-        guard payload.result == "success", let twd = payload.rates["TWD"] else {
+        guard payload.result == "success", let usdTwd = payload.rates["TWD"], usdTwd > 0 else {
             throw QuoteError.unavailable
         }
-        return Decimal(twd)
+        var out: [AssetCurrency: Decimal] = [.twd: 1, .usd: Decimal(usdTwd)]
+        for currency in AssetCurrency.allCases where currency != .twd && currency != .usd {
+            guard let perUsd = payload.rates[currency.rawValue], perUsd > 0 else { continue }
+            out[currency] = Decimal(usdTwd / perUsd)
+        }
+        return out
     }
 
     static func fetchAll(symbols: [UUID: String]) async -> [UUID: Quote] {
@@ -72,6 +82,35 @@ enum QuoteClient {
 
 enum QuoteError: Error {
     case unavailable
+}
+
+/// Latest TWD rate for each currency, kept across launches.
+enum RateBook {
+    private static let key = "twdRates.v1"
+
+    static func rate(for currency: AssetCurrency) -> Decimal? {
+        load()[currency]
+    }
+
+    static func merge(_ rates: [AssetCurrency: Decimal]) {
+        var book = load()
+        for (code, rate) in rates { book[code] = rate }
+        let raw = Dictionary(uniqueKeysWithValues: book.map {
+            ($0.key.rawValue, NSDecimalNumber(decimal: $0.value).stringValue)
+        })
+        UserDefaults.standard.set(raw, forKey: key)
+    }
+
+    private static func load() -> [AssetCurrency: Decimal] {
+        guard let raw = UserDefaults.standard.dictionary(forKey: key) as? [String: String] else { return [:] }
+        var out: [AssetCurrency: Decimal] = [:]
+        for (key, value) in raw {
+            if let code = AssetCurrency(rawValue: key), let rate = Decimal(string: value) {
+                out[code] = rate
+            }
+        }
+        return out
+    }
 }
 
 extension AssetItem {
