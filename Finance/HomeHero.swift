@@ -18,15 +18,10 @@ struct HomeHero: View {
         ZStack {
             GlowBackground(orbs: GlowOrb.orbs(for: portfolio), compact: reveal)
 
-            VStack(spacing: 14) {
-                Spacer()
-                ZStack {
-                    statusCopy.opacity(1 - settledReveal)
-                    lensPager.opacity(toAssets)
-                    yearsCopy.opacity(toSavings)
-                }
-                .frame(maxWidth: .infinity)
-                Spacer()
+            ZStack {
+                statusCopy.opacity(1 - settledReveal)
+                lensPager.opacity(toAssets)
+                yearsCopy.opacity(toSavings)
             }
             VStack {
                 Image(systemName: "chevron.compact.down")
@@ -57,21 +52,15 @@ struct HomeHero: View {
     }
 
     private var lensPager: some View {
-        Color.clear
-            .frame(maxWidth: .infinity)
-            .frame(height: 86)
-            .overlay {
-                GeometryReader { geo in
-                    HStack(spacing: 0) {
-                        metric(title: "總淨值", value: portfolio.netWorth, showsMix: false)
-                            .frame(width: geo.size.width)
-                        metric(title: "總曝險", value: portfolio.exposure, showsMix: true)
-                            .frame(width: geo.size.width)
-                    }
-                    .offset(x: -geo.size.width * lens)
-                }
+        GeometryReader { geo in
+            HStack(spacing: 0) {
+                metric(title: "總淨值", value: portfolio.netWorth, showsMix: false)
+                    .frame(width: geo.size.width, height: geo.size.height)
+                metric(title: "總曝險", value: portfolio.exposure, showsMix: true)
+                    .frame(width: geo.size.width, height: geo.size.height)
             }
-            .clipped()
+            .offset(x: -geo.size.width * lens)
+        }
     }
 
     private func metric(title: String, value: Decimal, showsMix: Bool) -> some View {
@@ -86,11 +75,12 @@ struct HomeHero: View {
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
-            Text(showsMix ? portfolio.allocationMixLabel : " ")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-                .opacity(showsMix ? 1 : 0)
+            if showsMix {
+                Text(portfolio.allocationMixLabel)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
         }
         .padding(.horizontal, 16)
     }
