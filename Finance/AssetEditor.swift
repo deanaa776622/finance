@@ -16,6 +16,8 @@ struct AssetEditor: View {
     @State private var leverage: Double
     @State private var quoteState: QuoteState = .idle
     @State private var rateState: QuoteState = .idle
+    @State private var isRefreshingTotal = false
+    @State private var lumpShowsTwd = false
     private let existingID: UUID?
     var onSave: (AssetItem) -> Void
     var onDelete: (() -> Void)?
@@ -74,6 +76,9 @@ struct AssetEditor: View {
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     .editable(!kind.prefersSharePrice)
+                    .onChange(of: usesSharePrice) { _, _ in
+                        lumpShowsTwd = false
+                    }
                     .listRowSeparator(.hidden, edges: .top)
                     .listRowSeparator(.visible, edges: .bottom)
                     LabeledContent("股票代號") {
@@ -158,6 +163,7 @@ struct AssetEditor: View {
                     }
                     .onChange(of: currency) { _, new in
                         rateState = .idle
+                        lumpShowsTwd = false
                         guard new != .twd, let rate = RateBook.rate(for: new) else { return }
                         rateText = NumberParse.fx(rate)
                     }
@@ -189,16 +195,29 @@ struct AssetEditor: View {
                 }
 
                 LabeledContent("總金額") {
-                    if usesSharePrice {
-                        Text(MoneyFormat.string(liveTotal))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    } else {
-                        TextField("", text: $amountText)
-                            .keyboardType(.decimalPad)
-                            .focused($focus, equals: .amount)
+                    HStack {
+                        if usesSharePrice || lumpShowsTwd {
+                            Text(MoneyFormat.string(usesSharePrice ? liveTotal : lumpTwd))
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        } else {
+                            TextField("", text: $amountText)
+                                .keyboardType(.decimalPad)
+                                .focused($focus, equals: .amount)
+                        }
+                        Button { Task { await refreshTotal() } } label: {
+                            if isRefreshingTotal {
+                                ProgressView()
+                            } else {
+                                Text("更新總金額")
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.white)
+                        .accessibilityLabel("更新總金額")
+                        .disabled(!canRefreshTotal)
                     }
                 }
-                .editable(!usesSharePrice)
 
                 if existingID != nil, onDelete != nil {
                     Button("刪除", role: .destructive) {
@@ -232,8 +251,39 @@ struct AssetEditor: View {
     private var liveTotal: Decimal {
         let shares = NumberParse.decimal(sharesText) ?? 0
         let price = NumberParse.decimal(priceText) ?? 0
-        let rate: Decimal = currency == .twd ? 1 : (NumberParse.decimal(rateText) ?? 0)
-        return shares * price * rate
+        return shares * price * rateValue
+    }
+
+    /// TWD value of the hand-entered amount. The typed amount itself stays put.
+    private var lumpTwd: Decimal {
+        (NumberParse.decimal(amountText) ?? 0) * rateValue
+    }
+
+    private var rateValue: Decimal {
+        currency == .twd ? 1 : (NumberParse.decimal(rateText) ?? 0)
+    }
+
+    private var canRefreshTotal: Bool {
+        if isRefreshingTotal { return false }
+        if usesSharePrice {
+            let ticker = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
+            return !ticker.isEmpty || currency != .twd
+        }
+        guard NumberParse.decimal(amountText) != nil else { return false }
+        return currency == .twd || NumberParse.decimal(rateText) != nil
+    }
+
+    private func refreshTotal() async {
+        guard canRefreshTotal else { return }
+        if !usesSharePrice {
+            lumpShowsTwd = true
+            return
+        }
+        isRefreshingTotal = true
+        defer { isRefreshingTotal = false }
+        let ticker = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !ticker.isEmpty { await lookup(force: true) }
+        if currency != .twd { await lookupRate(force: true) }
     }
 
     private var canSave: Bool {
@@ -279,9 +329,9 @@ struct AssetEditor: View {
         usesSharePrice && quoteState == .idle && !symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private func lookup() async {
+    private func lookup(force: Bool = false) async {
         let ticker = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard canQuote else { return }
+        guard !ticker.isEmpty, force || canQuote else { return }
         quoteState = .quoting
         let quote = try? await QuoteClient.fetch(symbol: ticker)
         guard symbol.trimmingCharacters(in: .whitespacesAndNewlines) == ticker else { return }
@@ -306,9 +356,9 @@ struct AssetEditor: View {
         currency != .twd && rateState == .idle
     }
 
-    private func lookupRate() async {
+    private func lookupRate(force: Bool = false) async {
         let code = currency
-        guard canLookupRate else { return }
+        guard code != .twd, force || rateState == .idle else { return }
         rateState = .quoting
         let rates = try? await QuoteClient.fetchTwdRates()
         guard currency == code else { return }
