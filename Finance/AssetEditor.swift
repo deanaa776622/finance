@@ -18,6 +18,7 @@ struct AssetEditor: View {
     @State private var rateState: QuoteState = .idle
     @State private var isRefreshingTotal = false
     @State private var lumpShowsTwd = false
+    @State private var labelWidth: CGFloat = 0
     private let existingID: UUID?
     var onSave: (AssetItem) -> Void
     var onDelete: (() -> Void)?
@@ -81,7 +82,7 @@ struct AssetEditor: View {
                     }
                     .listRowSeparator(.hidden, edges: .top)
                     .listRowSeparator(.visible, edges: .bottom)
-                    LabeledContent("股票代號") {
+                    LabeledContent {
                         TextField("", text: $symbol)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
@@ -92,13 +93,17 @@ struct AssetEditor: View {
                                     quoteState = .idle
                                 }
                             }
+                    } label: {
+                        alignedTitle("股票代號")
                     }
                     .editable(usesSharePrice)
                     .listRowSeparator(.hidden)
-                    LabeledContent("股數") {
+                    LabeledContent {
                         TextField("", text: $sharesText)
                             .keyboardType(.decimalPad)
                             .focused($focus, equals: .shares)
+                    } label: {
+                        alignedTitle("股數")
                     }
                     .editable(usesSharePrice)
                     .listRowSeparator(.hidden)
@@ -121,16 +126,18 @@ struct AssetEditor: View {
                             .disabled(!canQuote)
                         }
                     } label: {
-                        Text("單價")
-                            .foregroundStyle(usesSharePrice ? .primary : .secondary)
+                        alignedTitle("單價")
+                            .foregroundStyle(usesSharePrice ? Color.primary : Color.secondary)
                     }
                     .listRowSeparator(.hidden)
-                    LabeledContent("槓桿倍數") {
+                    LabeledContent {
                         LeveragePicker(leverage: $leverage, oneTimesEnabled: kind != .leverage)
+                    } label: {
+                        alignedTitle("槓桿倍數")
                     }
                     .editable(kind == .leverage)
                     .listRowSeparator(.hidden, edges: .top)
-                    LabeledContent("資產名稱") {
+                    LabeledContent {
                         HStack {
                             TextField("", text: $name)
                                 .focused($focus, equals: .name)
@@ -141,8 +148,10 @@ struct AssetEditor: View {
                             .tint(.white)
                             .disabled(!canCopySymbol)
                         }
+                    } label: {
+                        alignedTitle("資產名稱")
                     }
-                    LabeledContent("幣別") {
+                    LabeledContent {
                         Menu {
                             ForEach(AssetCurrency.allCases) { option in
                                 Button {
@@ -163,6 +172,8 @@ struct AssetEditor: View {
                             }
                         }
                         .tint(.white)
+                    } label: {
+                        alignedTitle("幣別")
                     }
                     .onChange(of: currency) { _, new in
                         rateState = .idle
@@ -171,7 +182,7 @@ struct AssetEditor: View {
                         rateText = NumberParse.fx(rate)
                     }
                     .listRowSeparator(.hidden)
-                    LabeledContent("幣值") {
+                    LabeledContent {
                         HStack {
                             if currency == .twd {
                                 Text("1")
@@ -194,10 +205,12 @@ struct AssetEditor: View {
                             .accessibilityLabel(rateButtonTitle)
                             .disabled(!canLookupRate || isRefreshingTotal)
                         }
+                    } label: {
+                        alignedTitle("幣值")
                     }
                 }
 
-                LabeledContent("總金額") {
+                LabeledContent {
                     HStack {
                         if usesSharePrice || lumpShowsTwd {
                             Text(MoneyFormat.string(usesSharePrice ? liveTotal : lumpTwd))
@@ -220,6 +233,8 @@ struct AssetEditor: View {
                         .accessibilityLabel("更新總金額")
                         .disabled(!canRefreshTotal)
                     }
+                } label: {
+                    alignedTitle("總金額")
                 }
 
                 if existingID != nil, onDelete != nil {
@@ -228,6 +243,9 @@ struct AssetEditor: View {
                         dismiss()
                     }
                 }
+            }
+            .onPreferenceChange(LabelWidthKey.self) { width in
+                if width != labelWidth { labelWidth = width }
             }
             .scrollEdgeFade()
             .navigationTitle(existingID == nil ? "新增資產與負債" : "編輯資產")
@@ -331,6 +349,17 @@ struct AssetEditor: View {
         }
     }
 
+    private func alignedTitle(_ title: String) -> some View {
+        Text(title)
+            .fixedSize(horizontal: true, vertical: false)
+            .background {
+                GeometryReader { proxy in
+                    Color.clear.preference(key: LabelWidthKey.self, value: proxy.size.width)
+                }
+            }
+            .frame(width: labelWidth > 0 ? labelWidth : nil, alignment: .leading)
+    }
+
     private var canCopySymbol: Bool {
         let ticker = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
         return !ticker.isEmpty && name.trimmingCharacters(in: .whitespacesAndNewlines) != ticker
@@ -389,6 +418,13 @@ struct AssetEditor: View {
         rateText = NumberParse.fx(rate)
         rateState = .found
         return true
+    }
+}
+
+private struct LabelWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 
