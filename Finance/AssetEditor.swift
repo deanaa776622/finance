@@ -183,7 +183,7 @@ struct AssetEditor: View {
                                     .focused($focus, equals: .rate)
                             }
                             Button { Task { await lookupRate() } } label: {
-                                if rateState == .quoting {
+                                if rateState == .quoting || isRefreshingTotal {
                                     ProgressView()
                                 } else {
                                     Text(rateButtonTitle)
@@ -192,7 +192,7 @@ struct AssetEditor: View {
                             .buttonStyle(.bordered)
                             .tint(.white)
                             .accessibilityLabel(rateButtonTitle)
-                            .disabled(!canLookupRate)
+                            .disabled(!canLookupRate || isRefreshingTotal)
                         }
                     }
                 }
