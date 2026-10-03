@@ -58,7 +58,7 @@ struct AssetEditor: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("輸入方式") {
+                Section {
                     Picker("類別", selection: $kind) {
                         ForEach(AssetKind.allCases) { Text($0.compactTitle).tag($0) }
                     }
