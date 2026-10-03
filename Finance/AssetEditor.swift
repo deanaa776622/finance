@@ -160,18 +160,24 @@ struct AssetEditor: View {
                     }
                 }
 
-                TextField("股數", text: $sharesText)
-                    .keyboardType(.decimalPad)
-                    .focused($focus, equals: .shares)
-                    .disabled(!usesSharePrice)
-                TextField("單價", text: $priceText)
-                    .keyboardType(.decimalPad)
-                    .focused($focus, equals: .price)
-                    .disabled(!usesSharePrice)
-                TextField("總金額", text: $amountText)
-                    .keyboardType(.decimalPad)
-                    .focused($focus, equals: .amount)
-                    .disabled(usesSharePrice)
+                LabeledContent("股數") {
+                    TextField("", text: $sharesText)
+                        .keyboardType(.decimalPad)
+                        .focused($focus, equals: .shares)
+                        .disabled(!usesSharePrice)
+                }
+                LabeledContent("單價") {
+                    TextField("", text: $priceText)
+                        .keyboardType(.decimalPad)
+                        .focused($focus, equals: .price)
+                        .disabled(!usesSharePrice)
+                }
+                LabeledContent("總金額") {
+                    TextField("", text: $amountText)
+                        .keyboardType(.decimalPad)
+                        .focused($focus, equals: .amount)
+                        .disabled(usesSharePrice)
+                }
 
                 if existingID != nil, onDelete != nil {
                     Button("刪除", role: .destructive) {
