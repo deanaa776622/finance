@@ -15,6 +15,7 @@ struct AssetListView: View {
     @State private var isRefreshing = false
     @State private var refreshMessage: String?
     @State private var expandedKinds: Set<AssetKind> = []
+    @State private var assetsOpen = true
 
     var body: some View {
         List {
@@ -24,47 +25,19 @@ struct AssetListView: View {
                     .foregroundStyle(.secondary)
                     .listRowBackground(Color.clear)
             }
-            ForEach(visibleKinds) { kind in
-                let rows = portfolio.items(for: kind)
-                let open = expandedKinds.contains(kind)
+            if exposureOnly {
+                ForEach(visibleKinds) { kindSection($0) }
+            } else {
                 Section {
-                    if open {
-                        if rows.isEmpty {
-                            Text("尚無紀錄").foregroundStyle(.secondary)
-                        } else {
-                            ForEach(rows) { item in
-                                Button { editing = item } label: {
-                                    AssetRow(item: item, hideAmounts: hideAmounts)
-                                }
-                                .foregroundStyle(.primary)
-                            }
-                            .onDelete { portfolio.delete(rows, at: $0) }
+                    if assetsOpen {
+                        ForEach(assetKinds) { kind in
+                            kindBlock(kind, nested: true)
                         }
                     }
                 } header: {
-                    Button {
-                        toggle(kind)
-                    } label: {
-                        HStack {
-                            Image(systemName: "chevron.right")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                                .rotationEffect(.degrees(open ? 90 : 0))
-                            Text(kind.title)
-                            Spacer()
-                            Text(MoneyFormat.string(portfolio.amount(for: kind), hidden: hideAmounts))
-                                .font(.subheadline)
-                                .monospacedDigit()
-                                .foregroundStyle(.secondary)
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(kind.title)
-                    .accessibilityHint(open ? "收合" : "展開")
-                    .accessibilityAddTraits(.isButton)
-                    .textCase(nil)
+                    assetHeader
                 }
+                kindSection(.debt)
             }
         }
         .contentMargins(.top, topInset, for: .scrollContent)
@@ -86,8 +59,99 @@ struct AssetListView: View {
         }
     }
 
-    private var visibleKinds: [AssetKind] {
-        exposureOnly ? [.original, .leverage, .cash] : Array(AssetKind.allCases)
+    private var visibleKinds: [AssetKind] { [.original, .leverage, .cash] }
+
+    private var assetKinds: [AssetKind] { [.original, .leverage, .cash, .realEstate] }
+
+    private var assetTotal: Decimal {
+        assetKinds.reduce(0) { $0 + portfolio.amount(for: $1) }
+    }
+
+    private var assetHeader: some View {
+        Button {
+            withAnimation { assetsOpen.toggle() }
+        } label: {
+            HStack {
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(assetsOpen ? 90 : 0))
+                Text("資產")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                Text(MoneyFormat.string(assetTotal, hidden: hideAmounts))
+                    .font(.subheadline)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("資產")
+        .accessibilityHint(assetsOpen ? "收合" : "展開")
+        .textCase(nil)
+    }
+
+    private func kindSection(_ kind: AssetKind) -> some View {
+        Section {
+            kindItems(kind, nested: false)
+        } header: {
+            kindHeader(kind, nested: false)
+        }
+    }
+
+    @ViewBuilder
+    private func kindBlock(_ kind: AssetKind, nested: Bool) -> some View {
+        kindHeader(kind, nested: nested)
+        kindItems(kind, nested: nested)
+    }
+
+    private func kindHeader(_ kind: AssetKind, nested: Bool) -> some View {
+        let open = expandedKinds.contains(kind)
+        return Button {
+            toggle(kind)
+        } label: {
+            HStack {
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(open ? 90 : 0))
+                Text(kind.title)
+                    .font(nested ? .body : .subheadline.weight(.semibold))
+                Spacer()
+                Text(MoneyFormat.string(portfolio.amount(for: kind), hidden: hideAmounts))
+                    .font(.subheadline)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.leading, nested ? 12 : 0)
+        .accessibilityLabel(kind.title)
+        .accessibilityHint(open ? "收合" : "展開")
+        .textCase(nil)
+    }
+
+    @ViewBuilder
+    private func kindItems(_ kind: AssetKind, nested: Bool) -> some View {
+        let rows = portfolio.items(for: kind)
+        if expandedKinds.contains(kind) {
+            if rows.isEmpty {
+                Text("尚無紀錄")
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, nested ? 12 : 0)
+            } else {
+                ForEach(rows) { item in
+                    Button { editing = item } label: {
+                        AssetRow(item: item, hideAmounts: hideAmounts)
+                    }
+                    .foregroundStyle(.primary)
+                    .padding(.leading, nested ? 28 : 0)
+                }
+                .onDelete { portfolio.delete(rows, at: $0) }
+            }
+        }
     }
 
     private var menuBar: some View {
