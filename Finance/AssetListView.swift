@@ -67,6 +67,16 @@ struct AssetListView: View {
         assetKinds.reduce(0) { $0 + portfolio.amount(for: $1) }
     }
 
+    private func headerTitleFont(open: Bool, nested: Bool = false) -> Font {
+        if nested, !open { return .body }
+        return open ? .subheadline.weight(.semibold) : .title3.weight(.semibold)
+    }
+
+    private func headerAmountFont(open: Bool, nested: Bool = false) -> Font {
+        if nested, !open { return .body }
+        return open ? .subheadline : .title3
+    }
+
     private var assetHeader: some View {
         Button {
             withAnimation { assetsOpen.toggle() }
@@ -77,10 +87,10 @@ struct AssetListView: View {
                     .foregroundStyle(.secondary)
                     .rotationEffect(.degrees(assetsOpen ? 90 : 0))
                 Text("資產")
-                    .font(.subheadline.weight(.semibold))
+                    .font(headerTitleFont(open: assetsOpen))
                 Spacer()
                 Text(MoneyFormat.string(assetTotal, hidden: hideAmounts))
-                    .font(.subheadline)
+                    .font(headerAmountFont(open: assetsOpen))
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
@@ -117,10 +127,10 @@ struct AssetListView: View {
                     .foregroundStyle(.secondary)
                     .rotationEffect(.degrees(open ? 90 : 0))
                 Text(kind.title)
-                    .font(nested ? .body : .subheadline.weight(.semibold))
+                    .font(headerTitleFont(open: open, nested: nested))
                 Spacer()
                 Text(MoneyFormat.string(portfolio.amount(for: kind), hidden: hideAmounts))
-                    .font(.subheadline)
+                    .font(headerAmountFont(open: open, nested: nested))
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
