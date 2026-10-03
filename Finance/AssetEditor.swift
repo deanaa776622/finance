@@ -9,6 +9,9 @@ struct AssetEditor: View {
     @State private var kind: AssetKind
     @State private var currency: AssetCurrency
     @State private var rateText: String
+    /// Full rate and price. The fields show a shorter number; the total keeps these until edited.
+    @State private var fullRate: Decimal
+    @State private var fullPrice: Decimal
     @State private var usesSharePrice: Bool
     @State private var sharesText: String
     @State private var priceText: String
@@ -39,9 +42,12 @@ struct AssetEditor: View {
         _symbol = State(initialValue: item?.symbol ?? "")
         _kind = State(initialValue: kind)
         _currency = State(initialValue: item?.currency ?? .twd)
-        _rateText = State(initialValue: NumberParse.oneDecimal(item?.usdTwdRate ?? 32))
+        let storedRate = item?.usdTwdRate ?? 32
+        _rateText = State(initialValue: NumberParse.fx(storedRate))
+        _fullRate = State(initialValue: storedRate)
         _usesSharePrice = State(initialValue: item?.usesSharePrice ?? kind.prefersSharePrice)
         _sharesText = State(initialValue: item?.shares.map(NumberParse.display) ?? "")
+        _fullPrice = State(initialValue: item?.price ?? 0)
         _priceText = State(initialValue: item?.price.map(NumberParse.price) ?? "")
         _amountText = State(initialValue: item.map { NumberParse.display($0.amount) } ?? "")
         _leverage = State(initialValue: Self.clampedLeverage(kind: kind, value: item?.leverageMultiple))
@@ -181,6 +187,7 @@ struct AssetEditor: View {
                         rateState = .idle
                         lumpShowsTwd = false
                         guard new != .twd, let rate = RateBook.rate(for: new) else { return }
+                        fullRate = rate
                         rateText = NumberParse.fx(rate)
                     }
                     .listRowSeparator(.hidden)
@@ -283,8 +290,7 @@ struct AssetEditor: View {
     /// TWD total from shares, price, and the currency rate. Matches `AssetItem.twdValue`.
     private var liveTotal: Decimal {
         let shares = NumberParse.decimal(sharesText) ?? 0
-        let price = NumberParse.decimal(priceText) ?? 0
-        return shares * price * rateValue
+        return shares * priceValue * rateValue
     }
 
     /// TWD value of the hand-entered amount. The typed amount itself stays put.
@@ -292,8 +298,17 @@ struct AssetEditor: View {
         (NumberParse.decimal(amountText) ?? 0) * rateValue
     }
 
+    /// Shown rate is rounded. Keep the stored rate while the field still shows that rounding.
     private var rateValue: Decimal {
-        currency == .twd ? 1 : (NumberParse.decimal(rateText) ?? 0)
+        if currency == .twd { return 1 }
+        if rateText == NumberParse.fx(fullRate) { return fullRate }
+        return NumberParse.decimal(rateText) ?? 0
+    }
+
+    /// Shown price is rounded to two places. Keep the stored price while the field still shows that rounding.
+    private var priceValue: Decimal {
+        if priceText == NumberParse.price(fullPrice) { return fullPrice }
+        return NumberParse.decimal(priceText) ?? 0
     }
 
     /// Disabled while a refresh is running, or when shares/price/amount are missing so the total cannot be computed.
@@ -332,11 +347,11 @@ struct AssetEditor: View {
     }
 
     private func save() {
-        let rate = currency == .twd ? 1 : (NumberParse.decimal(rateText) ?? 32)
+        let rate = currency == .twd ? 1 : rateValue
         let shares = NumberParse.decimal(sharesText)
-        let price = NumberParse.decimal(priceText)
+        let price = priceValue
         let amount = usesSharePrice ? 0 : (NumberParse.decimal(amountText) ?? 0)
-        guard amount >= 0, (shares ?? 0) >= 0, (price ?? 0) >= 0 else { return }
+        guard amount >= 0, (shares ?? 0) >= 0, price >= 0 else { return }
         onSave(AssetItem(
             id: existingID ?? UUID(),
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -391,6 +406,7 @@ struct AssetEditor: View {
             quoteState = .missing
             return
         }
+        fullPrice = quote.price
         priceText = NumberParse.price(quote.price)
         if let currency = quote.currency { self.currency = currency }
         quoteState = .found
@@ -427,6 +443,7 @@ struct AssetEditor: View {
             rateState = .missing
             return false
         }
+        fullRate = rate
         rateText = NumberParse.fx(rate)
         rateState = .found
         return true
