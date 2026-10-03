@@ -266,7 +266,17 @@ struct AssetEditor: View {
         currency == .twd ? 1 : (NumberParse.decimal(rateText) ?? 0)
     }
 
-    private var canRefreshTotal: Bool { !isRefreshingTotal }
+    /// Disabled while a refresh is running, or when shares/price/amount are missing so the total cannot be computed.
+    /// The rate is fetched by the button itself. A share price can also be fetched when a ticker is present.
+    private var canRefreshTotal: Bool {
+        if isRefreshingTotal { return false }
+        if usesSharePrice {
+            guard NumberParse.decimal(sharesText) != nil else { return false }
+            if NumberParse.decimal(priceText) != nil { return true }
+            return !symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        return NumberParse.decimal(amountText) != nil
+    }
 
     private func refreshTotal() async {
         guard !isRefreshingTotal else { return }
