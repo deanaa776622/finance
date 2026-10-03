@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct AssetEditor: View {
     @Environment(\.dismiss) private var dismiss
@@ -116,19 +117,7 @@ struct AssetEditor: View {
                     .editable(usesSharePrice)
                     .listRowSeparator(.hidden)
                     LabeledContent("槓桿倍數") {
-                        Picker("槓桿倍數", selection: $leverage) {
-                            Text("1×").tag(1.0)
-                            Text("1.5×").tag(1.5)
-                            Text("2×").tag(2.0)
-                            Text("3×").tag(3.0)
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .onChange(of: leverage) { old, new in
-                            if kind == .leverage, new == 1 {
-                                leverage = old == 1 ? 2 : old
-                            }
-                        }
+                        LeveragePicker(leverage: $leverage, oneTimesEnabled: kind != .leverage)
                     }
                     .editable(kind == .leverage)
                     .listRowSeparator(.hidden, edges: .top)
@@ -289,5 +278,58 @@ private extension View {
     func editable(_ isEditable: Bool) -> some View {
         foregroundStyle(isEditable ? Color.primary : Color.secondary)
             .disabled(!isEditable)
+    }
+}
+
+/// Segmented leverage choices. 1× is disabled, and therefore gray, for leverage assets.
+private struct LeveragePicker: UIViewRepresentable {
+    @Binding var leverage: Double
+    var oneTimesEnabled: Bool
+
+    private static let choices: [Double] = [1, 1.5, 2, 3]
+
+    func makeUIView(context: Context) -> UISegmentedControl {
+        let control = UISegmentedControl(items: Self.choices.map(Self.title))
+        control.apportionsSegmentWidthsByContent = false
+        control.setTitleTextAttributes([.foregroundColor: UIColor.secondaryLabel], for: .disabled)
+        control.addTarget(context.coordinator, action: #selector(Coordinator.changed(_:)), for: .valueChanged)
+        return control
+    }
+
+    func updateUIView(_ control: UISegmentedControl, context: Context) {
+        context.coordinator.leverage = $leverage
+        let index = Self.choices.firstIndex(of: leverage) ?? 2
+        if control.selectedSegmentIndex != index {
+            control.selectedSegmentIndex = index
+        }
+        control.setEnabled(oneTimesEnabled, forSegmentAt: 0)
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UISegmentedControl, context: Context) -> CGSize? {
+        CGSize(width: proposal.width ?? uiView.intrinsicContentSize.width, height: uiView.intrinsicContentSize.height)
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(leverage: $leverage)
+    }
+
+    private static func title(_ value: Double) -> String {
+        value == 1.5 ? "1.5×" : "\(Int(value))×"
+    }
+
+    final class Coordinator: NSObject {
+        var leverage: Binding<Double>
+
+        init(leverage: Binding<Double>) {
+            self.leverage = leverage
+        }
+
+        @objc func changed(_ sender: UISegmentedControl) {
+            let index = sender.selectedSegmentIndex
+            guard choices.indices.contains(index) else { return }
+            leverage.wrappedValue = choices[index]
+        }
+
+        private var choices: [Double] { LeveragePicker.choices }
     }
 }
