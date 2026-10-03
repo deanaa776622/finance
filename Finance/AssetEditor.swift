@@ -54,21 +54,16 @@ struct AssetEditor: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("類別") {
+                Section("輸入方式") {
                     Picker("類別", selection: $kind) {
                         ForEach(AssetKind.allCases) { Text($0.compactTitle).tag($0) }
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
                     .onChange(of: kind) { _, new in
                         if new.prefersSharePrice { usesSharePrice = true }
                         leverage = Self.clampedLeverage(kind: new, value: leverage)
                     }
-                }
-
-                Section("輸入方式") {
                     Picker("輸入方式", selection: $usesSharePrice) {
                         Text("總金額").tag(false)
                         Text("股數與單價").tag(true)
