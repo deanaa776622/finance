@@ -71,7 +71,7 @@ struct AssetEditor: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
-                    .disabled(kind.prefersSharePrice)
+                    .editable(!kind.prefersSharePrice)
                     .listRowSeparator(.hidden, edges: .top)
                     .listRowSeparator(.visible, edges: .bottom)
                     LabeledContent("股票代號") {
@@ -86,7 +86,6 @@ struct AssetEditor: View {
                                         quoteState = .idle
                                     }
                                 }
-                                .disabled(!usesSharePrice)
                             Button { Task { await lookup() } } label: {
                                 if quoteState == .quoting {
                                     ProgressView()
@@ -100,20 +99,21 @@ struct AssetEditor: View {
                             .disabled(!canQuote)
                         }
                     }
+                    .editable(usesSharePrice)
                     .listRowSeparator(.hidden)
                     LabeledContent("股數") {
                         TextField("", text: $sharesText)
                             .keyboardType(.decimalPad)
                             .focused($focus, equals: .shares)
-                            .disabled(!usesSharePrice)
                     }
+                    .editable(usesSharePrice)
                     .listRowSeparator(.hidden)
                     LabeledContent("單價") {
                         TextField("", text: $priceText)
                             .keyboardType(.decimalPad)
                             .focused($focus, equals: .price)
-                            .disabled(!usesSharePrice)
                     }
+                    .editable(usesSharePrice)
                     .listRowSeparator(.hidden)
                     LabeledContent("槓桿倍數") {
                         Picker("槓桿倍數", selection: $leverage) {
@@ -124,13 +124,13 @@ struct AssetEditor: View {
                         }
                         .pickerStyle(.segmented)
                         .labelsHidden()
-                        .disabled(kind != .leverage)
                         .onChange(of: leverage) { old, new in
                             if kind == .leverage, new == 1 {
                                 leverage = old == 1 ? 2 : old
                             }
                         }
                     }
+                    .editable(kind == .leverage)
                     .listRowSeparator(.hidden, edges: .top)
                     LabeledContent("資產名稱") {
                         HStack {
@@ -170,6 +170,7 @@ struct AssetEditor: View {
                     LabeledContent("幣值") {
                         if currency == .twd {
                             Text("1")
+                                .foregroundStyle(.secondary)
                         } else {
                             TextField("匯率", text: $rateText)
                                 .keyboardType(.decimalPad)
@@ -183,8 +184,8 @@ struct AssetEditor: View {
                     TextField("", text: $amountText)
                         .keyboardType(.decimalPad)
                         .focused($focus, equals: .amount)
-                        .disabled(usesSharePrice)
                 }
+                .editable(!usesSharePrice)
 
                 if existingID != nil, onDelete != nil {
                     Button("刪除", role: .destructive) {
@@ -281,4 +282,12 @@ struct AssetEditor: View {
 
 private enum QuoteState {
     case idle, quoting, found, missing
+}
+
+private extension View {
+    /// Gray text when the row cannot be edited.
+    func editable(_ isEditable: Bool) -> some View {
+        foregroundStyle(isEditable ? Color.primary : Color.secondary)
+            .disabled(!isEditable)
+    }
 }
