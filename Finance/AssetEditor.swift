@@ -102,11 +102,12 @@ struct AssetEditor: View {
                     }
                     .editable(usesSharePrice)
                     .listRowSeparator(.hidden)
-                    LabeledContent("單價") {
+                    LabeledContent {
                         HStack {
                             TextField("", text: $priceText)
                                 .keyboardType(.decimalPad)
                                 .focused($focus, equals: .price)
+                                .editable(usesSharePrice)
                             Button { Task { await lookup() } } label: {
                                 if quoteState == .quoting {
                                     ProgressView()
@@ -119,8 +120,10 @@ struct AssetEditor: View {
                             .accessibilityLabel(quoteButtonTitle)
                             .disabled(!canQuote)
                         }
+                    } label: {
+                        Text("單價")
+                            .foregroundStyle(usesSharePrice ? .primary : .secondary)
                     }
-                    .editable(usesSharePrice)
                     .listRowSeparator(.hidden)
                     LabeledContent("槓桿倍數") {
                         LeveragePicker(leverage: $leverage, oneTimesEnabled: kind != .leverage)
