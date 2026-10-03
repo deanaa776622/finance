@@ -125,7 +125,7 @@ struct AssetListView: View {
             } label: {
                 Image(systemName: "plus")
             }
-            .accessibilityLabel("新增資產")
+            .accessibilityLabel("新增資產與負債")
             .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
