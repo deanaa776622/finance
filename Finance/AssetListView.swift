@@ -16,6 +16,8 @@ struct AssetListView: View {
     @State private var refreshMessage: String?
     @State private var expandedKinds: Set<AssetKind> = []
     @State private var assetsOpen = true
+    @ScaledMetric(relativeTo: .title3) private var collapsedTitleSize: CGFloat = 20
+    @ScaledMetric(relativeTo: .subheadline) private var expandedTitleSize: CGFloat = 15
 
     var body: some View {
         List {
@@ -67,9 +69,8 @@ struct AssetListView: View {
         assetKinds.reduce(0) { $0 + portfolio.amount(for: $1) }
     }
 
-    private func headerTitleFont(open: Bool, nested: Bool = false) -> Font {
-        if nested, !open { return .body }
-        return open ? .subheadline.weight(.semibold) : .title3.weight(.semibold)
+    private func titlePointSize(open: Bool) -> CGFloat {
+        open ? expandedTitleSize : collapsedTitleSize
     }
 
     private func headerAmountFont(open: Bool, nested: Bool = false) -> Font {
@@ -87,7 +88,7 @@ struct AssetListView: View {
                     .foregroundStyle(.secondary)
                     .rotationEffect(.degrees(assetsOpen ? 90 : 0))
                 Text("資產")
-                    .font(headerTitleFont(open: assetsOpen))
+                    .modifier(AnimatingFont(size: titlePointSize(open: assetsOpen), weight: .semibold))
                 Spacer()
                 Text(MoneyFormat.string(assetTotal, hidden: hideAmounts))
                     .font(headerAmountFont(open: assetsOpen))
@@ -126,8 +127,13 @@ struct AssetListView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .rotationEffect(.degrees(open ? 90 : 0))
-                Text(kind.title)
-                    .font(headerTitleFont(open: open, nested: nested))
+                if nested {
+                    Text(kind.title)
+                        .font(open ? .subheadline.weight(.semibold) : .body)
+                } else {
+                    Text(kind.title)
+                        .modifier(AnimatingFont(size: titlePointSize(open: open), weight: .semibold))
+                }
                 Spacer()
                 Text(MoneyFormat.string(portfolio.amount(for: kind), hidden: hideAmounts))
                     .font(headerAmountFont(open: open, nested: nested))
@@ -288,6 +294,19 @@ private struct AssetMenuBar<Bar: View>: ViewModifier {
                     .padding(.bottom, 8)
             }
         }
+    }
+}
+
+private struct AnimatingFont: ViewModifier, Animatable {
+    var size: CGFloat
+    var weight: Font.Weight
+    var animatableData: CGFloat {
+        get { size }
+        set { size = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        content.font(.system(size: size, weight: weight))
     }
 }
 
