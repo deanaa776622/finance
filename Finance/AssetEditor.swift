@@ -76,17 +76,31 @@ struct AssetEditor: View {
                     .listRowSeparator(.hidden, edges: .top)
                     .listRowSeparator(.visible, edges: .bottom)
                     LabeledContent("股票代號") {
-                        HStack {
-                            TextField("", text: $symbol)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .focused($focus, equals: .symbol)
-                                .onChange(of: symbol) { old, new in
-                                    if old.trimmingCharacters(in: .whitespacesAndNewlines)
-                                        != new.trimmingCharacters(in: .whitespacesAndNewlines) {
-                                        quoteState = .idle
-                                    }
+                        TextField("", text: $symbol)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .focused($focus, equals: .symbol)
+                            .onChange(of: symbol) { old, new in
+                                if old.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    != new.trimmingCharacters(in: .whitespacesAndNewlines) {
+                                    quoteState = .idle
                                 }
+                            }
+                    }
+                    .editable(usesSharePrice)
+                    .listRowSeparator(.hidden)
+                    LabeledContent("股數") {
+                        TextField("", text: $sharesText)
+                            .keyboardType(.decimalPad)
+                            .focused($focus, equals: .shares)
+                    }
+                    .editable(usesSharePrice)
+                    .listRowSeparator(.hidden)
+                    LabeledContent("單價") {
+                        HStack {
+                            TextField("", text: $priceText)
+                                .keyboardType(.decimalPad)
+                                .focused($focus, equals: .price)
                             Button { Task { await lookup() } } label: {
                                 if quoteState == .quoting {
                                     ProgressView()
@@ -99,20 +113,6 @@ struct AssetEditor: View {
                             .accessibilityLabel(quoteButtonTitle)
                             .disabled(!canQuote)
                         }
-                    }
-                    .editable(usesSharePrice)
-                    .listRowSeparator(.hidden)
-                    LabeledContent("股數") {
-                        TextField("", text: $sharesText)
-                            .keyboardType(.decimalPad)
-                            .focused($focus, equals: .shares)
-                    }
-                    .editable(usesSharePrice)
-                    .listRowSeparator(.hidden)
-                    LabeledContent("單價") {
-                        TextField("", text: $priceText)
-                            .keyboardType(.decimalPad)
-                            .focused($focus, equals: .price)
                     }
                     .editable(usesSharePrice)
                     .listRowSeparator(.hidden)
@@ -237,7 +237,7 @@ struct AssetEditor: View {
 
     private var quoteButtonTitle: String {
         switch quoteState {
-        case .idle, .quoting: "查價"
+        case .idle, .quoting: "查詢單價"
         case .found: "已查得價格"
         case .missing: "查無價格"
         }
@@ -259,12 +259,6 @@ struct AssetEditor: View {
         }
         priceText = NumberParse.price(quote.price)
         if let currency = quote.currency { self.currency = currency }
-        if self.currency == .usd {
-            var rate = quote.usdTwdRate
-            if rate == nil { rate = try? await QuoteClient.fetchUsdTwd() }
-            guard symbol.trimmingCharacters(in: .whitespacesAndNewlines) == ticker else { return }
-            if let rate { rateText = NumberParse.oneDecimal(rate) }
-        }
         quoteState = .found
     }
 }
