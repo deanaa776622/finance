@@ -189,9 +189,14 @@ struct AssetEditor: View {
                 }
 
                 LabeledContent("總金額") {
-                    TextField("", text: $amountText)
-                        .keyboardType(.decimalPad)
-                        .focused($focus, equals: .amount)
+                    if usesSharePrice {
+                        Text(MoneyFormat.string(liveTotal))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        TextField("", text: $amountText)
+                            .keyboardType(.decimalPad)
+                            .focused($focus, equals: .amount)
+                    }
                 }
                 .editable(!usesSharePrice)
 
@@ -221,6 +226,14 @@ struct AssetEditor: View {
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
+    }
+
+    /// TWD total from shares, price, and the currency rate. Matches `AssetItem.twdValue`.
+    private var liveTotal: Decimal {
+        let shares = NumberParse.decimal(sharesText) ?? 0
+        let price = NumberParse.decimal(priceText) ?? 0
+        let rate: Decimal = currency == .twd ? 1 : (NumberParse.decimal(rateText) ?? 0)
+        return shares * price * rate
     }
 
     private var canSave: Bool {
