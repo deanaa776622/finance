@@ -50,6 +50,25 @@ final class Portfolio {
         }
     }
 
+    /// Prototype at face value, leverage scaled by its multiple. Cash, property, and debt sit outside.
+    var exposure: Decimal {
+        items.reduce(0) { partial, item in
+            switch item.kind {
+            case .original:
+                partial + item.twdValue
+            case .leverage:
+                partial + item.twdValue * Decimal(item.leverageMultiple ?? 2)
+            case .cash, .realEstate, .debt:
+                partial
+            }
+        }
+    }
+
+    var allocationMixLabel: String {
+        func pct(_ kind: AssetKind) -> Int { Int(actualPercent(for: kind).rounded()) }
+        return "原 \(pct(.original))%　槓 \(pct(.leverage))%　現 \(pct(.cash))%"
+    }
+
     var allocableTotal: Decimal {
         items.filter(\.kind.countsTowardAllocation).reduce(0) { $0 + $1.twdValue }
     }

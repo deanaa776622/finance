@@ -4,6 +4,8 @@ struct AssetListView: View {
     static let restingTopInset: CGFloat = 44
     var showsChrome = true
     var topInset = restingTopInset
+    /// Exposure lens keeps 原／槓／現. Net worth keeps every kind.
+    var exposureOnly = false
     @Environment(Portfolio.self) private var portfolio
     @AppStorage("hideAmounts") private var hideAmounts = false
     @State private var editing: AssetItem?
@@ -22,7 +24,7 @@ struct AssetListView: View {
                     .foregroundStyle(.secondary)
                     .listRowBackground(Color.clear)
             }
-            ForEach(AssetKind.allCases) { kind in
+            ForEach(visibleKinds) { kind in
                 let rows = portfolio.items(for: kind)
                 let open = expandedKinds.contains(kind)
                 Section {
@@ -82,6 +84,10 @@ struct AssetListView: View {
         .sheet(isPresented: $showTargets) {
             TargetEditor()
         }
+    }
+
+    private var visibleKinds: [AssetKind] {
+        exposureOnly ? [.original, .leverage, .cash] : Array(AssetKind.allCases)
     }
 
     private var menuBar: some View {

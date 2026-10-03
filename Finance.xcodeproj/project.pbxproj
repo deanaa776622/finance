@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		66B7520819D5483B958D0856 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73726A8D522F4F929C007C02 /* Models.swift */; };
 		A1C4E7B25D0F4E19C3B8D204 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7D35F1908A24C62A91E3D75 /* HomeView.swift */; };
+		B8D2F03A6E1C4D59807A9B4C /* HomeHero.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E3C14B7F2D4E6A91B0C8D5 /* HomeHero.swift */; };
 		C2E6A94371B84D3E8F71A5C6 /* GlowBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = D48F02C6AE514B75B60C287A /* GlowBackground.swift */; };
 		C570C3D396394F26AC8DDE7D /* Editors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 285FDE10B2E64BF885533CE6 /* Editors.swift */; };
 		CF93E2B4331F4B008B545BE9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0ACEF765DE7D48D9943D7D84 /* Assets.xcassets */; };
@@ -31,6 +32,7 @@
 		8E8A1B2C4D5E4F6A8B9C0D1E /* ScrollEdgeFade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollEdgeFade.swift; sourceTree = "<group>"; };
 		473D2B4067D142F2A2C45A33 /* Portfolio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Portfolio.swift; sourceTree = "<group>"; };
 		73726A8D522F4F929C007C02 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		A9E3C14B7F2D4E6A91B0C8D5 /* HomeHero.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeHero.swift; sourceTree = "<group>"; };
 		B7D35F1908A24C62A91E3D75 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		C99AAE8E3DC34E89A9404102 /* SavingsMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsMath.swift; sourceTree = "<group>"; };
 		D48F02C6AE514B75B60C287A /* GlowBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlowBackground.swift; sourceTree = "<group>"; };
@@ -55,6 +57,7 @@
 			children = (
 				EF766442653C438293CC0C5D /* FinanceApp.swift */,
 				B7D35F1908A24C62A91E3D75 /* HomeView.swift */,
+				A9E3C14B7F2D4E6A91B0C8D5 /* HomeHero.swift */,
 				D48F02C6AE514B75B60C287A /* GlowBackground.swift */,
 				2D4C730906A644DC837867DB /* AssetListView.swift */,
 				8E8A1B2C4D5E4F6A8B9C0D1E /* ScrollEdgeFade.swift */,
@@ -153,6 +156,7 @@
 			files = (
 				E0571D47B35541BCBAEFC46B /* FinanceApp.swift in Sources */,
 				A1C4E7B25D0F4E19C3B8D204 /* HomeView.swift in Sources */,
+				B8D2F03A6E1C4D59807A9B4C /* HomeHero.swift in Sources */,
 				C2E6A94371B84D3E8F71A5C6 /* GlowBackground.swift in Sources */,
 				F449C90D5036484FB22DD932 /* AssetListView.swift in Sources */,
 				7E8A1B2C4D5E4F6A8B9C0D1E /* ScrollEdgeFade.swift in Sources */,
