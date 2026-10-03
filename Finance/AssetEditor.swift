@@ -97,6 +97,18 @@ struct AssetEditor: View {
                             .disabled(!canQuote)
                         }
                     }
+                    LabeledContent("股數") {
+                        TextField("", text: $sharesText)
+                            .keyboardType(.decimalPad)
+                            .focused($focus, equals: .shares)
+                            .disabled(!usesSharePrice)
+                    }
+                    LabeledContent("單價") {
+                        TextField("", text: $priceText)
+                            .keyboardType(.decimalPad)
+                            .focused($focus, equals: .price)
+                            .disabled(!usesSharePrice)
+                    }
                     LabeledContent("資產名稱") {
                         HStack {
                             TextField("", text: $name)
@@ -160,18 +172,6 @@ struct AssetEditor: View {
                     }
                 }
 
-                LabeledContent("股數") {
-                    TextField("", text: $sharesText)
-                        .keyboardType(.decimalPad)
-                        .focused($focus, equals: .shares)
-                        .disabled(!usesSharePrice)
-                }
-                LabeledContent("單價") {
-                    TextField("", text: $priceText)
-                        .keyboardType(.decimalPad)
-                        .focused($focus, equals: .price)
-                        .disabled(!usesSharePrice)
-                }
                 LabeledContent("總金額") {
                     TextField("", text: $amountText)
                         .keyboardType(.decimalPad)
