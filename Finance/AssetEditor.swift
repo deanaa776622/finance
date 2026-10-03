@@ -71,38 +71,42 @@ struct AssetEditor: View {
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     .disabled(kind.prefersSharePrice)
-                    HStack {
-                        TextField("股票代號", text: $symbol)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .focused($focus, equals: .symbol)
-                            .onChange(of: symbol) { old, new in
-                                if old.trimmingCharacters(in: .whitespacesAndNewlines)
-                                    != new.trimmingCharacters(in: .whitespacesAndNewlines) {
-                                    quoteState = .idle
+                    LabeledContent("股票代號") {
+                        HStack {
+                            TextField("", text: $symbol)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .focused($focus, equals: .symbol)
+                                .onChange(of: symbol) { old, new in
+                                    if old.trimmingCharacters(in: .whitespacesAndNewlines)
+                                        != new.trimmingCharacters(in: .whitespacesAndNewlines) {
+                                        quoteState = .idle
+                                    }
+                                }
+                                .disabled(!usesSharePrice)
+                            Button { Task { await lookup() } } label: {
+                                if quoteState == .quoting {
+                                    ProgressView()
+                                } else {
+                                    Text(quoteButtonTitle)
                                 }
                             }
-                            .disabled(!usesSharePrice)
-                        Button { Task { await lookup() } } label: {
-                            if quoteState == .quoting {
-                                ProgressView()
-                            } else {
-                                Text(quoteButtonTitle)
-                            }
+                            .buttonStyle(.bordered)
+                            .tint(.white)
+                            .accessibilityLabel(quoteButtonTitle)
+                            .disabled(!canQuote)
                         }
-                        .buttonStyle(.bordered)
-                        .tint(.white)
-                        .accessibilityLabel(quoteButtonTitle)
-                        .disabled(!canQuote)
                     }
-                    HStack {
-                        TextField("資產名稱", text: $name)
-                        Button("使用股票代號") {
-                            name = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
+                    LabeledContent("資產名稱") {
+                        HStack {
+                            TextField("", text: $name)
+                            Button("使用股票代號") {
+                                name = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(.white)
+                            .disabled(symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         }
-                        .buttonStyle(.bordered)
-                        .tint(.white)
-                        .disabled(symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                     LabeledContent("幣別") {
                         Menu {
