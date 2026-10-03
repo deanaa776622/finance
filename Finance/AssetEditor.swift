@@ -60,6 +60,7 @@ struct AssetEditor: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
+                    .listRowSeparator(.hidden)
                     .onChange(of: kind) { _, new in
                         if new.prefersSharePrice { usesSharePrice = true }
                         leverage = Self.clampedLeverage(kind: new, value: leverage)
@@ -71,6 +72,8 @@ struct AssetEditor: View {
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     .disabled(kind.prefersSharePrice)
+                    .listRowSeparator(.hidden, edges: .top)
+                    .listRowSeparator(.visible, edges: .bottom)
                     LabeledContent("股票代號") {
                         HStack {
                             TextField("", text: $symbol)
@@ -97,18 +100,38 @@ struct AssetEditor: View {
                             .disabled(!canQuote)
                         }
                     }
+                    .listRowSeparator(.hidden)
                     LabeledContent("股數") {
                         TextField("", text: $sharesText)
                             .keyboardType(.decimalPad)
                             .focused($focus, equals: .shares)
                             .disabled(!usesSharePrice)
                     }
+                    .listRowSeparator(.hidden)
                     LabeledContent("單價") {
                         TextField("", text: $priceText)
                             .keyboardType(.decimalPad)
                             .focused($focus, equals: .price)
                             .disabled(!usesSharePrice)
                     }
+                    .listRowSeparator(.hidden)
+                    LabeledContent("槓桿倍數") {
+                        Picker("槓桿倍數", selection: $leverage) {
+                            Text("1×").tag(1.0)
+                            Text("1.5×").tag(1.5)
+                            Text("2×").tag(2.0)
+                            Text("3×").tag(3.0)
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .disabled(kind != .leverage)
+                        .onChange(of: leverage) { old, new in
+                            if kind == .leverage, new == 1 {
+                                leverage = old == 1 ? 2 : old
+                            }
+                        }
+                    }
+                    .listRowSeparator(.hidden, edges: .top)
                     LabeledContent("資產名稱") {
                         HStack {
                             TextField("", text: $name)
@@ -143,6 +166,7 @@ struct AssetEditor: View {
                         }
                         .tint(.white)
                     }
+                    .listRowSeparator(.hidden)
                     LabeledContent("幣值") {
                         if currency == .twd {
                             Text("1")
@@ -151,22 +175,6 @@ struct AssetEditor: View {
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                                 .focused($focus, equals: .rate)
-                        }
-                    }
-                    LabeledContent("槓桿倍數") {
-                        Picker("槓桿倍數", selection: $leverage) {
-                            Text("1×").tag(1.0)
-                            Text("1.5×").tag(1.5)
-                            Text("2×").tag(2.0)
-                            Text("3×").tag(3.0)
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .disabled(kind != .leverage)
-                        .onChange(of: leverage) { old, new in
-                            if kind == .leverage, new == 1 {
-                                leverage = old == 1 ? 2 : old
-                            }
                         }
                     }
                 }
