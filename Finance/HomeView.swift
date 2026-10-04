@@ -18,6 +18,12 @@ struct HomeView: View {
     @State private var safeTop: CGFloat = 0
     @State private var safeBottom: CGFloat = 0
 
+    init() {
+        let exposure = AssetListMemory.showsExposure
+        _lens = State(initialValue: exposure ? 1 : 0)
+        _exposureList = State(initialValue: exposure)
+    }
+
     private var lensPosition: CGFloat { min(1, max(0, lens + lensDrag)) }
 
     var body: some View {
@@ -212,6 +218,7 @@ struct HomeView: View {
             withAnimation(animation) {
                 lens = to
                 exposureList = to > 0.5
+                AssetListMemory.showsExposure = to > 0.5
             } completion: {
                 guard token == dotToken, dragAxis == nil else { return }
                 withAnimation(.easeOut(duration: 0.25)) { showDots = false }
@@ -223,20 +230,12 @@ struct HomeView: View {
         let current = min(1, max(-1, panel + drag))
         panel = current
         drag = 0
-        let leavingAssets = to > -0.5 && current < -0.4
         let animation: Animation = reduceMotion
             ? .easeInOut(duration: 0.2)
             : .spring(response: 0.48, dampingFraction: 0.88)
         DispatchQueue.main.async {
             withAnimation(animation) {
                 panel = to
-            } completion: {
-                guard leavingAssets, panel > -0.5 else { return }
-                lens = 0
-                lensDrag = 0
-                exposureList = false
-                showDots = false
-                dotToken += 1
             }
         }
     }

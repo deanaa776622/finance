@@ -14,10 +14,19 @@ struct AssetListView: View {
     @State private var showTargets = false
     @State private var isRefreshing = false
     @State private var refreshMessage: String?
-    @State private var expandedKinds: Set<AssetKind> = []
-    @State private var assetsOpen = true
+    @State private var expandedKinds: Set<AssetKind>
+    @State private var assetsOpen: Bool
     @ScaledMetric(relativeTo: .title3) private var collapsedTitleSize: CGFloat = 20
     @ScaledMetric(relativeTo: .subheadline) private var expandedTitleSize: CGFloat = 15
+
+    init(showsChrome: Bool = true, topInset: CGFloat = restingTopInset, exposureOnly: Bool = false) {
+        self.showsChrome = showsChrome
+        self.topInset = topInset
+        self.exposureOnly = exposureOnly
+        let saved = AssetListMemory.groups(exposure: exposureOnly)
+        _expandedKinds = State(initialValue: saved.kinds)
+        _assetsOpen = State(initialValue: saved.assetsOpen)
+    }
 
     var body: some View {
         List {
@@ -59,6 +68,13 @@ struct AssetListView: View {
         .sheet(isPresented: $showTargets) {
             TargetEditor()
         }
+        .onChange(of: exposureOnly) { wasExposure, isExposure in
+            AssetListMemory.save(exposure: wasExposure, assetsOpen: assetsOpen, kinds: expandedKinds)
+            let next = AssetListMemory.groups(exposure: isExposure)
+            assetsOpen = next.assetsOpen
+            expandedKinds = next.kinds
+        }
+        .onDisappear(perform: persistGroups)
     }
 
     private var visibleKinds: [AssetKind] { [.original, .leverage, .cash] }
@@ -81,6 +97,7 @@ struct AssetListView: View {
     private var assetHeader: some View {
         Button {
             withAnimation { assetsOpen.toggle() }
+            persistGroups()
         } label: {
             HStack {
                 Image(systemName: "chevron.right")
@@ -219,6 +236,10 @@ struct AssetListView: View {
         .modifier(CapsuleGlass())
     }
 
+    private func persistGroups() {
+        AssetListMemory.save(exposure: exposureOnly, assetsOpen: assetsOpen, kinds: expandedKinds)
+    }
+
     private func toggle(_ kind: AssetKind) {
         withAnimation {
             if expandedKinds.contains(kind) {
@@ -227,11 +248,14 @@ struct AssetListView: View {
                 expandedKinds.insert(kind)
             }
         }
+        persistGroups()
     }
 
     private func saveItem(_ item: AssetItem) {
         portfolio.upsert(item)
         expandedKinds.insert(item.kind)
+        if item.kind != .debt { assetsOpen = true }
+        persistGroups()
     }
 
     private func refreshQuotes() async {
@@ -300,6 +324,7 @@ private struct AssetMenuBar<Bar: View>: ViewModifier {
 private struct AnimatingFont: ViewModifier, Animatable {
     var size: CGFloat
     var weight: Font.Weight
+
     var animatableData: CGFloat {
         get { size }
         set { size = newValue }
