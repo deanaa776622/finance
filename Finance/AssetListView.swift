@@ -17,6 +17,8 @@ struct AssetListView: View {
     @State private var refreshMessage: String?
     @State private var expandedKinds: Set<AssetKind>
     @State private var assetsOpen: Bool
+    @State private var liquidOpen: Bool
+    @State private var stocksOpen: Bool
     @ScaledMetric(relativeTo: .title3) private var collapsedTitleSize: CGFloat = 20
     @ScaledMetric(relativeTo: .body) private var nestedTitleSize: CGFloat = 17
     @ScaledMetric(relativeTo: .subheadline) private var expandedTitleSize: CGFloat = 15
@@ -28,6 +30,8 @@ struct AssetListView: View {
         let saved = AssetListMemory.groups(exposure: exposureOnly)
         _expandedKinds = State(initialValue: saved.kinds)
         _assetsOpen = State(initialValue: saved.assetsOpen)
+        _liquidOpen = State(initialValue: saved.liquidOpen)
+        _stocksOpen = State(initialValue: saved.stocksOpen)
     }
 
     var body: some View {
@@ -43,12 +47,14 @@ struct AssetListView: View {
             } else {
                 Section {
                     if assetsOpen {
-                        ForEach(assetKinds) { kind in
-                            kindBlock(kind, nested: true)
-                        }
+                        liquidGroup
+                        kindBlock(.realEstate, depth: 1)
                     }
                 } header: {
-                    assetHeader
+                    groupHeader("資產", open: assetsOpen, amount: assetTotal, depth: 0) {
+                        withAnimation { assetsOpen.toggle() }
+                        persistGroups()
+                    }
                 }
                 kindSection(.debt)
             }
@@ -71,9 +77,17 @@ struct AssetListView: View {
             TargetEditor()
         }
         .onChange(of: exposureOnly) { wasExposure, isExposure in
-            AssetListMemory.save(exposure: wasExposure, assetsOpen: assetsOpen, kinds: expandedKinds)
+            AssetListMemory.save(
+                exposure: wasExposure,
+                assetsOpen: assetsOpen,
+                liquidOpen: liquidOpen,
+                stocksOpen: stocksOpen,
+                kinds: expandedKinds
+            )
             let next = AssetListMemory.groups(exposure: isExposure)
             assetsOpen = next.assetsOpen
+            liquidOpen = next.liquidOpen
+            stocksOpen = next.stocksOpen
             expandedKinds = next.kinds
         }
         .onDisappear(perform: persistGroups)
@@ -87,6 +101,14 @@ struct AssetListView: View {
         assetKinds.reduce(0) { $0 + portfolio.amount(for: $1) }
     }
 
+    private var stockTotal: Decimal {
+        portfolio.amount(for: .original) + portfolio.amount(for: .leverage)
+    }
+
+    private var liquidTotal: Decimal {
+        stockTotal + portfolio.amount(for: .cash)
+    }
+
     private func headerColor(open: Bool) -> Color {
         open ? .secondary : .white
     }
@@ -96,90 +118,98 @@ struct AssetListView: View {
         return ScalingFont(base: base, scale: open ? expandedTitleSize / base : 1, weight: weight, anchor: anchor)
     }
 
-    private var assetHeader: some View {
-        Button {
-            withAnimation { assetsOpen.toggle() }
+    @ViewBuilder
+    private var liquidGroup: some View {
+        groupHeader("流動資產", open: liquidOpen, amount: liquidTotal, depth: 1) {
+            withAnimation { liquidOpen.toggle() }
             persistGroups()
-        } label: {
-            HStack {
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .rotationEffect(.degrees(assetsOpen ? 90 : 0))
-                Text("資產")
-                    .modifier(headerLabelFont(open: assetsOpen, nested: false, weight: .semibold, anchor: .leading))
-                    .foregroundStyle(headerColor(open: assetsOpen))
-                Spacer()
-                Text(MoneyFormat.string(assetTotal, hidden: hideAmounts))
-                    .modifier(headerLabelFont(open: assetsOpen, nested: false, weight: .regular, anchor: .trailing))
-                    .monospacedDigit()
-                    .foregroundStyle(headerColor(open: assetsOpen))
-            }
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("資產")
-        .accessibilityHint(assetsOpen ? "收合" : "展開")
-        .textCase(nil)
-    }
-
-    private func kindSection(_ kind: AssetKind) -> some View {
-        Section {
-            kindItems(kind, nested: false)
-        } header: {
-            kindHeader(kind, nested: false)
+        if liquidOpen {
+            stockGroup
+            kindBlock(.cash, depth: 2)
         }
     }
 
     @ViewBuilder
-    private func kindBlock(_ kind: AssetKind, nested: Bool) -> some View {
-        kindHeader(kind, nested: nested)
-        kindItems(kind, nested: nested)
+    private var stockGroup: some View {
+        groupHeader("股票", open: stocksOpen, amount: stockTotal, depth: 2) {
+            withAnimation { stocksOpen.toggle() }
+            persistGroups()
+        }
+        if stocksOpen {
+            kindBlock(.original, depth: 3)
+            kindBlock(.leverage, depth: 3)
+        }
     }
 
-    private func kindHeader(_ kind: AssetKind, nested: Bool) -> some View {
+    private func kindSection(_ kind: AssetKind) -> some View {
+        Section {
+            kindItems(kind, depth: 0)
+        } header: {
+            kindHeader(kind, depth: 0)
+        }
+    }
+
+    @ViewBuilder
+    private func kindBlock(_ kind: AssetKind, depth: Int) -> some View {
+        kindHeader(kind, depth: depth)
+        kindItems(kind, depth: depth)
+    }
+
+    private func kindHeader(_ kind: AssetKind, depth: Int) -> some View {
         let open = expandedKinds.contains(kind)
-        return Button {
+        return groupHeader(kind.title, open: open, amount: portfolio.amount(for: kind), depth: depth) {
             toggle(kind)
-        } label: {
+        }
+    }
+
+    private func groupHeader(
+        _ title: String,
+        open: Bool,
+        amount: Decimal,
+        depth: Int,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
             HStack {
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .rotationEffect(.degrees(open ? 90 : 0))
-                Text(kind.title)
-                    .modifier(headerLabelFont(open: open, nested: nested, weight: .semibold, anchor: .leading))
+                Text(title)
+                    .modifier(headerLabelFont(open: open, nested: depth > 0, weight: .semibold, anchor: .leading))
                     .foregroundStyle(headerColor(open: open))
                 Spacer()
-                Text(MoneyFormat.string(portfolio.amount(for: kind), hidden: hideAmounts))
-                    .modifier(headerLabelFont(open: open, nested: nested, weight: .regular, anchor: .trailing))
+                Text(MoneyFormat.string(amount, hidden: hideAmounts))
+                    .modifier(headerLabelFont(open: open, nested: depth > 0, weight: .regular, anchor: .trailing))
                     .monospacedDigit()
                     .foregroundStyle(headerColor(open: open))
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(.leading, nested ? 12 : 0)
-        .accessibilityLabel(kind.title)
+        .padding(.leading, CGFloat(depth) * 12)
+        .accessibilityLabel(title)
         .accessibilityHint(open ? "收合" : "展開")
         .textCase(nil)
     }
 
     @ViewBuilder
-    private func kindItems(_ kind: AssetKind, nested: Bool) -> some View {
+    private func kindItems(_ kind: AssetKind, depth: Int) -> some View {
         let rows = portfolio.items(for: kind)
         if expandedKinds.contains(kind) {
+            let inset: CGFloat = depth == 0 ? 0 : CGFloat(depth) * 12 + 16
             if rows.isEmpty {
                 Text("尚無紀錄")
                     .foregroundStyle(.secondary)
-                    .padding(.leading, nested ? 12 : 0)
+                    .padding(.leading, inset)
             } else {
                 ForEach(rows) { item in
                     Button { editing = item } label: {
                         AssetRow(item: item, hideAmounts: hideAmounts)
                     }
                     .foregroundStyle(.primary)
-                    .padding(.leading, nested ? 28 : 0)
+                    .padding(.leading, inset)
                 }
                 .onDelete { portfolio.delete(rows, at: $0) }
             }
@@ -236,7 +266,13 @@ struct AssetListView: View {
     }
 
     private func persistGroups() {
-        AssetListMemory.save(exposure: exposureOnly, assetsOpen: assetsOpen, kinds: expandedKinds)
+        AssetListMemory.save(
+            exposure: exposureOnly,
+            assetsOpen: assetsOpen,
+            liquidOpen: liquidOpen,
+            stocksOpen: stocksOpen,
+            kinds: expandedKinds
+        )
     }
 
     private func toggle(_ kind: AssetKind) {
@@ -253,7 +289,19 @@ struct AssetListView: View {
     private func saveItem(_ item: AssetItem) {
         portfolio.upsert(item)
         expandedKinds.insert(item.kind)
-        if item.kind != .debt { assetsOpen = true }
+        switch item.kind {
+        case .original, .leverage:
+            assetsOpen = true
+            liquidOpen = true
+            stocksOpen = true
+        case .cash:
+            assetsOpen = true
+            liquidOpen = true
+        case .realEstate:
+            assetsOpen = true
+        case .debt:
+            break
+        }
         persistGroups()
     }
 
