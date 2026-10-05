@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct AssetListView: View {
     static let restingTopInset: CGFloat = 44
@@ -17,6 +18,7 @@ struct AssetListView: View {
     @State private var expandedKinds: Set<AssetKind>
     @State private var assetsOpen: Bool
     @ScaledMetric(relativeTo: .title3) private var collapsedTitleSize: CGFloat = 20
+    @ScaledMetric(relativeTo: .body) private var nestedTitleSize: CGFloat = 17
     @ScaledMetric(relativeTo: .subheadline) private var expandedTitleSize: CGFloat = 15
 
     init(showsChrome: Bool = true, topInset: CGFloat = restingTopInset, exposureOnly: Bool = false) {
@@ -85,13 +87,9 @@ struct AssetListView: View {
         assetKinds.reduce(0) { $0 + portfolio.amount(for: $1) }
     }
 
-    private func titlePointSize(open: Bool) -> CGFloat {
-        open ? expandedTitleSize : collapsedTitleSize
-    }
-
-    private func headerAmountFont(open: Bool, nested: Bool = false) -> Font {
-        if nested, !open { return .body }
-        return open ? .subheadline : .title3
+    private func headerLabelFont(open: Bool, nested: Bool, weight: Font.Weight, anchor: UnitPoint) -> ScalingFont {
+        let base = nested ? nestedTitleSize : collapsedTitleSize
+        return ScalingFont(base: base, scale: open ? expandedTitleSize / base : 1, weight: weight, anchor: anchor)
     }
 
     private var assetHeader: some View {
@@ -105,10 +103,10 @@ struct AssetListView: View {
                     .foregroundStyle(.secondary)
                     .rotationEffect(.degrees(assetsOpen ? 90 : 0))
                 Text("資產")
-                    .modifier(AnimatingFont(size: titlePointSize(open: assetsOpen), weight: .semibold))
+                    .modifier(headerLabelFont(open: assetsOpen, nested: false, weight: .semibold, anchor: .leading))
                 Spacer()
                 Text(MoneyFormat.string(assetTotal, hidden: hideAmounts))
-                    .font(headerAmountFont(open: assetsOpen))
+                    .modifier(headerLabelFont(open: assetsOpen, nested: false, weight: .regular, anchor: .trailing))
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
@@ -144,16 +142,11 @@ struct AssetListView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .rotationEffect(.degrees(open ? 90 : 0))
-                if nested {
-                    Text(kind.title)
-                        .font(open ? .subheadline.weight(.semibold) : .body)
-                } else {
-                    Text(kind.title)
-                        .modifier(AnimatingFont(size: titlePointSize(open: open), weight: .semibold))
-                }
+                Text(kind.title)
+                    .modifier(headerLabelFont(open: open, nested: nested, weight: .semibold, anchor: .leading))
                 Spacer()
                 Text(MoneyFormat.string(portfolio.amount(for: kind), hidden: hideAmounts))
-                    .font(headerAmountFont(open: open, nested: nested))
+                    .modifier(headerLabelFont(open: open, nested: nested, weight: .regular, anchor: .trailing))
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
@@ -321,17 +314,23 @@ private struct AssetMenuBar<Bar: View>: ViewModifier {
     }
 }
 
-private struct AnimatingFont: ViewModifier, Animatable {
-    var size: CGFloat
+/// Scales a fixed line box. Animating `Font` re-anchors the baseline when the spring ends.
+private struct ScalingFont: ViewModifier {
+    var base: CGFloat
+    var scale: CGFloat
     var weight: Font.Weight
-
-    var animatableData: CGFloat {
-        get { size }
-        set { size = newValue }
-    }
+    var anchor: UnitPoint
 
     func body(content: Content) -> some View {
-        content.font(.system(size: size, weight: weight))
+        content
+            .font(.system(size: base, weight: weight))
+            .fixedSize(horizontal: false, vertical: true)
+            .scaleEffect(scale, anchor: anchor)
+            .frame(height: lineHeight * scale, alignment: .center)
+    }
+
+    private var lineHeight: CGFloat {
+        UIFont.systemFont(ofSize: base, weight: weight == .semibold ? .semibold : .regular).lineHeight
     }
 }
 
