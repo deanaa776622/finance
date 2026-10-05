@@ -87,6 +87,10 @@ struct AssetListView: View {
         assetKinds.reduce(0) { $0 + portfolio.amount(for: $1) }
     }
 
+    private func headerColor(open: Bool) -> Color {
+        open ? .secondary : .white
+    }
+
     private func headerLabelFont(open: Bool, nested: Bool, weight: Font.Weight, anchor: UnitPoint) -> ScalingFont {
         let base = nested ? nestedTitleSize : collapsedTitleSize
         return ScalingFont(base: base, scale: open ? expandedTitleSize / base : 1, weight: weight, anchor: anchor)
@@ -104,11 +108,12 @@ struct AssetListView: View {
                     .rotationEffect(.degrees(assetsOpen ? 90 : 0))
                 Text("資產")
                     .modifier(headerLabelFont(open: assetsOpen, nested: false, weight: .semibold, anchor: .leading))
+                    .foregroundStyle(headerColor(open: assetsOpen))
                 Spacer()
                 Text(MoneyFormat.string(assetTotal, hidden: hideAmounts))
                     .modifier(headerLabelFont(open: assetsOpen, nested: false, weight: .regular, anchor: .trailing))
                     .monospacedDigit()
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(headerColor(open: assetsOpen))
             }
             .contentShape(Rectangle())
         }
@@ -144,11 +149,12 @@ struct AssetListView: View {
                     .rotationEffect(.degrees(open ? 90 : 0))
                 Text(kind.title)
                     .modifier(headerLabelFont(open: open, nested: nested, weight: .semibold, anchor: .leading))
+                    .foregroundStyle(headerColor(open: open))
                 Spacer()
                 Text(MoneyFormat.string(portfolio.amount(for: kind), hidden: hideAmounts))
                     .modifier(headerLabelFont(open: open, nested: nested, weight: .regular, anchor: .trailing))
                     .monospacedDigit()
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(headerColor(open: open))
             }
             .contentShape(Rectangle())
         }
