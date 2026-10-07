@@ -5,10 +5,12 @@ struct AssetListView: View {
     static let restingTopInset: CGFloat = 44
     var showsChrome = true
     var topInset = restingTopInset
-    /// Exposure lens keeps 原／槓／現. Net worth keeps every kind.
+    /// Exposure lens keeps 原／槓／現. Net worth groups by `grouping`.
     var exposureOnly = false
     @Environment(Portfolio.self) private var portfolio
     @AppStorage("hideAmounts") private var hideAmounts = false
+    @AppStorage("assetNetGrouping") private var grouping: AssetGrouping = .overview
+    @AppStorage("assetNetOpenGroups") private var openGroupsRaw = ""
     @State private var editing: AssetItem?
     @State private var showAdd = false
     @State private var addKind: AssetKind = .original
@@ -16,22 +18,14 @@ struct AssetListView: View {
     @State private var isRefreshing = false
     @State private var refreshMessage: String?
     @State private var expandedKinds: Set<AssetKind>
-    @State private var assetsOpen: Bool
-    @State private var liquidOpen: Bool
-    @State private var stocksOpen: Bool
     @ScaledMetric(relativeTo: .title3) private var collapsedTitleSize: CGFloat = 20
-    @ScaledMetric(relativeTo: .body) private var nestedTitleSize: CGFloat = 17
     @ScaledMetric(relativeTo: .subheadline) private var expandedTitleSize: CGFloat = 15
 
     init(showsChrome: Bool = true, topInset: CGFloat = restingTopInset, exposureOnly: Bool = false) {
         self.showsChrome = showsChrome
         self.topInset = topInset
         self.exposureOnly = exposureOnly
-        let saved = AssetListMemory.groups(exposure: exposureOnly)
-        _expandedKinds = State(initialValue: saved.kinds)
-        _assetsOpen = State(initialValue: saved.assetsOpen)
-        _liquidOpen = State(initialValue: saved.liquidOpen)
-        _stocksOpen = State(initialValue: saved.stocksOpen)
+        _expandedKinds = State(initialValue: exposureOnly ? AssetListMemory.exposureKinds : [])
     }
 
     var body: some View {
@@ -45,18 +39,7 @@ struct AssetListView: View {
             if exposureOnly {
                 ForEach(visibleKinds) { kindSection($0) }
             } else {
-                Section {
-                    if assetsOpen {
-                        liquidGroup
-                        kindBlock(.realEstate, depth: 1)
-                    }
-                } header: {
-                    groupHeader("資產", open: assetsOpen, amount: assetTotal, depth: 0) {
-                        withAnimation { assetsOpen.toggle() }
-                        persistGroups()
-                    }
-                }
-                kindSection(.debt)
+                ForEach(grouping.buckets) { bucketSection($0) }
             }
         }
         .contentMargins(.top, topInset, for: .scrollContent)
@@ -77,88 +60,61 @@ struct AssetListView: View {
             TargetEditor()
         }
         .onChange(of: exposureOnly) { wasExposure, isExposure in
-            AssetListMemory.save(
-                exposure: wasExposure,
-                assetsOpen: assetsOpen,
-                liquidOpen: liquidOpen,
-                stocksOpen: stocksOpen,
-                kinds: expandedKinds
-            )
-            let next = AssetListMemory.groups(exposure: isExposure)
-            assetsOpen = next.assetsOpen
-            liquidOpen = next.liquidOpen
-            stocksOpen = next.stocksOpen
-            expandedKinds = next.kinds
+            if wasExposure { AssetListMemory.exposureKinds = expandedKinds }
+            if isExposure { expandedKinds = AssetListMemory.exposureKinds }
         }
         .onDisappear(perform: persistGroups)
     }
 
     private var visibleKinds: [AssetKind] { [.original, .leverage, .cash] }
 
-    private var assetKinds: [AssetKind] { [.original, .leverage, .cash, .realEstate] }
-
-    private var assetTotal: Decimal {
-        assetKinds.reduce(0) { $0 + portfolio.amount(for: $1) }
-    }
-
-    private var stockTotal: Decimal {
-        portfolio.amount(for: .original) + portfolio.amount(for: .leverage)
-    }
-
-    private var liquidTotal: Decimal {
-        stockTotal + portfolio.amount(for: .cash)
+    private var openGroups: Set<String> {
+        Set(openGroupsRaw.split(separator: ",").map(String.init))
     }
 
     private func headerColor(open: Bool) -> Color {
         open ? .secondary : .white
     }
 
-    private func headerLabelFont(open: Bool, nested: Bool, weight: Font.Weight, anchor: UnitPoint) -> ScalingFont {
-        let base = nested ? nestedTitleSize : collapsedTitleSize
-        return ScalingFont(base: base, scale: open ? expandedTitleSize / base : 1, weight: weight, anchor: anchor)
+    private func headerLabelFont(open: Bool, weight: Font.Weight, anchor: UnitPoint) -> ScalingFont {
+        ScalingFont(
+            base: collapsedTitleSize,
+            scale: open ? expandedTitleSize / collapsedTitleSize : 1,
+            weight: weight,
+            anchor: anchor
+        )
     }
 
-    @ViewBuilder
-    private var liquidGroup: some View {
-        groupHeader("流動資產", open: liquidOpen, amount: liquidTotal, depth: 1) {
-            withAnimation { liquidOpen.toggle() }
-            persistGroups()
-        }
-        if liquidOpen {
-            stockGroup
-            kindBlock(.cash, depth: 2)
+    private func bucketSection(_ bucket: AssetBucket) -> some View {
+        let open = openGroups.contains(grouping.storageID(for: bucket))
+        return Section {
+            if open { rowsOrEmpty(items(in: bucket)) }
+        } header: {
+            groupHeader(bucket.title, open: open, amount: amount(of: bucket)) {
+                toggle(bucket)
+            }
         }
     }
 
-    @ViewBuilder
-    private var stockGroup: some View {
-        groupHeader("股票", open: stocksOpen, amount: stockTotal, depth: 2) {
-            withAnimation { stocksOpen.toggle() }
-            persistGroups()
-        }
-        if stocksOpen {
-            kindBlock(.original, depth: 3)
-            kindBlock(.leverage, depth: 3)
-        }
+    private func items(in bucket: AssetBucket) -> [AssetItem] {
+        bucket.kinds.flatMap { portfolio.items(for: $0) }
+    }
+
+    private func amount(of bucket: AssetBucket) -> Decimal {
+        bucket.kinds.reduce(0) { $0 + portfolio.amount(for: $1) }
     }
 
     private func kindSection(_ kind: AssetKind) -> some View {
         Section {
-            kindItems(kind, depth: 0)
+            kindItems(kind)
         } header: {
-            kindHeader(kind, depth: 0)
+            kindHeader(kind)
         }
     }
 
-    @ViewBuilder
-    private func kindBlock(_ kind: AssetKind, depth: Int) -> some View {
-        kindHeader(kind, depth: depth)
-        kindItems(kind, depth: depth)
-    }
-
-    private func kindHeader(_ kind: AssetKind, depth: Int) -> some View {
+    private func kindHeader(_ kind: AssetKind) -> some View {
         let open = expandedKinds.contains(kind)
-        return groupHeader(kind.title, open: open, amount: portfolio.amount(for: kind), depth: depth) {
+        return groupHeader(kind.title, open: open, amount: portfolio.amount(for: kind)) {
             toggle(kind)
         }
     }
@@ -167,7 +123,6 @@ struct AssetListView: View {
         _ title: String,
         open: Bool,
         amount: Decimal,
-        depth: Int,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -177,51 +132,78 @@ struct AssetListView: View {
                     .foregroundStyle(.secondary)
                     .rotationEffect(.degrees(open ? 90 : 0))
                 Text(title)
-                    .modifier(headerLabelFont(open: open, nested: depth > 0, weight: .semibold, anchor: .leading))
+                    .modifier(headerLabelFont(open: open, weight: .semibold, anchor: .leading))
                     .foregroundStyle(headerColor(open: open))
                 Spacer()
                 Text(MoneyFormat.string(amount, hidden: hideAmounts))
-                    .modifier(headerLabelFont(open: open, nested: depth > 0, weight: .regular, anchor: .trailing))
+                    .modifier(headerLabelFont(open: open, weight: .regular, anchor: .trailing))
                     .monospacedDigit()
                     .foregroundStyle(headerColor(open: open))
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(.leading, CGFloat(depth) * 12)
         .accessibilityLabel(title)
         .accessibilityHint(open ? "收合" : "展開")
         .textCase(nil)
     }
 
     @ViewBuilder
-    private func kindItems(_ kind: AssetKind, depth: Int) -> some View {
-        let rows = portfolio.items(for: kind)
+    private func kindItems(_ kind: AssetKind) -> some View {
         if expandedKinds.contains(kind) {
-            let inset: CGFloat = depth == 0 ? 0 : CGFloat(depth) * 12 + 16
-            if rows.isEmpty {
-                Text("尚無紀錄")
-                    .foregroundStyle(.secondary)
-                    .padding(.leading, inset)
-            } else {
-                ForEach(rows) { item in
-                    Button { editing = item } label: {
-                        AssetRow(item: item, hideAmounts: hideAmounts)
-                    }
-                    .foregroundStyle(.primary)
-                    .padding(.leading, inset)
-                }
-                .onDelete { portfolio.delete(rows, at: $0) }
-            }
+            rowsOrEmpty(portfolio.items(for: kind))
         }
+    }
+
+    @ViewBuilder
+    private func rowsOrEmpty(_ rows: [AssetItem]) -> some View {
+        if rows.isEmpty {
+            Text("尚無紀錄")
+                .foregroundStyle(.secondary)
+        } else {
+            assetRows(rows)
+        }
+    }
+
+    private func assetRows(_ rows: [AssetItem]) -> some View {
+        ForEach(rows) { item in
+            Button { editing = item } label: {
+                AssetRow(item: item, hideAmounts: hideAmounts)
+            }
+            .foregroundStyle(.primary)
+        }
+        .onDelete { portfolio.delete(rows, at: $0) }
     }
 
     private var menuBar: some View {
         HStack {
             hideButton
+            if !exposureOnly { groupingMenu }
             Spacer(minLength: 16)
             trailingCluster
         }
+    }
+
+    private var groupingMenu: some View {
+        Menu {
+            Picker("分組", selection: $grouping) {
+                ForEach(AssetGrouping.allCases) { option in
+                    Text(option.title).tag(option)
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(grouping.title)
+                    .lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down")
+                    .imageScale(.small)
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 44)
+        }
+        .buttonStyle(.plain)
+        .modifier(CapsuleGlass())
+        .accessibilityLabel("分組，\(grouping.title)")
     }
 
     private var hideButton: some View {
@@ -266,13 +248,8 @@ struct AssetListView: View {
     }
 
     private func persistGroups() {
-        AssetListMemory.save(
-            exposure: exposureOnly,
-            assetsOpen: assetsOpen,
-            liquidOpen: liquidOpen,
-            stocksOpen: stocksOpen,
-            kinds: expandedKinds
-        )
+        guard exposureOnly else { return }
+        AssetListMemory.exposureKinds = expandedKinds
     }
 
     private func toggle(_ kind: AssetKind) {
@@ -286,23 +263,24 @@ struct AssetListView: View {
         persistGroups()
     }
 
+    private func toggle(_ bucket: AssetBucket) {
+        let id = grouping.storageID(for: bucket)
+        var next = openGroups
+        if next.contains(id) { next.remove(id) } else { next.insert(id) }
+        withAnimation { openGroupsRaw = next.sorted().joined(separator: ",") }
+    }
+
     private func saveItem(_ item: AssetItem) {
         portfolio.upsert(item)
-        expandedKinds.insert(item.kind)
-        switch item.kind {
-        case .original, .leverage:
-            assetsOpen = true
-            liquidOpen = true
-            stocksOpen = true
-        case .cash:
-            assetsOpen = true
-            liquidOpen = true
-        case .realEstate:
-            assetsOpen = true
-        case .debt:
-            break
+        if exposureOnly {
+            expandedKinds.insert(item.kind)
+            persistGroups()
+            return
         }
-        persistGroups()
+        guard let bucket = grouping.buckets.first(where: { $0.kinds.contains(item.kind) }) else { return }
+        var next = openGroups
+        next.insert(grouping.storageID(for: bucket))
+        openGroupsRaw = next.sorted().joined(separator: ",")
     }
 
     private func refreshQuotes() async {

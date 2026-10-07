@@ -22,6 +22,7 @@
 		6E8A1B2C4D5E4F6A8B9C0D1E /* AssetEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8A1B2C4D5E4F6A8B9C0D1E /* AssetEditor.swift */; };
 		7E8A1B2C4D5E4F6A8B9C0D1E /* ScrollEdgeFade.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E8A1B2C4D5E4F6A8B9C0D1E /* ScrollEdgeFade.swift */; };
 		A7C3E91B4D2F48E6B1A05C73 /* AssetListMemory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8D4F02C5E3A49F7C2B16D84 /* AssetListMemory.swift */; };
+		D4B02F8C5A3E49B1C7F26D95 /* AssetGrouping.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A91E7B4F2D48A0B6E15C84 /* AssetGrouping.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 		5E8A1B2C4D5E4F6A8B9C0D1E /* AssetEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetEditor.swift; sourceTree = "<group>"; };
 		8E8A1B2C4D5E4F6A8B9C0D1E /* ScrollEdgeFade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollEdgeFade.swift; sourceTree = "<group>"; };
 		B8D4F02C5E3A49F7C2B16D84 /* AssetListMemory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetListMemory.swift; sourceTree = "<group>"; };
+		C3A91E7B4F2D48A0B6E15C84 /* AssetGrouping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetGrouping.swift; sourceTree = "<group>"; };
 		473D2B4067D142F2A2C45A33 /* Portfolio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Portfolio.swift; sourceTree = "<group>"; };
 		73726A8D522F4F929C007C02 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		A9E3C14B7F2D4E6A91B0C8D5 /* HomeHero.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeHero.swift; sourceTree = "<group>"; };
@@ -62,6 +64,7 @@
 				A9E3C14B7F2D4E6A91B0C8D5 /* HomeHero.swift */,
 				D48F02C6AE514B75B60C287A /* GlowBackground.swift */,
 				2D4C730906A644DC837867DB /* AssetListView.swift */,
+				C3A91E7B4F2D48A0B6E15C84 /* AssetGrouping.swift */,
 				B8D4F02C5E3A49F7C2B16D84 /* AssetListMemory.swift */,
 				8E8A1B2C4D5E4F6A8B9C0D1E /* ScrollEdgeFade.swift */,
 				5E8A1B2C4D5E4F6A8B9C0D1E /* AssetEditor.swift */,
@@ -162,6 +165,7 @@
 				B8D2F03A6E1C4D59807A9B4C /* HomeHero.swift in Sources */,
 				C2E6A94371B84D3E8F71A5C6 /* GlowBackground.swift in Sources */,
 				F449C90D5036484FB22DD932 /* AssetListView.swift in Sources */,
+				D4B02F8C5A3E49B1C7F26D95 /* AssetGrouping.swift in Sources */,
 				A7C3E91B4D2F48E6B1A05C73 /* AssetListMemory.swift in Sources */,
 				7E8A1B2C4D5E4F6A8B9C0D1E /* ScrollEdgeFade.swift in Sources */,
 				6E8A1B2C4D5E4F6A8B9C0D1E /* AssetEditor.swift in Sources */,
