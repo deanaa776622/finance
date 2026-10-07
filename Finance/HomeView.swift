@@ -1,5 +1,15 @@
 import SwiftUI
 
+/// Finger position once a drag passes the slack. Held on a class so the arming sample cannot be published late.
+private final class DragSession {
+    var anchor: CGPoint?
+    var axis: Axis?
+    /// Where the finger sat in the card, 0 = top, 1 = bottom. That point tracks the finger.
+    var grabFraction: CGFloat = 0.5
+    var decided = false
+    var ignored = false
+}
+
 struct HomeView: View {
     @Environment(Portfolio.self) private var portfolio
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -13,7 +23,7 @@ struct HomeView: View {
     @State private var showDots = false
     @State private var exposureList = false
     @State private var heroFrame: CGRect = .zero
-    @State private var dragAxis: Axis?
+    @State private var dragSession = DragSession()
     @State private var dotToken = 0
     @State private var safeTop: CGFloat = 0
     @State private var safeBottom: CGFloat = 0
@@ -29,7 +39,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             GeometryReader { geo in
-                let card: CGFloat = 168
+                let card = Self.dockedCard
                 let range = max(geo.size.height - card, 1)
                 let position = min(1, max(-1, panel + drag))
                 let reveal = abs(position)
@@ -43,24 +53,26 @@ struct HomeView: View {
                     presentValue: portfolio.allocableTotal
                 ).progress
 
-                VStack(spacing: position < 0 ? 0 : 12 * reveal) {
-                    if position < 0 {
+                let assetHeight = position < 0 ? max(0, range * -position - bottomLift - assetTop) : 0
+                let savingsHeight = position > 0 ? max(0, range * position - topLift) : 0
+
+                VStack(spacing: 0) {
+                    shellSlot(height: assetHeight) {
                         AssetListView(
                             showsChrome: position < -0.5,
                             topInset: AssetListView.restingTopInset * drop,
                             exposureOnly: exposureList
                         )
-                            .ignoresSafeArea(edges: .bottom)
-                            .frame(height: max(0, range * -position - bottomLift - assetTop))
-                            .mask {
-                                VStack(spacing: 0) {
-                                    ScrollFade.top
-                                    Color.black
-                                }
+                        .ignoresSafeArea(edges: .bottom)
+                        .mask {
+                            VStack(spacing: 0) {
+                                ScrollFade.top
+                                Color.black
                             }
-                            .opacity(-position)
-                            .scrollDisabled(panel > -0.95)
-                            .allowsHitTesting(panel < -0.85)
+                        }
+                        .opacity(position < 0 ? -position : 0)
+                        .scrollDisabled(panel > -0.95)
+                        .allowsHitTesting(position < 0 && panel < -0.85)
                     }
 
                     HomeHero(
@@ -101,7 +113,7 @@ struct HomeView: View {
                         .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
                         .padding(.horizontal, 16 * reveal)
                         .shadow(color: .black.opacity(0.35 * reveal), radius: 20 * reveal, y: 8 * reveal)
-                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("home")) } action: { heroFrame = $0 }
+                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { heroFrame = $0 }
                         .onTapGesture { if panel != 0 { snap(0) } }
                         .accessibilityAddTraits(.isButton)
                         .accessibilityHint(hint(panel))
@@ -112,19 +124,18 @@ struct HomeView: View {
                         .accessibilityAction(named: "總曝險") { snapLens(1) }
                         .accessibilityLabel(heroLabel(panel))
 
-                    if position > 0 {
+                    shellSlot(height: savingsHeight) {
                         SavingsTunerView()
                             .ignoresSafeArea(edges: .top)
-                            .frame(height: max(0, range * position - topLift))
-                            .opacity(position)
+                            .opacity(position > 0 ? position : 0)
                             .allowsHitTesting(position > 0.85)
                     }
+                    .padding(.top, position > 0 ? 12 * position : 0)
                 }
                 .padding(.top, topLift + assetTop)
                 .padding(.bottom, bottomLift)
                 .contentShape(Rectangle())
-                .coordinateSpace(.named("home"))
-                .gesture(panelDrag(range: range))
+                .simultaneousGesture(panelDrag(screen: geo.size.height))
             }
             .background {
                 Color.clear
@@ -136,6 +147,8 @@ struct HomeView: View {
             .toolbar(.hidden, for: .navigationBar)
         }
     }
+
+    private static let dockedCard: CGFloat = 168
 
     private static var windowSafeArea: UIEdgeInsets {
         UIApplication.shared.connectedScenes
@@ -151,38 +164,108 @@ struct HomeView: View {
         return "上滑查看儲蓄目標，下滑查看資產"
     }
 
-    private func panelDrag(range: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 10, coordinateSpace: .named("home"))
+    /// Panels stay in the stack at height 0. Inserting them on the first pixel made the card jump.
+    private func shellSlot<Content: View>(
+        height: CGFloat,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        Color.clear
+            .frame(height: max(0, height))
+            .overlay(alignment: .top) {
+                content()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: max(height, 1), alignment: .top)
+            }
+            .clipped()
+            .accessibilityHidden(height <= 0)
+    }
+
+    private func panelDrag(screen: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .global)
             .onChanged { value in
-                let axis = lockedAxis(for: value)
-                if axis == .horizontal {
-                    let width = max(heroFrame.width, 1)
-                    let next = min(1, max(0, lens - value.translation.width / width))
-                    lensDrag = next - lens
-                    let showExposure = next > 0.5
-                    if exposureList != showExposure { exposureList = showExposure }
-                } else {
-                    let next = min(1, max(-1, panel - value.translation.height / range))
-                    drag = next - panel
+                if !dragSession.decided {
+                    dragSession.decided = true
+                    dragSession.ignored = ignoresShell(value.startLocation)
                 }
+                if dragSession.ignored { return }
+                let dx = value.location.x - value.startLocation.x
+                let dy = value.location.y - value.startLocation.y
+                if dragSession.anchor == nil {
+                    guard hypot(dx, dy) >= 10 else { return }
+                    dragSession.anchor = value.location
+                    let height = max(heroFrame.height, 1)
+                    dragSession.grabFraction = min(1, max(0, (value.location.y - heroFrame.minY) / height))
+                    _ = lockedAxis(dx: dx, dy: dy, start: value.startLocation)
+                    return
+                }
+                let anchor = dragSession.anchor ?? value.location
+                let moved = CGSize(width: value.location.x - anchor.x, height: value.location.y - anchor.y)
+                applyDrag(moved, axis: dragSession.axis ?? .vertical, screen: screen)
             }
             .onEnded { value in
-                let axis = dragAxis
-                dragAxis = nil
-                if axis == .horizontal {
-                    endLens(value)
-                } else {
-                    endPanel(value, range: range)
+                let axis = dragSession.axis
+                let anchor = dragSession.anchor
+                let moved = anchor.map {
+                    CGSize(width: value.location.x - $0.x, height: value.location.y - $0.y)
                 }
+                if let moved {
+                    if axis == .horizontal {
+                        endLens(moved)
+                    } else {
+                        endPanel(moved, screen: screen)
+                    }
+                }
+                dragSession.anchor = nil
+                dragSession.axis = nil
+                dragSession.grabFraction = 0.5
+                dragSession.decided = false
+                dragSession.ignored = false
             }
     }
 
-    private func lockedAxis(for value: DragGesture.Value) -> Axis {
-        if let dragAxis { return dragAxis }
-        let horizontal = abs(value.translation.width) > abs(value.translation.height)
-        let onHero = panel < -0.4 && heroFrame.contains(value.startLocation)
+    /// List and savings own the drag once they are settled. The card does not.
+    private func ignoresShell(_ start: CGPoint) -> Bool {
+        if heroFrame.contains(start) { return false }
+        return panel <= -0.95 || panel >= 0.95
+    }
+
+    private func applyDrag(_ moved: CGSize, axis: Axis, screen: CGFloat) {
+        if axis == .horizontal {
+            let width = max(heroFrame.width, 1)
+            let next = min(1, max(0, lens - moved.width / width))
+            lensDrag = next - lens
+            let showExposure = next > 0.5
+            if exposureList != showExposure { exposureList = showExposure }
+        } else {
+            let next = trackedPanel(dy: moved.height, screen: screen)
+            drag = next - panel
+        }
+    }
+
+    /// Card height changes while it moves, so the point under the finger is what travels 1:1.
+    private func trackedPanel(dy: CGFloat, screen: CGFloat) -> CGFloat {
+        let range = max(screen - Self.dockedCard, 1)
+        let f = min(1, max(0, dragSession.grabFraction))
+        let slopeDown = range * (f - 1) + safeBottom
+        let slopeUp = safeTop - f * range
+        guard slopeDown < -0.5, slopeUp < -0.5 else {
+            return min(1, max(-1, panel - dy / range))
+        }
+        let origin = f * screen
+        let base = origin + (panel < 0 ? slopeDown : slopeUp) * panel
+        let target = base + dy
+        if target >= origin {
+            return min(0, max(-1, (target - origin) / slopeDown))
+        }
+        return min(1, max(0, (target - origin) / slopeUp))
+    }
+
+    private func lockedAxis(dx: CGFloat, dy: CGFloat, start: CGPoint) -> Axis {
+        if let axis = dragSession.axis { return axis }
+        let horizontal = abs(dx) > abs(dy)
+        let onHero = panel < -0.4 && heroFrame.contains(start)
         let axis: Axis = horizontal && onHero ? .horizontal : .vertical
-        dragAxis = axis
+        dragSession.axis = axis
         if axis == .horizontal {
             dotToken += 1
             withAnimation(.easeOut(duration: 0.12)) { showDots = true }
@@ -190,8 +273,8 @@ struct HomeView: View {
         return axis
     }
 
-    private func endPanel(_ value: DragGesture.Value, range: CGFloat) {
-        let end = min(1, max(-1, panel - value.translation.height / range))
+    private func endPanel(_ translation: CGSize, screen: CGFloat) {
+        let end = trackedPanel(dy: translation.height, screen: screen)
         let moved = end - panel
         if abs(moved) <= 0.25 { snap(panel) }
         else if panel == 0 { snap(moved > 0 ? 1 : -1) }
@@ -199,9 +282,9 @@ struct HomeView: View {
         else { snap(end > 0.25 ? 1 : 0) }
     }
 
-    private func endLens(_ value: DragGesture.Value) {
+    private func endLens(_ translation: CGSize) {
         let width = max(heroFrame.width, 1)
-        let end = min(1, max(0, lens - value.translation.width / width))
+        let end = min(1, max(0, lens - translation.width / width))
         let moved = end - lens
         snapLens(abs(moved) <= 0.25 ? lens : (moved > 0 ? 1 : 0))
     }
@@ -220,7 +303,7 @@ struct HomeView: View {
                 exposureList = to > 0.5
                 AssetListMemory.showsExposure = to > 0.5
             } completion: {
-                guard token == dotToken, dragAxis == nil else { return }
+                guard token == dotToken, dragSession.axis == nil else { return }
                 withAnimation(.easeOut(duration: 0.25)) { showDots = false }
             }
         }
