@@ -298,13 +298,15 @@ struct HomeView: View {
             ? .easeInOut(duration: 0.2)
             : .spring(response: 0.48, dampingFraction: 0.88)
         DispatchQueue.main.async {
-            withAnimation(animation) {
+            var transaction = Transaction(animation: animation)
+            transaction.addAnimationCompletion {
+                guard token == dotToken, dragSession.axis == nil else { return }
+                withAnimation(.easeOut(duration: 0.25)) { showDots = false }
+            }
+            withTransaction(transaction) {
                 lens = to
                 exposureList = to > 0.5
                 AssetListMemory.showsExposure = to > 0.5
-            } completion: {
-                guard token == dotToken, dragSession.axis == nil else { return }
-                withAnimation(.easeOut(duration: 0.25)) { showDots = false }
             }
         }
     }

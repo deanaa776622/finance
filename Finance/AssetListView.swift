@@ -127,10 +127,6 @@ struct AssetListView: View {
     ) -> some View {
         Button(action: action) {
             HStack {
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .rotationEffect(.degrees(open ? 90 : 0))
                 Text(title)
                     .font(.system(size: titleSize, weight: .semibold))
                     .foregroundStyle(headerColor(open: open))
@@ -303,12 +299,12 @@ struct AssetListView: View {
     private func saveItem(_ item: AssetItem) {
         portfolio.upsert(item)
         if exposureOnly {
-            withAnimation { expandedKinds.insert(item.kind) }
+            withAnimation { _ = expandedKinds.insert(item.kind) }
             persistGroups()
             return
         }
         guard let bucket = grouping.buckets.first(where: { $0.kinds.contains(item.kind) }) else { return }
-        withAnimation { openGroupIDs.insert(grouping.storageID(for: bucket)) }
+        withAnimation { _ = openGroupIDs.insert(grouping.storageID(for: bucket)) }
         AssetListMemory.netOpenGroups = openGroupIDs
     }
 
