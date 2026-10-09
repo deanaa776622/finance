@@ -110,6 +110,12 @@ final class Portfolio {
             / NSDecimalNumber(decimal: allocableTotal).doubleValue * 100
     }
 
+    /// Signed TWD so `kind` matches `targetPercent` of today's allocable total. Positive means short.
+    func rebalanceGap(for kind: AssetKind, targetPercent: Double) -> Decimal {
+        guard kind.countsTowardAllocation else { return 0 }
+        return allocableTotal * Decimal(targetPercent) / 100 - amount(for: kind)
+    }
+
     /// 0…1 how far this bucket is toward its slice of the long-term total.
     func achievement(for kind: AssetKind) -> Double {
         guard kind.countsTowardAllocation else { return 0 }

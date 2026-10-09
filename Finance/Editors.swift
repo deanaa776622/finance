@@ -3,6 +3,7 @@ import SwiftUI
 struct TargetEditor: View {
     @Environment(Portfolio.self) private var portfolio
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("hideAmounts") private var hideAmounts = false
     @FocusState private var field: Field?
 
     @State private var originalText = ""
@@ -25,6 +26,14 @@ struct TargetEditor: View {
                     AllocationGlowTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios)
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
+                    if portfolio.allocableTotal <= 0 {
+                        Text("新增資產後，會顯示再平衡差額")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    }
                 }
             }
             .scrollEdgeFade()
@@ -46,7 +55,7 @@ struct TargetEditor: View {
             }
             .onAppear(perform: load)
         }
-        .presentationDetents([.height(240)])
+        .presentationDetents([.height(300)])
         .presentationBackground(Color(.systemGroupedBackground))
         .presentationDragIndicator(.visible)
     }
@@ -71,8 +80,26 @@ struct TargetEditor: View {
             }
             .font(.title3.weight(.semibold))
             .foregroundStyle(portfolio.glowColor(for: kind))
+            if portfolio.allocableTotal > 0 {
+                let label = gapLabel(kind: kind, percent: NumberParse.double(text.wrappedValue) ?? 0)
+                Text(label)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .accessibilityLabel("\(title)，\(label)")
+            }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func gapLabel(kind: AssetKind, percent: Double) -> String {
+        let gap = portfolio.rebalanceGap(for: kind, targetPercent: percent)
+        let magnitude = gap < 0 ? -gap : gap
+        if magnitude < 1 { return "剛好" }
+        let amount = MoneyFormat.string(magnitude, hidden: hideAmounts)
+        return gap > 0 ? "少 \(amount)" : "多 \(amount)"
     }
 
     private var originalPercent: Double { NumberParse.double(originalText) ?? 0 }
