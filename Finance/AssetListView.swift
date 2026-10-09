@@ -60,6 +60,7 @@ struct AssetListView: View {
         .scrollContentBackground(.hidden)
         .background(Color(.systemGroupedBackground))
         .contentMargins(.top, topInset, for: .scrollContent)
+        .contentMargins(.bottom, showsChrome ? 64 : 0, for: .scrollContent)
         .scrollEdgeFade(edges: .bottom)
         .navigationTitle(showsChrome ? "資產" : "")
         .navigationBarTitleDisplayMode(.inline)
@@ -163,7 +164,8 @@ struct AssetListView: View {
             Text("尚無紀錄")
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .listRowInsets(Self.rowInsets)
+                .padding(Self.rowPadding)
+                .listRowInsets(Self.cardInsets)
                 .listRowSeparator(.hidden)
                 .listRowBackground(GroupCardBackground(isFirst: true, isLast: true))
         } else {
@@ -171,7 +173,13 @@ struct AssetListView: View {
         }
     }
 
-    private static let rowInsets = EdgeInsets(top: 12, leading: 32, bottom: 12, trailing: 32)
+    private static let cardInsets = EdgeInsets(
+        top: 0,
+        leading: GroupCardBackground.inset,
+        bottom: 0,
+        trailing: GroupCardBackground.inset
+    )
+    private static let rowPadding = EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
 
     private func assetRows(_ rows: [AssetItem]) -> some View {
         ForEach(rows) { item in
@@ -179,9 +187,13 @@ struct AssetListView: View {
             let isLast = item.id == rows.last?.id
             Button { editing = item } label: {
                 AssetRow(item: item, hideAmounts: hideAmounts)
+                    .padding(Self.rowPadding)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .foregroundStyle(.primary)
-            .listRowInsets(Self.rowInsets)
+            .listRowInsets(Self.cardInsets)
             .listRowSeparator(.hidden)
             .listRowBackground(GroupCardBackground(isFirst: isFirst, isLast: isLast))
         }
@@ -387,6 +399,7 @@ private struct GroupCardBackground: View {
             }
         }
         .padding(.horizontal, Self.inset)
+        .allowsHitTesting(false)
     }
 }
 
