@@ -8,9 +8,12 @@ struct SavingsTunerView: View {
     @State private var costText = ""
     @State private var rateText = ""
     @State private var pmtText = ""
+    @State private var yearsText = ""
+    /// Nil asks “given this monthly amount, how many years?” A number asks the other way.
+    @State private var horizon: Double?
     @State private var baseline: SavingsPlan?
 
-    private enum Field: Hashable { case cost, rate, pmt }
+    private enum Field: Hashable { case cost, rate, pmt, years }
 
     var body: some View {
         Form {
@@ -26,7 +29,22 @@ struct SavingsTunerView: View {
                         .frame(width: 72)
                     Text("%").foregroundStyle(.secondary)
                 }
-                moneyRow("月投資額", text: $pmtText, field: .pmt)
+                moneyRow("月投資額", text: $pmtText, field: .pmt, keepSign: true)
+                HStack {
+                    Text("幾年後退休")
+                    Spacer()
+                    TextField("0", text: $yearsText)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .focused($field, equals: .years)
+                        .frame(width: 72)
+                    Text("年").foregroundStyle(.secondary)
+                }
+                if let note = horizonNote {
+                    Text(note)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             if let points = draftOutlook?.points, !points.isEmpty {
@@ -60,37 +78,91 @@ struct SavingsTunerView: View {
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                Button("完成") { field = nil }
+                Button("完成") {
+                    if field == .pmt, horizon != nil { applyHorizon() }
+                    field = nil
+                }
             }
         }
         .onAppear(perform: load)
-        .onChange(of: costText) { _, _ in persist() }
-        .onChange(of: rateText) { _, _ in persist() }
-        .onChange(of: pmtText) { _, _ in persist() }
+        .onChange(of: costText) { _, _ in followInputs() }
+        .onChange(of: rateText) { _, _ in followInputs() }
+        .onChange(of: pmtText) { old, new in
+            guard field == .pmt else { return }
+            if let solved = solvedPayment(),
+               let shown = NumberParse.decimal(new),
+               shown == solved || shown == -solved {
+                let text = contributionText(solved)
+                if pmtText != text { pmtText = text }
+                return
+            }
+            if NumberParse.decimal(old) == NumberParse.decimal(new) { return }
+            horizon = nil
+            persist()
+            syncYears()
+        }
+        .onChange(of: yearsText) { _, _ in
+            guard field == .years else { return }
+            applyHorizon()
+        }
+        .onChange(of: portfolio.allocableTotal) { _, _ in
+            if horizon != nil { applyHorizon() } else { syncYears() }
+        }
+    }
+
+    private var horizonNote: String? {
+        guard let payment = draft?.monthlyContribution else { return nil }
+        if horizon == 0 {
+            if payment > 0 { return "要現在補上，距離目標才是 0" }
+            if payment < 0 { return "現在可提領，距離目標仍是 0" }
+            return nil
+        }
+        return payment < 0 ? "不必再投入，每月可從目前資產提領" : nil
     }
 
     private var draft: SavingsPlan? {
         guard let cost = NumberParse.decimal(costText), cost >= 0,
               let rate = NumberParse.double(rateText), rate >= 0, rate <= 100,
-              let pmt = NumberParse.decimal(pmtText), pmt >= 0
+              let pmt = NumberParse.decimal(pmtText)
         else { return nil }
-        return SavingsPlan(annualCost: cost, annualRatePercent: rate, monthlyContribution: pmt)
+        return SavingsPlan(
+            annualCost: cost,
+            annualRatePercent: rate,
+            monthlyContribution: pmt,
+            retirementYears: horizon
+        )
     }
 
     private var draftOutlook: SavingsOutlook? {
         draft.map { SavingsMath.outlook(plan: $0, presentValue: portfolio.allocableTotal) }
     }
 
-    private func moneyRow(_ title: String, text: Binding<String>, field: Field) -> some View {
+    private func moneyRow(
+        _ title: String,
+        text: Binding<String>,
+        field: Field,
+        keepSign: Bool = false
+    ) -> some View {
         HStack {
             Text(title)
             Spacer()
-            TextField("0", text: grouped(text))
-                .keyboardType(.numberPad)
-                .multilineTextAlignment(.trailing)
-                .focused($field, equals: field)
-                .frame(minWidth: 120)
+            HStack(spacing: 0) {
+                if keepSign, text.wrappedValue.hasPrefix("-") {
+                    Text("−")
+                        .accessibilityHidden(true)
+                }
+                TextField("0", text: keepSign ? magnitude(text) : grouped(text))
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .focused($field, equals: field)
+                    .fixedSize(horizontal: keepSign && text.wrappedValue.hasPrefix("-"), vertical: false)
+                    .frame(
+                        minWidth: keepSign && text.wrappedValue.hasPrefix("-") ? 0 : 120,
+                        alignment: .trailing
+                    )
+            }
         }
+        .accessibilityElement(children: .combine)
     }
 
     private func grouped(_ text: Binding<String>) -> Binding<String> {
@@ -100,12 +172,91 @@ struct SavingsTunerView: View {
         )
     }
 
+    /// The number pad drops a minus typed into the field. Keep it beside the digits.
+    private func magnitude(_ text: Binding<String>) -> Binding<String> {
+        Binding(
+            get: {
+                let raw = text.wrappedValue
+                return raw.hasPrefix("-") ? String(raw.dropFirst()) : raw
+            },
+            set: { raw in
+                let body = NumberParse.grouped(raw)
+                let negative = text.wrappedValue.hasPrefix("-")
+                let next = negative && !body.isEmpty ? "-\(body)" : body
+                if text.wrappedValue != next { text.wrappedValue = next }
+            }
+        )
+    }
+
     private func load() {
         let plan = portfolio.savings ?? .prototype
+        horizon = plan.retirementYears
         costText = NumberParse.grouped(plan.annualCost)
         rateText = String(format: "%.2f", plan.annualRatePercent)
-        pmtText = NumberParse.grouped(plan.monthlyContribution)
+        pmtText = contributionText(plan.monthlyContribution)
+        if let years = plan.retirementYears {
+            yearsText = yearsLabel(years)
+        }
         baseline = plan
+        if horizon != nil { applyHorizon() } else { syncYears() }
+    }
+
+    /// Cost and rate keep whichever question was asked last.
+    private func followInputs() {
+        if horizon != nil { applyHorizon() } else { persist(); syncYears() }
+    }
+
+    private func solvedPayment() -> Decimal? {
+        guard let years = horizon, years >= 0,
+              let cost = NumberParse.decimal(costText),
+              let rate = NumberParse.double(rateText), rate >= 0, rate <= 100,
+              let future = SavingsMath.targetAmount(cost: cost, annualRatePercent: rate)
+        else { return nil }
+        return SavingsMath.monthlyContribution(
+            years: years,
+            annualRatePercent: rate,
+            presentValue: portfolio.allocableTotal,
+            futureValue: future
+        )
+    }
+
+    private func applyHorizon() {
+        guard let years = NumberParse.double(yearsText), years >= 0,
+              let cost = NumberParse.decimal(costText),
+              let rate = NumberParse.double(rateText), rate >= 0, rate <= 100,
+              let future = SavingsMath.targetAmount(cost: cost, annualRatePercent: rate),
+              let payment = SavingsMath.monthlyContribution(
+                years: years,
+                annualRatePercent: rate,
+                presentValue: portfolio.allocableTotal,
+                futureValue: future
+              )
+        else { return }
+        horizon = years
+        let text = contributionText(payment)
+        if pmtText != text { pmtText = text }
+        persist()
+    }
+
+    private func syncYears() {
+        guard field != .years, horizon == nil else { return }
+        guard let years = draftOutlook?.years else {
+            yearsText = ""
+            return
+        }
+        let text = yearsLabel(years)
+        if yearsText != text { yearsText = text }
+    }
+
+    /// Keeps a leading minus. The shared grouped parser drops every non-digit.
+    private func contributionText(_ value: Decimal) -> String {
+        let magnitude = NumberParse.grouped(value < 0 ? -value : value)
+        return value < 0 ? "-\(magnitude)" : magnitude
+    }
+
+    private func yearsLabel(_ value: Double) -> String {
+        let text = String(format: "%.1f", value)
+        return text.hasSuffix(".0") ? String(text.dropLast(2)) : text
     }
 
     private func persist() {
