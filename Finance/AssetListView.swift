@@ -33,14 +33,32 @@ struct AssetListView: View {
                 Text(refreshMessage)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                    .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
             }
             if exposureOnly {
-                ForEach(visibleKinds) { kindSection($0) }
+                ForEach(visibleKinds) { kind in
+                    Section {
+                        kindItems(kind)
+                    } header: {
+                        kindHeader(kind)
+                    }
+                }
             } else {
-                ForEach(grouping.buckets) { bucketSection($0) }
+                ForEach(grouping.buckets) { bucket in
+                    Section {
+                        bucketItems(bucket)
+                    } header: {
+                        bucketHeader(bucket)
+                    }
+                }
             }
         }
+        .listStyle(.plain)
+        .listSectionSeparator(.hidden)
+        .listSectionSpacing(0)
+        .scrollContentBackground(.hidden)
+        .background(Color(.systemGroupedBackground))
         .contentMargins(.top, topInset, for: .scrollContent)
         .scrollEdgeFade(edges: .bottom)
         .navigationTitle(showsChrome ? "資產" : "")
@@ -71,14 +89,10 @@ struct AssetListView: View {
         open ? .secondary : .white
     }
 
-    private func bucketSection(_ bucket: AssetBucket) -> some View {
-        Section {
-            bucketItems(bucket)
-        } header: {
-            let open = openGroupIDs.contains(grouping.storageID(for: bucket))
-            groupHeader(bucket.title, open: open, amount: amount(of: bucket)) {
-                toggle(bucket)
-            }
+    private func bucketHeader(_ bucket: AssetBucket) -> some View {
+        let open = openGroupIDs.contains(grouping.storageID(for: bucket))
+        return groupHeader(bucket.title, open: open, amount: amount(of: bucket)) {
+            toggle(bucket)
         }
     }
 
@@ -95,14 +109,6 @@ struct AssetListView: View {
 
     private func amount(of bucket: AssetBucket) -> Decimal {
         bucket.kinds.reduce(0) { $0 + portfolio.amount(for: $1) }
-    }
-
-    private func kindSection(_ kind: AssetKind) -> some View {
-        Section {
-            kindItems(kind)
-        } header: {
-            kindHeader(kind)
-        }
     }
 
     private func kindHeader(_ kind: AssetKind) -> some View {
@@ -136,6 +142,9 @@ struct AssetListView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .listRowInsets(EdgeInsets(top: 18, leading: 32, bottom: 8, trailing: 32))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color(.systemGroupedBackground))
         .accessibilityLabel(title)
         .accessibilityHint(open ? "收合" : "展開")
         .textCase(nil)
@@ -153,17 +162,28 @@ struct AssetListView: View {
         if rows.isEmpty {
             Text("尚無紀錄")
                 .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .listRowInsets(Self.rowInsets)
+                .listRowSeparator(.hidden)
+                .listRowBackground(GroupCardBackground(isFirst: true, isLast: true))
         } else {
             assetRows(rows)
         }
     }
 
+    private static let rowInsets = EdgeInsets(top: 12, leading: 32, bottom: 12, trailing: 32)
+
     private func assetRows(_ rows: [AssetItem]) -> some View {
         ForEach(rows) { item in
+            let isFirst = item.id == rows.first?.id
+            let isLast = item.id == rows.last?.id
             Button { editing = item } label: {
                 AssetRow(item: item, hideAmounts: hideAmounts)
             }
             .foregroundStyle(.primary)
+            .listRowInsets(Self.rowInsets)
+            .listRowSeparator(.hidden)
+            .listRowBackground(GroupCardBackground(isFirst: isFirst, isLast: isLast))
         }
         .onDelete { portfolio.delete(rows, at: $0) }
     }
@@ -340,6 +360,33 @@ private struct AssetMenuBar<Bar: View>: ViewModifier {
                     .padding(.bottom, 8)
             }
         }
+    }
+}
+
+private struct GroupCardBackground: View {
+    var isFirst: Bool
+    var isLast: Bool
+    static let radius: CGFloat = 26
+    static let inset: CGFloat = 16
+
+    var body: some View {
+        UnevenRoundedRectangle(
+            topLeadingRadius: isFirst ? Self.radius : 0,
+            bottomLeadingRadius: isLast ? Self.radius : 0,
+            bottomTrailingRadius: isLast ? Self.radius : 0,
+            topTrailingRadius: isFirst ? Self.radius : 0,
+            style: .continuous
+        )
+        .fill(Color(.secondarySystemGroupedBackground))
+        .overlay(alignment: .bottom) {
+            if !isLast {
+                Rectangle()
+                    .fill(Color(.separator))
+                    .frame(height: 0.5)
+                    .padding(.leading, Self.inset)
+            }
+        }
+        .padding(.horizontal, Self.inset)
     }
 }
 
