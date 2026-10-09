@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 struct AssetListView: View {
     static let restingTopInset: CGFloat = 44
@@ -10,7 +9,6 @@ struct AssetListView: View {
     @Environment(Portfolio.self) private var portfolio
     @AppStorage("hideAmounts") private var hideAmounts = false
     @AppStorage("assetNetGrouping") private var grouping: AssetGrouping = .overview
-    @AppStorage("assetNetOpenGroups") private var openGroupsRaw = ""
     @State private var editing: AssetItem?
     @State private var showAdd = false
     @State private var addKind: AssetKind = .original
@@ -18,14 +16,15 @@ struct AssetListView: View {
     @State private var isRefreshing = false
     @State private var refreshMessage: String?
     @State private var expandedKinds: Set<AssetKind>
-    @ScaledMetric(relativeTo: .title3) private var collapsedTitleSize: CGFloat = 20
-    @ScaledMetric(relativeTo: .subheadline) private var expandedTitleSize: CGFloat = 15
+    @State private var openGroupIDs: Set<String>
+    @ScaledMetric(relativeTo: .title3) private var titleSize: CGFloat = 20
 
     init(showsChrome: Bool = true, topInset: CGFloat = restingTopInset, exposureOnly: Bool = false) {
         self.showsChrome = showsChrome
         self.topInset = topInset
         self.exposureOnly = exposureOnly
         _expandedKinds = State(initialValue: exposureOnly ? AssetListMemory.exposureKinds : [])
+        _openGroupIDs = State(initialValue: AssetListMemory.netOpenGroups)
     }
 
     var body: some View {
@@ -68,31 +67,25 @@ struct AssetListView: View {
 
     private var visibleKinds: [AssetKind] { [.original, .leverage, .cash] }
 
-    private var openGroups: Set<String> {
-        Set(openGroupsRaw.split(separator: ",").map(String.init))
-    }
-
     private func headerColor(open: Bool) -> Color {
         open ? .secondary : .white
     }
 
-    private func headerLabelFont(open: Bool, weight: Font.Weight, anchor: UnitPoint) -> ScalingFont {
-        ScalingFont(
-            base: collapsedTitleSize,
-            scale: open ? expandedTitleSize / collapsedTitleSize : 1,
-            weight: weight,
-            anchor: anchor
-        )
-    }
-
     private func bucketSection(_ bucket: AssetBucket) -> some View {
-        let open = openGroups.contains(grouping.storageID(for: bucket))
-        return Section {
-            if open { rowsOrEmpty(items(in: bucket)) }
+        Section {
+            bucketItems(bucket)
         } header: {
+            let open = openGroupIDs.contains(grouping.storageID(for: bucket))
             groupHeader(bucket.title, open: open, amount: amount(of: bucket)) {
                 toggle(bucket)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func bucketItems(_ bucket: AssetBucket) -> some View {
+        if openGroupIDs.contains(grouping.storageID(for: bucket)) {
+            rowsOrEmpty(items(in: bucket))
         }
     }
 
@@ -132,11 +125,11 @@ struct AssetListView: View {
                     .foregroundStyle(.secondary)
                     .rotationEffect(.degrees(open ? 90 : 0))
                 Text(title)
-                    .modifier(headerLabelFont(open: open, weight: .semibold, anchor: .leading))
+                    .font(.system(size: titleSize, weight: .semibold))
                     .foregroundStyle(headerColor(open: open))
                 Spacer()
                 Text(MoneyFormat.string(amount, hidden: hideAmounts))
-                    .modifier(headerLabelFont(open: open, weight: .regular, anchor: .trailing))
+                    .font(.system(size: titleSize))
                     .monospacedDigit()
                     .foregroundStyle(headerColor(open: open))
             }
@@ -265,22 +258,26 @@ struct AssetListView: View {
 
     private func toggle(_ bucket: AssetBucket) {
         let id = grouping.storageID(for: bucket)
-        var next = openGroups
-        if next.contains(id) { next.remove(id) } else { next.insert(id) }
-        withAnimation { openGroupsRaw = next.sorted().joined(separator: ",") }
+        withAnimation {
+            if openGroupIDs.contains(id) {
+                openGroupIDs.remove(id)
+            } else {
+                openGroupIDs.insert(id)
+            }
+        }
+        AssetListMemory.netOpenGroups = openGroupIDs
     }
 
     private func saveItem(_ item: AssetItem) {
         portfolio.upsert(item)
         if exposureOnly {
-            expandedKinds.insert(item.kind)
+            withAnimation { expandedKinds.insert(item.kind) }
             persistGroups()
             return
         }
         guard let bucket = grouping.buckets.first(where: { $0.kinds.contains(item.kind) }) else { return }
-        var next = openGroups
-        next.insert(grouping.storageID(for: bucket))
-        openGroupsRaw = next.sorted().joined(separator: ",")
+        withAnimation { openGroupIDs.insert(grouping.storageID(for: bucket)) }
+        AssetListMemory.netOpenGroups = openGroupIDs
     }
 
     private func refreshQuotes() async {
@@ -343,26 +340,6 @@ private struct AssetMenuBar<Bar: View>: ViewModifier {
                     .padding(.bottom, 8)
             }
         }
-    }
-}
-
-/// Scales a fixed line box. Animating `Font` re-anchors the baseline when the spring ends.
-private struct ScalingFont: ViewModifier {
-    var base: CGFloat
-    var scale: CGFloat
-    var weight: Font.Weight
-    var anchor: UnitPoint
-
-    func body(content: Content) -> some View {
-        content
-            .font(.system(size: base, weight: weight))
-            .fixedSize(horizontal: false, vertical: true)
-            .scaleEffect(scale, anchor: anchor)
-            .frame(height: lineHeight * scale, alignment: .center)
-    }
-
-    private var lineHeight: CGFloat {
-        UIFont.systemFont(ofSize: base, weight: weight == .semibold ? .semibold : .regular).lineHeight
     }
 }
 
