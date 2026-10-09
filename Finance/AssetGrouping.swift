@@ -48,6 +48,20 @@ enum AssetGrouping: String, CaseIterable, Identifiable {
     func storageID(for bucket: AssetBucket) -> String { "\(rawValue).\(bucket.id)" }
 }
 
+/// Keeps the 原型 bucket's id so its header can retitle in place, and drops 槓桿.
+func bucketsMergingStocks(_ buckets: [AssetBucket], merged: Bool) -> [AssetBucket] {
+    guard merged,
+          let original = buckets.firstIndex(where: { $0.kinds == [.original] }),
+          let leverage = buckets.firstIndex(where: { $0.kinds == [.leverage] }),
+          leverage == original + 1
+    else { return buckets }
+    var next = buckets
+    let kept = next[original]
+    next[original] = AssetBucket(id: kept.id, title: "股票", kinds: [.original, .leverage])
+    next.remove(at: leverage)
+    return next
+}
+
 struct AssetBucket: Identifiable {
     var id: String
     var title: String
