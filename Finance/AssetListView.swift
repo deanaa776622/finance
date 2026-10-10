@@ -218,7 +218,7 @@ struct AssetListView: View {
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(Self.rowPadding)
-                .stockLinkHit(enabled: linkHit, margin: 16, action: tapStockLink)
+                .stockLinkHit(enabled: linkHit, margin: 24, action: tapStockLink)
                 .overlay(alignment: .bottom) {
                     if let bucketID {
                         rowBottomTracker("empty-\(bucketID)")
@@ -234,7 +234,7 @@ struct AssetListView: View {
 
     private static let cardInsets = EdgeInsets(
         top: 0,
-        leading: GroupCardBackground.inset,
+        leading: GroupCardBackground.leading,
         bottom: 0,
         trailing: GroupCardBackground.inset
     )
@@ -252,7 +252,7 @@ struct AssetListView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.primary)
-            .stockLinkHit(enabled: linkHit, margin: 16, action: tapStockLink)
+            .stockLinkHit(enabled: linkHit, margin: 24, action: tapStockLink)
             .overlay(alignment: .bottom) {
                 if trackLink {
                     rowBottomTracker(item.id.uuidString)
@@ -675,6 +675,8 @@ private struct GroupCardBackground: View {
     var isLast: Bool
     static let radius: CGFloat = 26
     static let inset: CGFloat = 16
+    /// Matches the group title's leading inset, so the card's left edge lines up with the first glyph.
+    static let leading: CGFloat = 32
 
     var body: some View {
         UnevenRoundedRectangle(
@@ -693,7 +695,8 @@ private struct GroupCardBackground: View {
                     .padding(.leading, Self.inset)
             }
         }
-        .padding(.horizontal, Self.inset)
+        .padding(.leading, Self.leading)
+        .padding(.trailing, Self.inset)
         .allowsHitTesting(false)
     }
 }
