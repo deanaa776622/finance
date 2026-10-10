@@ -6,11 +6,13 @@ struct StockLinkMark: View {
     var top: CGFloat
     var height: CGFloat
     var collapsed: Bool
+    /// White when this group can still open into smaller groups. Gray at the leaf.
+    var color: Color
 
     var body: some View {
         let length = max(height, 8)
         Capsule()
-            .fill(Color.white.opacity(0.85))
+            .fill(color)
             .frame(width: 1.5, height: length)
             .scaleEffect(y: collapsed ? 0.001 : 1, anchor: .center)
             .opacity(collapsed ? 0 : 1)

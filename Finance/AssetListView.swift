@@ -466,11 +466,11 @@ struct AssetListView: View {
     @ViewBuilder
     private var stockLinkLayer: some View {
         if stocksMerged, let stub = stockStub {
-            StockLinkMark(x: stub.x, top: stub.top, height: stub.height, collapsed: false)
+            StockLinkMark(x: stub.x, top: stub.top, height: stub.height, collapsed: false, color: .white.opacity(0.85))
                 .allowsHitTesting(false)
                 .transition(.opacity)
         } else if let line = stockLine {
-            StockLinkMark(x: line.x, top: line.top, height: line.height, collapsed: linkCollapsed)
+            StockLinkMark(x: line.x, top: line.top, height: line.height, collapsed: linkCollapsed, color: .secondary)
                 .allowsHitTesting(false)
                 .transition(.opacity)
         }
