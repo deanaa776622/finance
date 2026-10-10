@@ -21,14 +21,15 @@ struct StockLinkMark: View {
 }
 
 extension View {
-    func stockLinkHit(enabled: Bool, action: @escaping () -> Void) -> some View {
+    /// Tap strip in the margin to the left of this view. `margin` is its width; it does not cover the view.
+    func stockLinkHit(enabled: Bool, margin: CGFloat, action: @escaping () -> Void) -> some View {
         overlay(alignment: .leading) {
             if enabled {
                 Color.clear
-                    .frame(width: 44)
+                    .frame(width: margin)
                     .frame(maxHeight: .infinity)
                     .contentShape(Rectangle())
-                    .offset(x: -20)
+                    .offset(x: -margin)
                     .onTapGesture(perform: action)
                     .accessibilityHidden(true)
             }

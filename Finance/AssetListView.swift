@@ -31,6 +31,12 @@ struct AssetListView: View {
     /// Bumped when the pair merges or splits, so row bottoms are measured again after the list shifts.
     @State private var linkEpoch = 0
     @State private var linkRowEpoch: [String: Int] = [:]
+    /// Open state of 原型 / 槓桿 just before a merge, restored on split or when leaving this list.
+    @State private var mergedWasExposure = false
+    @State private var mergedOriginalOpen = false
+    @State private var mergedLeverageOpen = false
+    @State private var mergedOriginalID: String?
+    @State private var mergedLeverageID: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .title3) private var titleSize: CGFloat = 20
 
@@ -95,18 +101,12 @@ struct AssetListView: View {
             TargetEditor()
         }
         .onChange(of: exposureOnly) { wasExposure, isExposure in
-            linkOriginal = nil
-            linkLeverage = nil
-            linkTitle = nil
-            linkLeverageTitle = nil
+            cancelMergeIfNeeded()
             if wasExposure { AssetListMemory.exposureKinds = expandedKinds }
             if isExposure { expandedKinds = AssetListMemory.exposureKinds }
         }
         .onChange(of: grouping) { _, _ in
-            linkOriginal = nil
-            linkLeverage = nil
-            linkTitle = nil
-            linkLeverageTitle = nil
+            cancelMergeIfNeeded()
         }
         .onDisappear(perform: persistGroups)
     }
@@ -145,7 +145,7 @@ struct AssetListView: View {
             toggleBucket(bucket)
         }
         .opacity(linkCollapsed && bucket.kinds == [.leverage] ? 0 : 1)
-        .stockLinkHit(enabled: isLinkBucket(bucket), action: tapStockLink)
+        .stockLinkHit(enabled: isLinkBucket(bucket), margin: 24, action: tapStockLink)
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { trackLink(bucket, frame: $0) }
         if isLinkBucket(bucket) {
             headerChrome(header.accessibilityAction(named: Text(stocksMerged ? "分開為原型與槓桿" : "合併為股票")) {
@@ -218,7 +218,7 @@ struct AssetListView: View {
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(Self.rowPadding)
-                .stockLinkHit(enabled: linkHit, action: tapStockLink)
+                .stockLinkHit(enabled: linkHit, margin: 16, action: tapStockLink)
                 .overlay(alignment: .bottom) {
                     if let bucketID {
                         rowBottomTracker("empty-\(bucketID)")
@@ -252,7 +252,7 @@ struct AssetListView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.primary)
-            .stockLinkHit(enabled: linkHit, action: tapStockLink)
+            .stockLinkHit(enabled: linkHit, margin: 16, action: tapStockLink)
             .overlay(alignment: .bottom) {
                 if trackLink {
                     rowBottomTracker(item.id.uuidString)
@@ -482,6 +482,7 @@ struct AssetListView: View {
 
     private func mergeStocks() {
         guard !linkCollapsed else { return }
+        rememberOpenBeforeMerge()
         if reduceMotion {
             stocksMerged = true
             linkEpoch += 1
@@ -503,14 +504,60 @@ struct AssetListView: View {
     private func splitStocks() {
         guard !linkCollapsed else { return }
         if reduceMotion {
+            restoreOpenAfterSplit()
             stocksMerged = false
             linkEpoch += 1
             return
         }
         withAnimation(.smooth(duration: 0.45)) {
+            restoreOpenAfterSplit()
             stocksMerged = false
             linkEpoch += 1
         }
+    }
+
+    private func cancelMergeIfNeeded() {
+        if stocksMerged {
+            restoreOpenAfterSplit()
+            stocksMerged = false
+            linkEpoch += 1
+        }
+        linkCollapsed = false
+    }
+
+    private func rememberOpenBeforeMerge() {
+        mergedWasExposure = exposureOnly
+        if exposureOnly {
+            mergedOriginalOpen = expandedKinds.contains(.original)
+            mergedLeverageOpen = expandedKinds.contains(.leverage)
+            return
+        }
+        guard let original = baseBuckets.first(where: { $0.kinds == [.original] }),
+              let leverage = baseBuckets.first(where: { $0.kinds == [.leverage] }) else { return }
+        mergedOriginalID = grouping.storageID(for: original)
+        mergedLeverageID = grouping.storageID(for: leverage)
+        mergedOriginalOpen = openGroupIDs.contains(mergedOriginalID ?? "")
+        mergedLeverageOpen = openGroupIDs.contains(mergedLeverageID ?? "")
+    }
+
+    private func restoreOpenAfterSplit() {
+        if mergedWasExposure {
+            setExpanded(.original, mergedOriginalOpen)
+            setExpanded(.leverage, mergedLeverageOpen)
+            persistGroups()
+            return
+        }
+        if let id = mergedOriginalID { setOpen(id, mergedOriginalOpen) }
+        if let id = mergedLeverageID { setOpen(id, mergedLeverageOpen) }
+        AssetListMemory.netOpenGroups = openGroupIDs
+    }
+
+    private func setExpanded(_ kind: AssetKind, _ open: Bool) {
+        if open { expandedKinds.insert(kind) } else { expandedKinds.remove(kind) }
+    }
+
+    private func setOpen(_ id: String, _ open: Bool) {
+        if open { openGroupIDs.insert(id) } else { openGroupIDs.remove(id) }
     }
 
     private func syncOpenForMerge() {
