@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A group that was on screen when 流動／股票／現金 folded into 資產.
+/// A group that was on screen just before a merge, restored when that merge splits.
 private struct AssetChild: Identifiable {
     var id: String
     var title: String
@@ -13,11 +13,10 @@ struct AssetListView: View {
     static let restingTopInset: CGFloat = 44
     var showsChrome = true
     var topInset = restingTopInset
-    /// Exposure lens keeps 原／槓／現. Net worth groups by `grouping`.
+    /// Exposure lens keeps 原／槓／現. Net worth lists every kind.
     var exposureOnly = false
     @Environment(Portfolio.self) private var portfolio
     @AppStorage("hideAmounts") private var hideAmounts = false
-    @AppStorage("assetNetGrouping") private var grouping: AssetGrouping = .overview
     @State private var editing: AssetItem?
     @State private var showAdd = false
     @State private var addKind: AssetKind = .original
@@ -53,10 +52,8 @@ struct AssetListView: View {
     @State private var assetHeldStocks = false
     @State private var assetHeldLiquid = false
     @State private var liquidChildren: [AssetChild] = []
-    @State private var liquidHeadID = ""
     @State private var liquidHeldStocks = false
     @State private var stockChildren: [AssetChild] = []
-    @State private var stockHeadID = ""
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .title3) private var titleSize: CGFloat = 20
 
@@ -127,25 +124,12 @@ struct AssetListView: View {
             if wasExposure { AssetListMemory.exposureKinds = expandedKinds }
             if isExposure { expandedKinds = AssetListMemory.exposureKinds }
         }
-        .onChange(of: grouping) { _, _ in
-            cancelMergeIfNeeded()
-            stockChildren = []
-            liquidChildren = []
-            assetChildren = []
-        }
         .onDisappear(perform: persistGroups)
     }
 
     private var baseBuckets: [AssetBucket] {
-        if exposureOnly {
-            [
-                AssetBucket(id: "original", title: "原型", kinds: [.original]),
-                AssetBucket(id: "leverage", title: "槓桿", kinds: [.leverage]),
-                AssetBucket(id: "cash", title: "現金", kinds: [.cash]),
-            ]
-        } else {
-            grouping.buckets
-        }
+        let kinds: [AssetKind] = exposureOnly ? [.original, .leverage, .cash] : AssetKind.allCases
+        return kinds.map { AssetBucket(id: $0.rawValue, title: $0.compactTitle, kinds: [$0]) }
     }
 
     private var shownBuckets: [AssetBucket] {
@@ -198,81 +182,12 @@ struct AssetListView: View {
     @ViewBuilder
     private func bucketItems(_ bucket: AssetBucket) -> some View {
         if isOpen(bucket) {
-            if assetMerged, bucket.kinds == [.original, .leverage, .cash, .realEstate] {
-                assetLevel(assetChildren)
-            } else if liquidMerged, bucket.kinds == [.original, .leverage, .cash] {
-                liquidLevel(liquidChildren)
-            } else if stocksMerged, bucket.kinds == [.original, .leverage] {
-                stockLevel(stockChildren)
-            } else {
-                rowsOrEmpty(
-                    items(in: bucket),
-                    trackLink: tracksLinkRows(bucket) ? bucket.id : nil,
-                    onLink: linkAction(for: bucket)
-                )
-            }
+            rowsOrEmpty(
+                items(in: bucket),
+                trackLink: tracksLinkRows(bucket) ? bucket.id : nil,
+                onLink: linkAction(for: bucket)
+            )
         }
-    }
-
-    private func toggleAssetChild(_ id: String) { toggle(&assetChildren, id) }
-    private func toggleLiquidChild(_ id: String) { toggle(&liquidChildren, id) }
-    private func toggleStockChild(_ id: String) { toggle(&stockChildren, id) }
-
-    private func toggle(_ children: inout [AssetChild], _ id: String) {
-        guard let index = children.firstIndex(where: { $0.id == id }) else { return }
-        withAnimation { children[index].open.toggle() }
-    }
-
-    /// Expanded merged group shows the groups that were on screen before that merge.
-    @ViewBuilder
-    private func assetLevel(_ children: [AssetChild]) -> some View {
-        ForEach(children) { child in
-            childHeader(child, mark: "asset") { toggleAssetChild(child.id) }
-            if child.open { belowLiquid(child) }
-        }
-    }
-
-    @ViewBuilder
-    private func liquidLevel(_ children: [AssetChild]) -> some View {
-        ForEach(children) { child in
-            childHeader(child, mark: "liquid") { toggleLiquidChild(child.id) }
-            if child.open { belowStock(child) }
-        }
-    }
-
-    @ViewBuilder
-    private func stockLevel(_ children: [AssetChild]) -> some View {
-        ForEach(children) { child in
-            childHeader(child, mark: "stock") { toggleStockChild(child.id) }
-            if child.open {
-                rowsOrEmpty(items(in: child.kinds), trackLink: child.id, onLink: nil)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func belowLiquid(_ child: AssetChild) -> some View {
-        if child.id == liquidHeadID, child.kinds == [.original, .leverage, .cash], liquidChildren.count > 1 {
-            liquidLevel(liquidChildren)
-        } else {
-            belowStock(child)
-        }
-    }
-
-    @ViewBuilder
-    private func belowStock(_ child: AssetChild) -> some View {
-        if child.id == stockHeadID, child.kinds == [.original, .leverage], stockChildren.count > 1 {
-            stockLevel(stockChildren)
-        } else {
-            rowsOrEmpty(items(in: child.kinds), trackLink: child.id, onLink: nil)
-        }
-    }
-
-    private func childHeader(_ child: AssetChild, mark: String, action: @escaping () -> Void) -> some View {
-        headerChrome(
-            groupHeader(child.title, open: child.open, amount: amount(of: child.kinds), action: action)
-                .overlay(alignment: .bottom) { rowBottomTracker("\(mark)-\(child.id)") }
-        )
     }
 
     private func items(in bucket: AssetBucket) -> [AssetItem] {
@@ -384,32 +299,9 @@ struct AssetListView: View {
     private var menuBar: some View {
         HStack {
             hideButton
-            if !exposureOnly { groupingMenu }
             Spacer(minLength: 16)
             trailingCluster
         }
-    }
-
-    private var groupingMenu: some View {
-        Menu {
-            Picker("分組", selection: $grouping) {
-                ForEach(AssetGrouping.allCases) { option in
-                    Text(option.title).tag(option)
-                }
-            }
-        } label: {
-            HStack(spacing: 4) {
-                Text(grouping.title)
-                    .lineLimit(1)
-                Image(systemName: "chevron.up.chevron.down")
-                    .imageScale(.small)
-            }
-            .padding(.horizontal, 12)
-            .frame(height: 44)
-        }
-        .buttonStyle(.plain)
-        .modifier(CapsuleGlass())
-        .accessibilityLabel("分組，\(grouping.title)")
     }
 
     private var hideButton: some View {
@@ -462,7 +354,7 @@ struct AssetListView: View {
         if exposureOnly {
             return bucket.kinds.contains { expandedKinds.contains($0) }
         }
-        return openGroupIDs.contains(grouping.storageID(for: bucket))
+        return openGroupIDs.contains(bucket.id)
     }
 
     private func toggleBucket(_ bucket: AssetBucket) {
@@ -584,10 +476,6 @@ struct AssetListView: View {
             .id(linkEpoch)
     }
 
-    private var openLinkRowBottom: CGFloat? {
-        measuredBottom(openLinkRowKeys)
-    }
-
     private func measuredBottom(_ keys: Set<String>) -> CGFloat? {
         var bottom: CGFloat?
         for key in keys {
@@ -601,27 +489,6 @@ struct AssetListView: View {
         let rows = items(in: bucket)
         if rows.isEmpty { return ["empty-\(bucket.id)"] }
         return Set(rows.map(\.id.uuidString))
-    }
-
-    private var openLinkRowKeys: Set<String> {
-        var keys: Set<String> = []
-        for bucket in shownBuckets where isLinkBucket(bucket) && isOpen(bucket) {
-            let rows = items(in: bucket)
-            if rows.isEmpty {
-                keys.insert("empty-\(bucket.id)")
-            } else {
-                keys.formUnion(rows.map(\.id.uuidString))
-            }
-        }
-        return keys
-    }
-
-    /// True when the group at the bottom of the line is open, so the line runs past its title.
-    private var endGroupIsOpen: Bool {
-        if stocksMerged {
-            return shownBuckets.contains { $0.kinds == [.original, .leverage] && isOpen($0) }
-        }
-        return shownBuckets.contains { $0.kinds == [.leverage] && isOpen($0) }
     }
 
     /// From the top of the 原型 title. A collapsed group ends at the bottom of its title.
@@ -641,13 +508,13 @@ struct AssetListView: View {
     private var stockLine: (x: CGFloat, top: CGFloat, height: CGFloat)? {
         guard stockPairAvailable, !stocksMerged, !liquidMerged, !assetMerged,
               let original = linkOriginal, let leverage = linkLeverage else { return nil }
-        let rows = endGroupIsOpen ? openLinkRowBottom : nil
+        let rows = shownBuckets.first { $0.kinds == [.leverage] }.flatMap { listedKeys(for: $0) }.flatMap(measuredBottom)
         return linkSpan(from: original, title: linkTitle, through: leverage, endTitle: linkLeverageTitle, rows: rows)
     }
 
     private var stockStub: (x: CGFloat, top: CGFloat, height: CGFloat)? {
         guard stockPairAvailable, stocksMerged, let original = linkOriginal else { return nil }
-        let rows = endGroupIsOpen ? measuredBottom(openChildKeys(stockChildren, mark: "stock")) : nil
+        let rows = shownBuckets.first { $0.kinds == [.original, .leverage] }.flatMap { listedKeys(for: $0) }.flatMap(measuredBottom)
         if let span = linkSpan(from: original, title: linkTitle, through: nil, endTitle: linkTitle, rows: rows) {
             return span
         }
@@ -662,8 +529,9 @@ struct AssetListView: View {
         let top = cashAnchorMaxY + 8
         guard top > 1 else { return nil }
         var bottom = cashTitle.maxY
-        if let cash = shownBuckets.first(where: { $0.kinds == [.cash] }), isOpen(cash),
-           let row = measuredBottom(rowKeys(for: cash)) {
+        if let cash = shownBuckets.first(where: { $0.kinds == [.cash] }),
+           let keys = listedKeys(for: cash),
+           let row = measuredBottom(keys) {
             bottom = max(bottom, row)
         }
         let height = bottom - top
@@ -675,16 +543,18 @@ struct AssetListView: View {
     private var cashAnchorMaxY: CGFloat {
         if stocksMerged, let stockTitle = linkTitle {
             var top = stockTitle.maxY
-            if let stock = shownBuckets.first(where: { $0.kinds == [.original, .leverage] }), isOpen(stock),
-               let row = measuredBottom(openChildKeys(stockChildren, mark: "stock")) {
+            if let stock = shownBuckets.first(where: { $0.kinds == [.original, .leverage] }),
+               let keys = listedKeys(for: stock),
+               let row = measuredBottom(keys) {
                 top = max(top, row)
             }
             return top
         }
         guard let leverageTitle = linkLeverageTitle else { return 0 }
         var top = leverageTitle.maxY
-        if let leverage = shownBuckets.first(where: { $0.kinds == [.leverage] }), isOpen(leverage),
-           let row = measuredBottom(rowKeys(for: leverage)) {
+        if let leverage = shownBuckets.first(where: { $0.kinds == [.leverage] }),
+           let keys = listedKeys(for: leverage),
+           let row = measuredBottom(keys) {
             top = max(top, row)
         }
         return top
@@ -697,8 +567,9 @@ struct AssetListView: View {
         let top = realAnchorMaxY + 8
         guard top > 1 else { return nil }
         var bottom = realTitle.maxY
-        if let real = shownBuckets.first(where: { $0.kinds == [.realEstate] }), isOpen(real),
-           let row = measuredBottom(rowKeys(for: real)) {
+        if let real = shownBuckets.first(where: { $0.kinds == [.realEstate] }),
+           let keys = listedKeys(for: real),
+           let row = measuredBottom(keys) {
             bottom = max(bottom, row)
         }
         let height = bottom - top
@@ -710,7 +581,7 @@ struct AssetListView: View {
         guard let above = bucketAboveReal else { return 0 }
         let titleBottom = above.kinds == [.cash] ? (linkCashTitle?.maxY ?? 0) : (linkTitle?.maxY ?? 0)
         var top = titleBottom
-        if isOpen(above), let row = measuredBottom(anchorKeys(for: above)) {
+        if let keys = listedKeys(for: above), let row = measuredBottom(keys) {
             top = max(top, row)
         }
         return top
@@ -718,11 +589,7 @@ struct AssetListView: View {
 
     private var assetLine: (x: CGFloat, top: CGFloat, height: CGFloat)? {
         guard assetMerged, assetJoinAvailable, let original = linkOriginal else { return nil }
-        let rows: CGFloat? = {
-            guard let bucket = shownBuckets.first(where: { $0.kinds == [.original, .leverage, .cash, .realEstate] }),
-                  isOpen(bucket) else { return nil }
-            return measuredBottom(openChildKeys(assetChildren, mark: "asset"))
-        }()
+        let rows = shownBuckets.first { $0.kinds == [.original, .leverage, .cash, .realEstate] }.flatMap { listedKeys(for: $0) }.flatMap(measuredBottom)
         if let span = linkSpan(from: original, title: linkTitle, through: nil, endTitle: linkTitle, rows: rows) {
             return span
         }
@@ -732,11 +599,7 @@ struct AssetListView: View {
 
     private var liquidLine: (x: CGFloat, top: CGFloat, height: CGFloat)? {
         guard liquidMerged, cashJoinAvailable, let original = linkOriginal else { return nil }
-        let rows: CGFloat? = {
-            guard let bucket = shownBuckets.first(where: { $0.kinds == [.original, .leverage, .cash] }),
-                  isOpen(bucket) else { return nil }
-            return measuredBottom(openChildKeys(liquidChildren, mark: "liquid"))
-        }()
+        let rows = shownBuckets.first { $0.kinds == [.original, .leverage, .cash] }.flatMap { listedKeys(for: $0) }.flatMap(measuredBottom)
         if let span = linkSpan(from: original, title: linkTitle, through: nil, endTitle: linkTitle, rows: rows) {
             return span
         }
@@ -791,7 +654,6 @@ struct AssetListView: View {
         let joined = stockJoinBuckets()
         guard !joined.isEmpty else { return }
         stockChildren = snapshot(joined)
-        stockHeadID = joined[0].id
         if reduceMotion {
             stocksMerged = true
             linkEpoch += 1
@@ -828,7 +690,6 @@ struct AssetListView: View {
         let joined = liquidJoinBuckets()
         guard !joined.isEmpty else { return }
         liquidChildren = snapshot(joined)
-        liquidHeadID = joined[0].id
         liquidHeldStocks = stocksMerged
         if reduceMotion {
             liquidMerged = true
@@ -919,7 +780,7 @@ struct AssetListView: View {
                 id: bucket.id,
                 title: bucket.title,
                 kinds: bucket.kinds,
-                storageID: grouping.storageID(for: bucket),
+                storageID: bucket.id,
                 open: isOpen(bucket)
             )
         }
@@ -969,7 +830,7 @@ struct AssetListView: View {
                 id: bucket.id,
                 title: bucket.title,
                 kinds: bucket.kinds,
-                storageID: grouping.storageID(for: bucket),
+                storageID: bucket.id,
                 open: isOpen(bucket)
             )
         }
@@ -997,38 +858,9 @@ struct AssetListView: View {
         return Array(shown[head...cash])
     }
 
-    private func nestedSnapshot(of child: AssetChild) -> (children: [AssetChild], mark: String)? {
-        if child.id == liquidHeadID, child.kinds == [.original, .leverage, .cash], liquidChildren.count > 1 {
-            return (liquidChildren, "liquid")
-        }
-        if child.id == stockHeadID, child.kinds == [.original, .leverage], stockChildren.count > 1 {
-            return (stockChildren, "stock")
-        }
-        return nil
-    }
-
-    private func openChildKeys(_ children: [AssetChild], mark: String) -> Set<String> {
-        var keys = Set(children.map { "\(mark)-\($0.id)" })
-        for child in children where child.open {
-            if let nested = nestedSnapshot(of: child) {
-                keys.formUnion(openChildKeys(nested.children, mark: nested.mark))
-            } else {
-                let rows = items(in: child.kinds)
-                if rows.isEmpty {
-                    keys.insert("empty-\(child.id)")
-                } else {
-                    keys.formUnion(rows.map(\.id.uuidString))
-                }
-            }
-        }
-        return keys
-    }
-
-    private func anchorKeys(for bucket: AssetBucket) -> Set<String> {
-        let child = AssetChild(id: bucket.id, title: bucket.title, kinds: bucket.kinds, storageID: "", open: true)
-        if let nested = nestedSnapshot(of: child) {
-            return openChildKeys(nested.children, mark: nested.mark)
-        }
+    /// Rows on screen under an open group. A merged group lists every asset it folded in.
+    private func listedKeys(for bucket: AssetBucket) -> Set<String>? {
+        guard isOpen(bucket) else { return nil }
         return rowKeys(for: bucket)
     }
 
@@ -1065,7 +897,7 @@ struct AssetListView: View {
     }
 
     private func toggle(_ bucket: AssetBucket) {
-        let id = grouping.storageID(for: bucket)
+        let id = bucket.id
         withAnimation {
             if openGroupIDs.contains(id) {
                 openGroupIDs.remove(id)
@@ -1083,8 +915,8 @@ struct AssetListView: View {
             persistGroups()
             return
         }
-        guard let bucket = grouping.buckets.first(where: { $0.kinds.contains(item.kind) }) else { return }
-        withAnimation { _ = openGroupIDs.insert(grouping.storageID(for: bucket)) }
+        guard let bucket = shownBuckets.first(where: { $0.kinds.contains(item.kind) }) else { return }
+        withAnimation { _ = openGroupIDs.insert(bucket.id) }
         AssetListMemory.netOpenGroups = openGroupIDs
     }
 
