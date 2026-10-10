@@ -527,7 +527,7 @@ struct AssetListView: View {
     private var cashLine: (x: CGFloat, top: CGFloat, height: CGFloat)? {
         guard cashJoinAvailable, !liquidMerged, !linkCollapsed || collapsingLiquid,
               let cashTitle = linkCashTitle else { return nil }
-        let top = cashAnchorMaxY
+        let top = cashAnchorMaxY + 8
         guard top > 1 else { return nil }
         var bottom = cashTitle.maxY
         if let cash = shownBuckets.first(where: { $0.kinds == [.cash] }), isOpen(cash),
