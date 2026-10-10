@@ -62,6 +62,23 @@ func bucketsMergingStocks(_ buckets: [AssetBucket], merged: Bool) -> [AssetBucke
     return next
 }
 
+/// Keeps the 原型 bucket's id and drops 槓桿 and 現金, so the header can retitle to 流動.
+func bucketsMergingLiquid(_ buckets: [AssetBucket], merged: Bool) -> [AssetBucket] {
+    guard merged,
+          let original = buckets.firstIndex(where: { $0.kinds == [.original] }),
+          let leverage = buckets.firstIndex(where: { $0.kinds == [.leverage] }),
+          let cash = buckets.firstIndex(where: { $0.kinds == [.cash] }),
+          leverage == original + 1,
+          cash == leverage + 1
+    else { return buckets }
+    var next = buckets
+    let kept = next[original]
+    next[original] = AssetBucket(id: kept.id, title: "流動", kinds: [.original, .leverage, .cash])
+    next.remove(at: cash)
+    next.remove(at: leverage)
+    return next
+}
+
 struct AssetBucket: Identifiable {
     var id: String
     var title: String
