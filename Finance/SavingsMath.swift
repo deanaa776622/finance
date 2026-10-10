@@ -3,18 +3,20 @@ import Foundation
 struct SavingsPlan: Equatable {
     var annualCost: Decimal
     var annualRatePercent: Double
+    /// Safe withdrawal rate. The target is annual cost divided by this, not by the return.
+    var withdrawalRatePercent: Double = 4
     var monthlyContribution: Decimal
     /// When set, monthly contribution is solved so this horizon still holds as assets change.
     var retirementYears: Double? = nil
 
     static let prototype = SavingsPlan(
-        annualCost: 1_440_000, annualRatePercent: 7, monthlyContribution: 13_500
+        annualCost: 1_440_000, annualRatePercent: 7, withdrawalRatePercent: 4, monthlyContribution: 13_500
     )
 
     /// Keeps `retirementYears` fixed by replacing the contribution. No horizon leaves the plan unchanged.
     func solving(presentValue: Decimal) -> SavingsPlan {
         guard let years = retirementYears, years >= 0,
-              let future = SavingsMath.targetAmount(cost: annualCost, annualRatePercent: annualRatePercent),
+              let future = SavingsMath.targetAmount(cost: annualCost, withdrawalRatePercent: withdrawalRatePercent),
               let payment = SavingsMath.monthlyContribution(
                 years: years,
                 annualRatePercent: annualRatePercent,
@@ -30,13 +32,15 @@ struct SavingsPlan: Equatable {
 
 extension SavingsPlan: Codable {
     private enum CodingKeys: String, CodingKey {
-        case annualCost, annualRatePercent, monthlyContribution, retirementYears
+        case annualCost, annualRatePercent, withdrawalRatePercent, monthlyContribution, retirementYears
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         annualCost = try c.decode(Decimal.self, forKey: .annualCost)
         annualRatePercent = try c.decode(Double.self, forKey: .annualRatePercent)
+        // Old saves used the return as the divisor. Keep that number until a withdrawal rate is stored.
+        withdrawalRatePercent = try c.decodeIfPresent(Double.self, forKey: .withdrawalRatePercent) ?? annualRatePercent
         monthlyContribution = try c.decode(Decimal.self, forKey: .monthlyContribution)
         retirementYears = try c.decodeIfPresent(Double.self, forKey: .retirementYears)
     }
@@ -45,6 +49,7 @@ extension SavingsPlan: Codable {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(annualCost, forKey: .annualCost)
         try c.encode(annualRatePercent, forKey: .annualRatePercent)
+        try c.encode(withdrawalRatePercent, forKey: .withdrawalRatePercent)
         try c.encode(monthlyContribution, forKey: .monthlyContribution)
         try c.encodeIfPresent(retirementYears, forKey: .retirementYears)
     }
@@ -77,7 +82,7 @@ struct SavingsOutlook {
     }
 
     var detailText: String {
-        if needsPositiveRate { return "報酬率需大於 0" }
+        if needsPositiveRate { return "提領率需大於 0" }
         if alreadyReached || retiresNow { return "已達成目標" }
         if unreachable { return "可提高月投資或報酬率" }
         guard let months else { return "" }
@@ -86,10 +91,10 @@ struct SavingsOutlook {
 }
 
 enum SavingsMath {
-    /// Nest egg that funds `annualCost` at `annualRatePercent` (web: cost ÷ rate).
-    static func targetAmount(cost: Decimal, annualRatePercent: Double) -> Decimal? {
-        guard annualRatePercent > 0 else { return nil }
-        return cost / (Decimal(annualRatePercent) / 100)
+    /// Nest egg that funds `annualCost` at the withdrawal rate (年花費 ÷ 提領率).
+    static func targetAmount(cost: Decimal, withdrawalRatePercent: Double) -> Decimal? {
+        guard withdrawalRatePercent > 0 else { return nil }
+        return cost / (Decimal(withdrawalRatePercent) / 100)
     }
 
     /// Monthly amount that reaches `futureValue` in `years`, using the same monthly compounding as `nper`.
@@ -129,9 +134,9 @@ enum SavingsMath {
         let pv = NSDecimalNumber(decimal: presentValue).doubleValue
         let pmt = NSDecimalNumber(decimal: plan.monthlyContribution).doubleValue
         let annualRate = plan.annualRatePercent / 100
-        let fvDec = targetAmount(cost: plan.annualCost, annualRatePercent: plan.annualRatePercent)
+        let fvDec = targetAmount(cost: plan.annualCost, withdrawalRatePercent: plan.withdrawalRatePercent)
         let fv = fvDec.map { NSDecimalNumber(decimal: $0).doubleValue } ?? 0
-        let needsRate = plan.annualRatePercent <= 0 && plan.annualCost > 0
+        let needsRate = plan.withdrawalRatePercent <= 0 && plan.annualCost > 0
         let reached = fv > 0 && pv >= fv
         let rawMonths: Double?
         if needsRate || fvDec == nil {
@@ -161,10 +166,10 @@ enum SavingsMath {
 
     /// Zero years means the cash that makes the distance 0 today. A shortfall is that lump.
     private static func retiringNow(plan: SavingsPlan, presentValue: Decimal) -> SavingsOutlook {
-        let fvDec = targetAmount(cost: plan.annualCost, annualRatePercent: plan.annualRatePercent)
+        let fvDec = targetAmount(cost: plan.annualCost, withdrawalRatePercent: plan.withdrawalRatePercent)
         let pv = NSDecimalNumber(decimal: presentValue).doubleValue
         let fv = fvDec.map { NSDecimalNumber(decimal: $0).doubleValue } ?? 0
-        let needsRate = plan.annualRatePercent <= 0 && plan.annualCost > 0
+        let needsRate = plan.withdrawalRatePercent <= 0 && plan.annualCost > 0
         let reached = fv > 0 && pv >= fv
         return SavingsOutlook(
             targetAmount: fvDec,

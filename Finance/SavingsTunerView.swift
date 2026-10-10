@@ -6,6 +6,7 @@ struct SavingsTunerView: View {
     @AppStorage("hideAmounts") private var hideAmounts = false
     @FocusState private var field: Field?
     @State private var costText = ""
+    @State private var withdrawText = ""
     @State private var rateText = ""
     @State private var pmtText = ""
     @State private var yearsText = ""
@@ -13,22 +14,14 @@ struct SavingsTunerView: View {
     @State private var horizon: Double?
     @State private var baseline: SavingsPlan?
 
-    private enum Field: Hashable { case cost, rate, pmt, years }
+    private enum Field: Hashable { case cost, withdraw, rate, pmt, years }
 
     var body: some View {
         Form {
             Section {
                 moneyRow("年花費", text: $costText, field: .cost)
-                HStack {
-                    Text("年報酬率")
-                    Spacer()
-                    TextField("％", text: $rateText)
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
-                        .focused($field, equals: .rate)
-                        .frame(width: 72)
-                    Text("%").foregroundStyle(.secondary)
-                }
+                percentRow("提領率", text: $withdrawText, focus: .withdraw)
+                percentRow("年報酬率", text: $rateText, focus: .rate)
                 moneyRow("月投資額", text: $pmtText, field: .pmt, keepSign: true)
                 HStack {
                     Text("幾年後退休")
@@ -69,7 +62,7 @@ struct SavingsTunerView: View {
             Section {
                 LabeledContent("目前資產", value: MoneyFormat.string(portfolio.allocableTotal, hidden: hideAmounts))
                 LabeledContent("目標金額") {
-                    Text(draftOutlook?.targetAmount.map(MoneyFormat.string) ?? "報酬率需大於 0")
+                    Text(draftOutlook?.targetAmount.map(MoneyFormat.string) ?? "提領率需大於 0")
                 }
             }
         }
@@ -86,6 +79,7 @@ struct SavingsTunerView: View {
         }
         .onAppear(perform: load)
         .onChange(of: costText) { _, _ in followInputs() }
+        .onChange(of: withdrawText) { _, _ in followInputs() }
         .onChange(of: rateText) { _, _ in followInputs() }
         .onChange(of: pmtText) { old, new in
             guard field == .pmt else { return }
@@ -122,12 +116,14 @@ struct SavingsTunerView: View {
 
     private var draft: SavingsPlan? {
         guard let cost = NumberParse.decimal(costText), cost >= 0,
+              let withdrawal = NumberParse.double(withdrawText), withdrawal >= 0, withdrawal <= 100,
               let rate = NumberParse.double(rateText), rate >= 0, rate <= 100,
               let pmt = NumberParse.decimal(pmtText)
         else { return nil }
         return SavingsPlan(
             annualCost: cost,
             annualRatePercent: rate,
+            withdrawalRatePercent: withdrawal,
             monthlyContribution: pmt,
             retirementYears: horizon
         )
@@ -135,6 +131,19 @@ struct SavingsTunerView: View {
 
     private var draftOutlook: SavingsOutlook? {
         draft.map { SavingsMath.outlook(plan: $0, presentValue: portfolio.allocableTotal) }
+    }
+
+    private func percentRow(_ title: String, text: Binding<String>, focus: Field) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            TextField("％", text: text)
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .focused($field, equals: focus)
+                .frame(width: 72)
+            Text("%").foregroundStyle(.secondary)
+        }
     }
 
     private func moneyRow(
@@ -192,6 +201,7 @@ struct SavingsTunerView: View {
         let plan = portfolio.savings ?? .prototype
         horizon = plan.retirementYears
         costText = NumberParse.grouped(plan.annualCost)
+        withdrawText = String(format: "%.2f", plan.withdrawalRatePercent)
         rateText = String(format: "%.2f", plan.annualRatePercent)
         pmtText = contributionText(plan.monthlyContribution)
         if let years = plan.retirementYears {
@@ -209,8 +219,9 @@ struct SavingsTunerView: View {
     private func solvedPayment() -> Decimal? {
         guard let years = horizon, years >= 0,
               let cost = NumberParse.decimal(costText),
+              let withdrawal = NumberParse.double(withdrawText), withdrawal > 0, withdrawal <= 100,
               let rate = NumberParse.double(rateText), rate >= 0, rate <= 100,
-              let future = SavingsMath.targetAmount(cost: cost, annualRatePercent: rate)
+              let future = SavingsMath.targetAmount(cost: cost, withdrawalRatePercent: withdrawal)
         else { return nil }
         return SavingsMath.monthlyContribution(
             years: years,
@@ -223,8 +234,9 @@ struct SavingsTunerView: View {
     private func applyHorizon() {
         guard let years = NumberParse.double(yearsText), years >= 0,
               let cost = NumberParse.decimal(costText),
+              let withdrawal = NumberParse.double(withdrawText), withdrawal > 0, withdrawal <= 100,
               let rate = NumberParse.double(rateText), rate >= 0, rate <= 100,
-              let future = SavingsMath.targetAmount(cost: cost, annualRatePercent: rate),
+              let future = SavingsMath.targetAmount(cost: cost, withdrawalRatePercent: withdrawal),
               let payment = SavingsMath.monthlyContribution(
                 years: years,
                 annualRatePercent: rate,
@@ -267,6 +279,11 @@ struct SavingsTunerView: View {
 }
 
 #Preview {
+    let _ = {
+        let egg = SavingsMath.targetAmount(cost: 1_440_000, withdrawalRatePercent: 4)
+        assert(egg == .some(36_000_000))
+        return egg
+    }()
     NavigationStack {
         SavingsTunerView()
             .environment(Portfolio(items: [

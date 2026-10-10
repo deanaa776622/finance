@@ -73,10 +73,10 @@ final class Portfolio {
         items.filter(\.kind.countsTowardAllocation).reduce(0) { $0 + $1.twdValue }
     }
 
-    /// Baseline for per-bucket target amounts (web: `sav_target_total` from cost ÷ rate).
+    /// Baseline for per-bucket target amounts (年花費 ÷ 提領率).
     var targetFromSavings: Decimal? {
         guard let savings else { return nil }
-        return SavingsMath.targetAmount(cost: savings.annualCost, annualRatePercent: savings.annualRatePercent)
+        return SavingsMath.targetAmount(cost: savings.annualCost, withdrawalRatePercent: savings.withdrawalRatePercent)
     }
 
     var effectiveTargetTotal: Decimal {
