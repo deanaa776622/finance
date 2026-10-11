@@ -234,8 +234,6 @@ struct HomeView: View {
             let width = max(heroFrame.width, 1)
             let next = min(1, max(0, lens - moved.width / width))
             lensDrag = next - lens
-            let showExposure = next > 0.5
-            if exposureList != showExposure { exposureList = showExposure }
         } else {
             let next = trackedPanel(dy: moved.height, screen: screen)
             drag = next - panel
