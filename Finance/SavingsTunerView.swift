@@ -3,6 +3,7 @@ import SwiftUI
 
 struct SavingsTunerView: View {
     @Environment(Portfolio.self) private var portfolio
+    @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
     @FocusState private var field: Field?
     @State private var costText = ""
@@ -67,6 +68,8 @@ struct SavingsTunerView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(palette.ground)
         .scrollEdgeFade()
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
@@ -336,6 +339,7 @@ struct SavingsTunerView: View {
                 AssetItem(name: "2x 槓桿 ETF", kind: .leverage, amount: 600_000),
                 AssetItem(name: "活存", kind: .cash, amount: 400_000),
             ]))
+            .environment(Palette())
     }
     .preferredColorScheme(.dark)
 }

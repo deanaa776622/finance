@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Five colors shared by the home glow, allocation bar, and night background.
+/// Five colors shared by the home glow, allocation bar, and night background of home, net worth, exposure, and savings.
 @Observable
 final class Palette {
     var original: Color { didSet { store() } }

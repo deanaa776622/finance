@@ -16,6 +16,7 @@ struct AssetListView: View {
     /// Exposure lens keeps 原／槓／現. Net worth lists every kind.
     var exposureOnly = false
     @Environment(Portfolio.self) private var portfolio
+    @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
     @State private var editing: AssetItem?
     @State private var showAdd = false
@@ -101,7 +102,7 @@ struct AssetListView: View {
         .listSectionSeparator(.hidden)
         .listSectionSpacing(0)
         .scrollContentBackground(.hidden)
-        .background(Color(.systemGroupedBackground))
+        .background(palette.ground)
         .contentMargins(.top, topInset, for: .scrollContent)
         .contentMargins(.bottom, showsChrome ? 64 : 0, for: .scrollContent)
         .onGeometryChange(for: CGPoint.self) {
@@ -261,7 +262,7 @@ struct AssetListView: View {
         view
             .listRowInsets(EdgeInsets(top: 18, leading: 32, bottom: 8, trailing: 32))
             .listRowSeparator(.hidden)
-            .listRowBackground(Color(.systemGroupedBackground))
+            .listRowBackground(palette.ground)
             .textCase(nil)
     }
 

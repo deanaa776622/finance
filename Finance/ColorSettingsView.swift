@@ -26,7 +26,7 @@ struct ColorSettingsView: View {
                 Section {
                     colorRow(.ground)
                 } footer: {
-                    Text("首屏夜色，上沿會稍亮")
+                    Text("首屏、總淨值、總曝險、距離目標。首屏上沿會稍亮")
                 }
                 Section {
                     Button("恢復預設") { palette.reset() }
