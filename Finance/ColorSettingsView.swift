@@ -9,19 +9,19 @@ struct ColorSettingsView: View {
         NavigationStack {
             Form {
                 Section {
-                    ColorPicker("原型", selection: $palette.original, supportsOpacity: false)
-                    ColorPicker("槓桿", selection: $palette.leverage, supportsOpacity: false)
-                    ColorPicker("現金", selection: $palette.cash, supportsOpacity: false)
+                    colorRow("原型", selection: $palette.original)
+                    colorRow("槓桿", selection: $palette.leverage)
+                    colorRow("現金", selection: $palette.cash)
                 } footer: {
                     Text("光球、配置條、目標百分比共用")
                 }
                 Section {
-                    ColorPicker("偏離", selection: $palette.drift, supportsOpacity: false)
+                    colorRow("偏離", selection: $palette.drift)
                 } footer: {
                     Text("偏離目標時混進那一桶")
                 }
                 Section {
-                    ColorPicker("底", selection: $palette.ground, supportsOpacity: false)
+                    colorRow("底", selection: $palette.ground)
                 } footer: {
                     Text("首屏夜色，上沿會稍亮")
                 }
@@ -42,6 +42,24 @@ struct ColorSettingsView: View {
         .presentationDetents([.medium, .large])
         .presentationBackground(Color(.systemGroupedBackground))
         .presentationDragIndicator(.visible)
+    }
+
+    /// Plain swatch. The system picker stays, without its rainbow ring.
+    private func colorRow(_ title: String, selection: Binding<Color>) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Circle()
+                .fill(selection.wrappedValue)
+                .frame(width: 26, height: 26)
+                .overlay(Circle().strokeBorder(.separator, lineWidth: 1))
+                .accessibilityHidden(true)
+                .overlay {
+                    ColorPicker(title, selection: selection, supportsOpacity: false)
+                        .labelsHidden()
+                        .opacity(0)
+                }
+        }
     }
 }
 
