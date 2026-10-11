@@ -8,6 +8,7 @@ struct ColorDraftPicker: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var draft: Color
+    @State private var box: ColorDraftBox
     @State private var confirmed = false
 
     init(title: String, initial: Color, onConfirm: @escaping (Color) -> Void) {
@@ -15,10 +16,11 @@ struct ColorDraftPicker: View {
         self.initial = initial
         self.onConfirm = onConfirm
         _draft = State(initialValue: initial)
+        _box = State(initialValue: ColorDraftBox(initial))
     }
 
     var body: some View {
-        SystemColorPicker(color: $draft) {
+        SystemColorPicker(color: $draft, box: box) {
             if !confirmed { dismiss() }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
@@ -36,8 +38,9 @@ struct ColorDraftPicker: View {
                     .accessibilityLabel("關閉")
                     Spacer()
                     Button("確認") {
+                        let picked = box.color
                         confirmed = true
-                        onConfirm(draft)
+                        onConfirm(picked)
                         dismiss()
                     }
                     .font(.body.weight(.semibold))
@@ -88,17 +91,29 @@ private final class PaletteColorPicker: UIColorPickerViewController {
     }
 }
 
+/// Holds the live picker color. The SwiftUI draft can lag behind the wheel.
+private final class ColorDraftBox {
+    var fallback: UIColor
+    weak var picker: UIColorPickerViewController?
+    var color: Color { Color(uiColor: picker?.selectedColor ?? fallback) }
+    init(_ color: Color) { fallback = UIColor(color) }
+}
+
 private struct SystemColorPicker: UIViewControllerRepresentable {
     @Binding var color: Color
+    var box: ColorDraftBox
     var onFinish: () -> Void
 
     func makeUIViewController(context: Context) -> PickerHost {
-        PickerHost(initial: UIColor(color))
+        let host = PickerHost(initial: UIColor(color))
+        host.attach(box)
+        return host
     }
 
     func updateUIViewController(_ host: PickerHost, context: Context) {
         host.color = $color
         host.onFinish = onFinish
+        host.attach(box)
     }
 
     func sizeThatFits(_ proposal: ProposedViewSize, uiViewController: PickerHost, context: Context) -> CGSize? {
@@ -109,7 +124,14 @@ private struct SystemColorPicker: UIViewControllerRepresentable {
         private let picker = PaletteColorPicker()
         var color: Binding<Color>?
         var onFinish: () -> Void = {}
+        private var box: ColorDraftBox?
         private var hidClose = false
+        private var colorObservation: NSKeyValueObservation?
+
+        func attach(_ box: ColorDraftBox) {
+            self.box = box
+            box.picker = picker
+        }
 
         init(initial: UIColor) {
             super.init(nibName: nil, bundle: nil)
@@ -134,6 +156,10 @@ private struct SystemColorPicker: UIViewControllerRepresentable {
             ])
             picker.didMove(toParent: self)
             view.clipsToBounds = true
+            colorObservation = picker.observe(\.selectedColor, options: [.new]) { [weak self] picker, _ in
+                self?.box?.fallback = picker.selectedColor
+                self?.color?.wrappedValue = Color(uiColor: picker.selectedColor)
+            }
         }
 
         override func viewDidAppear(_ animated: Bool) {
@@ -152,6 +178,7 @@ private struct SystemColorPicker: UIViewControllerRepresentable {
             didSelect color: UIColor,
             continuously: Bool
         ) {
+            box?.fallback = color
             self.color?.wrappedValue = Color(uiColor: color)
         }
 
