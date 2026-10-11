@@ -46,10 +46,10 @@ struct SavingsTunerView: View {
                     Chart(points) { p in
                         AreaMark(x: .value("年", p.year), y: .value("資產", p.amount))
                             .interpolationMethod(.catmullRom)
-                            .foregroundStyle(.white.opacity(0.18).gradient)
+                            .foregroundStyle(Color.primary.opacity(0.18).gradient)
                         LineMark(x: .value("年", p.year), y: .value("資產", p.amount))
                             .interpolationMethod(.catmullRom)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color.primary)
                             .lineStyle(StrokeStyle(lineWidth: 2))
                     }
                     .chartXAxis(.hidden)

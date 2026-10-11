@@ -12,6 +12,11 @@ final class Palette {
     /// Top of the home gradient: the same night, a little brighter.
     var canvasTop: Color { ground.mix(with: .white, by: 0.05) }
 
+    /// Light ground gets dark text and system surfaces; dark ground stays in night mode.
+    var colorScheme: ColorScheme {
+        ground.relativeLuminance(scheme: .dark) > 0.179 ? .light : .dark
+    }
+
     init(
         original: Color = Palette.defaultOriginal,
         leverage: Color = Palette.defaultLeverage,
@@ -147,4 +152,40 @@ struct PaletteTheme: Identifiable, Codable {
     var id: UUID
     var name: String
     fileprivate var colors: Stored
+}
+
+extension Color {
+    /// Black or white text, whichever contrasts with this fill. The switch is the WCAG crossover.
+    func readable(on background: Color, scheme: ColorScheme) -> Color {
+        guard contrast(against: background, scheme: scheme) < 3 else { return self }
+        let ink: Color = background.relativeLuminance(scheme: scheme) > 0.179 ? .black : .white
+        var amount = 0.25
+        var mixed = self
+        for _ in 0..<5 {
+            mixed = mix(with: ink, by: amount)
+            if mixed.contrast(against: background, scheme: scheme) >= 3 { return mixed }
+            amount += 0.15
+        }
+        return mixed
+    }
+
+    fileprivate func relativeLuminance(scheme: ColorScheme) -> Double {
+        var environment = EnvironmentValues()
+        environment.colorScheme = scheme
+        let resolved = resolve(in: environment)
+        func linear(_ channel: Float) -> Double {
+            let value = Double(channel)
+            return value <= 0.04045 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4)
+        }
+        let red = linear(resolved.red)
+        let green = linear(resolved.green)
+        let blue = linear(resolved.blue)
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+    }
+
+    private func contrast(against other: Color, scheme: ColorScheme) -> Double {
+        let lighter = max(relativeLuminance(scheme: scheme), other.relativeLuminance(scheme: scheme))
+        let darker = min(relativeLuminance(scheme: scheme), other.relativeLuminance(scheme: scheme))
+        return (lighter + 0.05) / (darker + 0.05)
+    }
 }

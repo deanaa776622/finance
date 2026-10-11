@@ -181,7 +181,7 @@ struct AssetListView: View {
     }
 
     private func headerColor(open: Bool) -> Color {
-        open ? .secondary : .white
+        open ? .secondary : .primary
     }
 
     @ViewBuilder
@@ -706,18 +706,18 @@ struct AssetListView: View {
     private var stockLinkLayer: some View {
         ZStack(alignment: .topLeading) {
             if netMerged, let line = netLine {
-                linkMark(line, collapsed: false, color: .white.opacity(0.85))
+                linkMark(line, collapsed: false, color: Color.primary.opacity(0.85))
             } else if collapsingNet {
                 debtLinkMark
             } else if assetMerged, let line = assetLine {
-                linkMark(line, collapsed: false, color: .white.opacity(0.85))
+                linkMark(line, collapsed: false, color: Color.primary.opacity(0.85))
                 debtLinkMark
             } else if liquidMerged, let line = liquidLine {
-                linkMark(line, collapsed: false, color: .white.opacity(0.85))
+                linkMark(line, collapsed: false, color: Color.primary.opacity(0.85))
                 realLinkMark
                 debtLinkMark
             } else if stocksMerged, let stub = stockStub {
-                linkMark(stub, collapsed: false, color: .white.opacity(0.85))
+                linkMark(stub, collapsed: false, color: Color.primary.opacity(0.85))
                 if let cash = cashLine {
                     linkMark(cash, collapsed: collapsingLiquid && linkCollapsed, color: .secondary)
                 }

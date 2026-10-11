@@ -90,7 +90,7 @@ struct HomeHero: View {
         HStack(spacing: 7) {
             ForEach(0..<2, id: \.self) { index in
                 Circle()
-                    .fill(.white.opacity(dotOn(index) ? 0.95 : 0.35))
+                    .fill(Color.primary.opacity(dotOn(index) ? 0.95 : 0.35))
                     .frame(width: 6, height: 6)
                     .scaleEffect(dotOn(index) ? 1.15 : 1)
             }

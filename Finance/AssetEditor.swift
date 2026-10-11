@@ -129,7 +129,7 @@ struct AssetEditor: View {
                                 }
                             }
                             .buttonStyle(.bordered)
-                            .tint(.white)
+                            .tint(.primary)
                             .accessibilityLabel(quoteButtonTitle)
                             .disabled(!canQuote)
                         }
@@ -153,7 +153,7 @@ struct AssetEditor: View {
                                 name = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
                             }
                             .buttonStyle(.bordered)
-                            .tint(.white)
+                            .tint(.primary)
                             .disabled(!canCopySymbol)
                         }
                     } label: {
@@ -179,7 +179,7 @@ struct AssetEditor: View {
                                     .imageScale(.small)
                             }
                         }
-                        .tint(.white)
+                        .tint(.primary)
                     } label: {
                         alignedTitle("幣別")
                     }
@@ -210,7 +210,7 @@ struct AssetEditor: View {
                                 }
                             }
                             .buttonStyle(.bordered)
-                            .tint(.white)
+                            .tint(.primary)
                             .accessibilityLabel(rateButtonTitle)
                             .disabled(!canLookupRate || isRefreshingTotal)
                         }
@@ -238,7 +238,7 @@ struct AssetEditor: View {
                             }
                         }
                         .buttonStyle(.bordered)
-                        .tint(.white)
+                        .tint(.primary)
                         .accessibilityLabel("更新總金額")
                         .disabled(!canRefreshTotal)
                     }

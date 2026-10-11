@@ -80,7 +80,10 @@ struct TargetEditor: View {
                     .foregroundStyle(.secondary)
             }
             .font(.title3.weight(.semibold))
-            .foregroundStyle(palette.glow(for: kind, factor: portfolio.driftFactor(for: kind)))
+            .foregroundStyle(
+                palette.glow(for: kind, factor: portfolio.driftFactor(for: kind))
+                    .readable(on: Color(.systemGroupedBackground), scheme: palette.colorScheme)
+            )
             if portfolio.allocableTotal > 0 {
                 let label = gapLabel(kind: kind, percent: NumberParse.double(text.wrappedValue) ?? 0)
                 Text(label)
@@ -165,8 +168,8 @@ private struct AllocationGlowTrack: View {
                         }
                     }
                 }
-                .overlay(Capsule().strokeBorder(.white.opacity(0.2), lineWidth: 1))
-                .shadow(color: .white.opacity(0.28), radius: 8)
+                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.2), lineWidth: 1))
+                .shadow(color: Color.primary.opacity(0.28), radius: 8)
                 .highPriorityGesture(drag(width: geo.size.width))
         }
         .frame(height: 20)
@@ -178,7 +181,7 @@ private struct AllocationGlowTrack: View {
 
     private var seam: some View {
         Rectangle()
-            .fill(.white.opacity(0.9))
+            .fill(Color.primary.opacity(0.9))
             .frame(width: 1)
     }
 

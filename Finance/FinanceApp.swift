@@ -10,7 +10,7 @@ struct FinanceApp: App {
             HomeView()
                 .environment(portfolio)
                 .environment(palette)
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(palette.colorScheme)
         }
     }
 }

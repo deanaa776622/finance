@@ -86,7 +86,7 @@ struct HomeView: View {
                         .frame(height: geo.size.height - range * reveal)
                         .overlay(alignment: .bottom) {
                             Rectangle()
-                                .fill(.white.opacity(0.05))
+                                .fill(Color.primary.opacity(0.12))
                                 .frame(height: 3)
                                 .overlay(alignment: .leading) {
                                     GeometryReader { bar in
@@ -98,12 +98,12 @@ struct HomeView: View {
                                                 topTrailingRadius: 2
                                             )
                                             .fill(LinearGradient(
-                                                colors: [.white.opacity(0.3), .white],
+                                                colors: [Color.primary.opacity(0.35), Color.primary],
                                                 startPoint: .leading,
                                                 endPoint: .trailing
                                             ))
                                             .frame(width: bar.size.width * savingsProgress, height: 3)
-                                            .shadow(color: .white.opacity(0.7), radius: 8)
+                                            .shadow(color: Color.primary.opacity(0.45), radius: 8)
                                         }
                                     }
                                 }
@@ -145,6 +145,7 @@ struct HomeView: View {
             }
             .ignoresSafeArea(edges: [.top, .bottom])
             .background(palette.ground.ignoresSafeArea())
+            .preferredColorScheme(palette.colorScheme)
             .toolbar(.hidden, for: .navigationBar)
         }
     }
