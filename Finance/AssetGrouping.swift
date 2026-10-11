@@ -43,6 +43,32 @@ func bucketsMergingAssets(_ buckets: [AssetBucket], merged: Bool) -> [AssetBucke
     return next
 }
 
+/// Folds 負債 and every asset group above it into one 總淨值 bucket, keeping the top bucket's id.
+func bucketsMergingNetWorth(_ buckets: [AssetBucket], merged: Bool) -> [AssetBucket] {
+    guard merged, let range = netJoinRange(buckets) else { return buckets }
+    let order: [AssetKind] = [.original, .leverage, .cash, .realEstate, .debt]
+    let kinds = order.filter { kind in buckets[range].contains { $0.kinds.contains(kind) } }
+    var next = buckets
+    let kept = next[range.lowerBound]
+    next[range.lowerBound] = AssetBucket(id: kept.id, title: "總淨值", kinds: kinds)
+    next.removeSubrange((range.lowerBound + 1)..<range.upperBound)
+    return next
+}
+
+/// 負債 plus the contiguous asset buckets above it.
+func netJoinRange(_ buckets: [AssetBucket]) -> Range<Int>? {
+    let cluster: Set<AssetKind> = [.original, .leverage, .cash, .realEstate]
+    guard let debt = buckets.firstIndex(where: { $0.kinds == [.debt] }), debt > 0 else { return nil }
+    var head = debt
+    while head > 0 {
+        let kinds = buckets[head - 1].kinds
+        guard !kinds.isEmpty, kinds.allSatisfy({ cluster.contains($0) }) else { break }
+        head -= 1
+    }
+    guard head < debt else { return nil }
+    return head..<(debt + 1)
+}
+
 /// 實體 plus the contiguous original / leverage / cash buckets above it.
 func assetJoinRange(_ buckets: [AssetBucket]) -> Range<Int>? {
     let cluster: Set<AssetKind> = [.original, .leverage, .cash]
