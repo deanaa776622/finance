@@ -50,10 +50,16 @@ struct ColorSettingsView: View {
         .presentationDetents([.medium, .large])
         .presentationBackground(Color(.systemGroupedBackground))
         .presentationDragIndicator(.visible)
-        .sheet(item: $editing) { swatch in
-            ColorDraftPicker(title: swatch.title, initial: swatch.color(in: palette)) { picked in
-                swatch.set(picked, on: palette)
-            }
+        .background {
+            ColorDraftPresenter(
+                title: editing?.title,
+                initial: editing?.color(in: palette) ?? Palette.defaultOriginal,
+                onConfirm: { picked in
+                    editing?.set(picked, on: palette)
+                    editing = nil
+                },
+                onCancel: { editing = nil }
+            )
         }
         .alert("儲存主題", isPresented: $showSave) {
             TextField("主題名稱", text: $themeName)
@@ -101,22 +107,24 @@ private enum Swatch: String, Identifiable {
         }
     }
 
-    private var keyPath: ReferenceWritableKeyPath<Palette, Color> {
+    func color(in palette: Palette) -> Color {
         switch self {
-        case .original: \.original
-        case .leverage: \.leverage
-        case .cash: \.cash
-        case .drift: \.drift
-        case .ground: \.ground
+        case .original: palette.original
+        case .leverage: palette.leverage
+        case .cash: palette.cash
+        case .drift: palette.drift
+        case .ground: palette.ground
         }
     }
 
-    func color(in palette: Palette) -> Color {
-        palette[keyPath: keyPath]
-    }
-
     func set(_ color: Color, on palette: Palette) {
-        palette[keyPath: keyPath] = color
+        switch self {
+        case .original: palette.original = color
+        case .leverage: palette.leverage = color
+        case .cash: palette.cash = color
+        case .drift: palette.drift = color
+        case .ground: palette.ground = color
+        }
     }
 }
 

@@ -1,176 +1,121 @@
 import SwiftUI
 
-/// Color wheel that keeps a draft until 確認. The close button discards it.
-struct ColorDraftPicker: View {
-    let title: String
-    let initial: Color
-    let onConfirm: (Color) -> Void
+/// Presents the system color wheel. 確認 applies; close and swipe discard.
+/// ponytail: a child picker never updates its color — it has to be presented.
+struct ColorDraftPresenter: UIViewControllerRepresentable {
+    var title: String?
+    var initial: Color
+    var onConfirm: (Color) -> Void
+    var onCancel: () -> Void
 
-    @Environment(\.dismiss) private var dismiss
-    @State private var draft: Color
-    @State private var box: ColorDraftBox
-    @State private var confirmed = false
+    func makeCoordinator() -> Coordinator { Coordinator() }
 
-    init(title: String, initial: Color, onConfirm: @escaping (Color) -> Void) {
-        self.title = title
-        self.initial = initial
-        self.onConfirm = onConfirm
-        _draft = State(initialValue: initial)
-        _box = State(initialValue: ColorDraftBox(initial))
-    }
-
-    var body: some View {
-        SystemColorPicker(color: $draft, box: box) {
-            if !confirmed { dismiss() }
+    func makeUIViewController(context: Context) -> Host {
+        let host = Host()
+        host.onAppear = { [weak host] in
+            guard let host else { return }
+            context.coordinator.sync(host)
         }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            ZStack {
-                Text(title)
-                    .font(.headline)
-                HStack {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.body.weight(.semibold))
-                            .frame(width: 44, height: 44)
-                    }
-                    .accessibilityLabel("關閉")
-                    Spacer()
-                    Button("確認") {
-                        let picked = box.color
-                        confirmed = true
-                        onConfirm(picked)
-                        dismiss()
-                    }
-                    .font(.body.weight(.semibold))
-                    .frame(minHeight: 44)
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
-            .background(Color(.systemGroupedBackground))
-        }
-        .background(Color(.systemGroupedBackground))
-        .presentationDetents([.height(Self.sheetHeight)])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(Color(.systemGroupedBackground))
-    }
-
-    /// Short enough that the sheet top, and these buttons, stay below the status bar.
-    static let sheetHeight: CGFloat = 520
-}
-
-/// Keeps the system picker from forcing the sheet back to full height.
-private final class PaletteColorPicker: UIColorPickerViewController {
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        shortenSheet()
-    }
-
-    func shortenSheet() {
-        guard let sheet = enclosingSheet() else { return }
-        let id = UISheetPresentationController.Detent.Identifier("palette")
-        guard sheet.selectedDetentIdentifier != id else { return }
-        let detent = UISheetPresentationController.Detent.custom(identifier: id) { _ in
-            ColorDraftPicker.sheetHeight
-        }
-        sheet.detents = [detent]
-        sheet.selectedDetentIdentifier = id
-    }
-
-    private func enclosingSheet() -> UISheetPresentationController? {
-        var current: UIViewController? = self
-        while let controller = current {
-            if let sheet = controller.presentationController as? UISheetPresentationController {
-                return sheet
-            }
-            current = controller.parent
-        }
-        return sheetPresentationController
-    }
-}
-
-/// Holds the live picker color. The SwiftUI draft can lag behind the wheel.
-private final class ColorDraftBox {
-    var fallback: UIColor
-    weak var picker: UIColorPickerViewController?
-    var color: Color { Color(uiColor: picker?.selectedColor ?? fallback) }
-    init(_ color: Color) { fallback = UIColor(color) }
-}
-
-private struct SystemColorPicker: UIViewControllerRepresentable {
-    @Binding var color: Color
-    var box: ColorDraftBox
-    var onFinish: () -> Void
-
-    func makeUIViewController(context: Context) -> PickerHost {
-        let host = PickerHost(initial: UIColor(color))
-        host.attach(box)
         return host
     }
 
-    func updateUIViewController(_ host: PickerHost, context: Context) {
-        host.color = $color
-        host.onFinish = onFinish
-        host.attach(box)
+    func updateUIViewController(_ host: Host, context: Context) {
+        let coordinator = context.coordinator
+        coordinator.title = title
+        coordinator.initial = initial
+        coordinator.onConfirm = onConfirm
+        coordinator.onCancel = onCancel
+        coordinator.sync(host)
     }
 
-    func sizeThatFits(_ proposal: ProposedViewSize, uiViewController: PickerHost, context: Context) -> CGSize? {
-        CGSize(width: proposal.width ?? 0, height: min(proposal.height ?? 440, 440))
-    }
-
-    final class PickerHost: UIViewController, UIColorPickerViewControllerDelegate {
-        private let picker = PaletteColorPicker()
-        var color: Binding<Color>?
-        var onFinish: () -> Void = {}
-        private var box: ColorDraftBox?
-        private var hidClose = false
-        private var colorObservation: NSKeyValueObservation?
-
-        func attach(_ box: ColorDraftBox) {
-            self.box = box
-            box.picker = picker
-        }
-
-        init(initial: UIColor) {
-            super.init(nibName: nil, bundle: nil)
-            picker.supportsAlpha = false
-            picker.selectedColor = initial
-            picker.delegate = self
-        }
-
-        @available(*, unavailable)
-        required init?(coder: NSCoder) { nil }
+    final class Host: UIViewController {
+        var onAppear: (() -> Void)?
 
         override func viewDidLoad() {
             super.viewDidLoad()
-            addChild(picker)
-            picker.view.translatesAutoresizingMaskIntoConstraints = false
-            view.addSubview(picker.view)
-            NSLayoutConstraint.activate([
-                picker.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                picker.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-                picker.view.topAnchor.constraint(equalTo: view.topAnchor),
-                picker.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            ])
-            picker.didMove(toParent: self)
-            view.clipsToBounds = true
-            colorObservation = picker.observe(\.selectedColor, options: [.new]) { [weak self] picker, _ in
-                self?.box?.fallback = picker.selectedColor
-                self?.color?.wrappedValue = Color(uiColor: picker.selectedColor)
-            }
+            view.backgroundColor = .clear
+            view.isUserInteractionEnabled = false
         }
 
         override func viewDidAppear(_ animated: Bool) {
             super.viewDidAppear(animated)
-            picker.shortenSheet()
+            onAppear?()
+        }
+    }
+
+    final class Coordinator: NSObject, UIColorPickerViewControllerDelegate, UISheetPresentationControllerDelegate {
+        var title: String?
+        var initial: Color = .clear
+        var onConfirm: (Color) -> Void = { _ in }
+        var onCancel: () -> Void = {}
+
+        private weak var host: Host?
+        private weak var picker: UIColorPickerViewController?
+        private weak var nav: UINavigationController?
+        private var showing = false
+        private var finished = false
+        private var picked: UIColor?
+        private var queued = false
+
+        func sync(_ host: Host) {
+            self.host = host
+            guard title != nil, !showing, !queued else { return }
+            queued = true
+            DispatchQueue.main.async { [weak self, weak host] in
+                guard let self, let host else { return }
+                self.queued = false
+                self.present(from: host)
+            }
         }
 
-        override func viewDidLayoutSubviews() {
-            super.viewDidLayoutSubviews()
-            guard !hidClose else { return }
-            hidClose = hideClose(in: picker.view)
+        private func present(from host: Host) {
+            guard let title, !showing, let presenter = Self.presenter(host), presenter.presentedViewController == nil else { return }
+            showing = true
+            finished = false
+            picked = nil
+            let wheel = PaletteColorPicker()
+            wheel.supportsAlpha = false
+            wheel.selectedColor = UIColor(initial)
+            wheel.delegate = self
+            wheel.title = title
+            let close = UIBarButtonItem(
+                image: UIImage(systemName: "xmark"),
+                style: .plain,
+                target: self,
+                action: #selector(cancel)
+            )
+            close.accessibilityLabel = "關閉"
+            wheel.navigationItem.leftBarButtonItem = close
+            wheel.navigationItem.rightBarButtonItem = UIBarButtonItem(
+                title: "確認",
+                style: .done,
+                target: self,
+                action: #selector(confirm)
+            )
+            picker = wheel
+            let nav = UINavigationController(rootViewController: wheel)
+            self.nav = nav
+            nav.modalPresentationStyle = .pageSheet
+            if let sheet = nav.sheetPresentationController {
+                let detent = UISheetPresentationController.Detent.custom(identifier: Self.detent) { _ in Self.height }
+                sheet.detents = [detent]
+                sheet.selectedDetentIdentifier = Self.detent
+                sheet.prefersGrabberVisible = true
+                sheet.prefersScrollingExpandsWhenScrolledToEdge = false
+                sheet.delegate = self
+            }
+            presenter.present(nav, animated: true)
+        }
+
+        /// The background host is often off-window. Present from the sheet already on screen.
+        private static func presenter(_ host: Host) -> UIViewController? {
+            if host.view.window != nil { return host }
+            let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+            let windows = scenes.flatMap(\.windows)
+            let window = windows.first(where: \.isKeyWindow) ?? windows.first
+            var top = window?.rootViewController
+            while let next = top?.presentedViewController { top = next }
+            return top
         }
 
         func colorPickerViewController(
@@ -178,34 +123,75 @@ private struct SystemColorPicker: UIViewControllerRepresentable {
             didSelect color: UIColor,
             continuously: Bool
         ) {
-            box?.fallback = color
-            self.color?.wrappedValue = Color(uiColor: color)
+            picked = color
         }
 
         func colorPickerViewControllerDidFinish(_ viewController: UIColorPickerViewController) {
-            onFinish()
+            let already = finished
+            finish(apply: false)
+            if !already { dismissWheel() }
         }
 
-        /// ponytail: the embedded picker adds its own close control; ours is the one that discards.
-        private func hideClose(in view: UIView) -> Bool {
-            var found = false
-            if let button = view as? UIButton {
-                let label = (button.accessibilityLabel ?? "").lowercased()
-                if label.contains("close") || label.contains("關閉") || label.contains("dismiss") {
-                    button.isHidden = true
-                    button.isAccessibilityElement = false
-                    found = true
-                }
+        func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+            showing = false
+            finish(apply: false)
+        }
+
+        @objc private func confirm() {
+            finish(apply: true)
+            dismissWheel()
+        }
+
+        @objc private func cancel() {
+            finish(apply: false)
+            dismissWheel()
+        }
+
+        private func finish(apply: Bool) {
+            guard !finished else { return }
+            finished = true
+            if apply { onConfirm(Self.srgb(chosen())) } else { onCancel() }
+        }
+
+        private func dismissWheel() {
+            guard let nav else {
+                showing = false
+                return
             }
-            for subview in view.subviews where hideClose(in: subview) {
-                found = true
+            nav.dismiss(animated: true) { [weak self] in
+                self?.showing = false
             }
-            return found
+        }
+
+        /// Delegate color wins. The wheel's selectedColor stays put when it is embedded.
+        private func chosen() -> UIColor {
+            if let picked { return picked }
+            return picker?.selectedColor ?? UIColor(initial)
+        }
+
+        private static let detent = UISheetPresentationController.Detent.Identifier("palette")
+        private static let height: CGFloat = 560
+
+        private static func srgb(_ color: UIColor) -> Color {
+            let space = CGColorSpace(name: CGColorSpace.sRGB)!
+            guard let converted = color.cgColor.converted(to: space, intent: .defaultIntent, options: nil),
+                  let c = converted.components, c.count >= 3 else {
+                return Color(uiColor: color)
+            }
+            return Color(red: c[0], green: c[1], blue: c[2])
         }
     }
 }
 
-#Preview {
-    ColorDraftPicker(title: "原型", initial: Color(red: 0.22, green: 0.74, blue: 0.97)) { _ in }
-        .preferredColorScheme(.dark)
+/// Keeps the wheel sheet from jumping back to full height, above the status bar.
+private final class PaletteColorPicker: UIColorPickerViewController {
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        guard let sheet = navigationController?.sheetPresentationController else { return }
+        let id = UISheetPresentationController.Detent.Identifier("palette")
+        guard sheet.selectedDetentIdentifier != id else { return }
+        sheet.detents = [.custom(identifier: id) { _ in 560 }]
+        sheet.selectedDetentIdentifier = id
+        sheet.prefersGrabberVisible = true
+    }
 }
