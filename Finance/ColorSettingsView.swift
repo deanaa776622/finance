@@ -4,6 +4,9 @@ struct ColorSettingsView: View {
     @Environment(Palette.self) private var palette
     @Environment(\.dismiss) private var dismiss
     @State private var editing: Swatch?
+    @State private var showSave = false
+    @State private var showThemes = false
+    @State private var themeName = ""
 
     var body: some View {
         NavigationStack {
@@ -27,6 +30,11 @@ struct ColorSettingsView: View {
                 }
                 Section {
                     Button("恢復預設") { palette.reset() }
+                    Button("儲存主題") {
+                        themeName = ""
+                        showSave = true
+                    }
+                    Button("選取主題") { showThemes = true }
                 }
             }
             .navigationTitle("顏色")
@@ -46,6 +54,17 @@ struct ColorSettingsView: View {
             ColorDraftPicker(title: swatch.title, initial: swatch.color(in: palette)) { picked in
                 swatch.set(picked, on: palette)
             }
+        }
+        .alert("儲存主題", isPresented: $showSave) {
+            TextField("主題名稱", text: $themeName)
+            Button("儲存") { palette.saveTheme(named: themeName) }
+                .disabled(themeName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("用目前的五個顏色存成一個主題")
+        }
+        .sheet(isPresented: $showThemes) {
+            ThemeList()
         }
     }
 
@@ -98,6 +117,43 @@ private enum Swatch: String, Identifiable {
 
     func set(_ color: Color, on palette: Palette) {
         palette[keyPath: keyPath] = color
+    }
+}
+
+private struct ThemeList: View {
+    @Environment(Palette.self) private var palette
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if palette.themes.isEmpty {
+                    ContentUnavailableView {
+                        Text("尚未儲存主題")
+                    }
+                } else {
+                    List(palette.themes) { theme in
+                        Button {
+                            palette.apply(theme)
+                            dismiss()
+                        } label: {
+                            Text(theme.name)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("選取主題")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("完成") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(Color(.systemGroupedBackground))
     }
 }
 

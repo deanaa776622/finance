@@ -24,6 +24,35 @@ final class Palette {
         self.cash = cash
         self.drift = drift
         self.ground = ground
+        themes = Self.loadThemes()
+    }
+
+    private(set) var themes: [PaletteTheme] = []
+
+    func saveTheme(named rawName: String) {
+        let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        let colors = Stored(
+            original: RGB(original),
+            leverage: RGB(leverage),
+            cash: RGB(cash),
+            drift: RGB(drift),
+            ground: RGB(ground)
+        )
+        if let index = themes.firstIndex(where: { $0.name == name }) {
+            themes[index].colors = colors
+        } else {
+            themes.append(PaletteTheme(id: UUID(), name: name, colors: colors))
+        }
+        storeThemes()
+    }
+
+    func apply(_ theme: PaletteTheme) {
+        original = theme.colors.original.color
+        leverage = theme.colors.leverage.color
+        cash = theme.colors.cash.color
+        drift = theme.colors.drift.color
+        ground = theme.colors.ground.color
     }
 
     static func load() -> Palette {
@@ -75,7 +104,22 @@ final class Palette {
         }
     }
 
+    private static func loadThemes() -> [PaletteTheme] {
+        guard let data = UserDefaults.standard.data(forKey: themesKey),
+              let themes = try? JSONDecoder().decode([PaletteTheme].self, from: data) else {
+            return []
+        }
+        return themes
+    }
+
+    private func storeThemes() {
+        if let data = try? JSONEncoder().encode(themes) {
+            UserDefaults.standard.set(data, forKey: Self.themesKey)
+        }
+    }
+
     private static let key = "palette"
+    private static let themesKey = "palette.themes"
     static let defaultOriginal = Color(red: 0.22, green: 0.74, blue: 0.97)
     static let defaultLeverage = Color(red: 0.29, green: 0.87, blue: 0.50)
     static let defaultCash = Color(red: 0.98, green: 0.80, blue: 0.08)
@@ -97,4 +141,10 @@ private struct RGB: Codable {
 
 private struct Stored: Codable {
     var original, leverage, cash, drift, ground: RGB
+}
+
+struct PaletteTheme: Identifiable, Codable {
+    var id: UUID
+    var name: String
+    fileprivate var colors: Stored
 }
