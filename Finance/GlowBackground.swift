@@ -11,6 +11,10 @@ struct GlowOrb: Identifiable {
 }
 
 extension GlowOrb {
+    /// Full-size orb. Blur uses this same ratio at every size, so a small orb stays as bright.
+    static let fullDiameter: CGFloat = 520
+    static let fullBlur: CGFloat = 80
+
     static func orbs(for portfolio: Portfolio, palette: Palette) -> [GlowOrb] {
         AssetKind.allCases.filter(\.countsTowardAllocation).compactMap { kind in
             let achieve = portfolio.achievement(for: kind)
@@ -19,7 +23,7 @@ extension GlowOrb {
             return GlowOrb(
                 id: kind.rawValue,
                 color: palette.glow(for: kind, factor: portfolio.driftFactor(for: kind)),
-                diameter: 520 * achieve,
+                diameter: fullDiameter * achieve,
                 anchor: layout.anchor,
                 points: layout.points,
                 duration: layout.duration
@@ -73,8 +77,7 @@ struct GlowBackground: View {
                 ForEach(orbs) { orb in
                     let fitted = min(orb.diameter, geo.size.width * 0.55)
                     let d = orb.diameter + (fitted - orb.diameter) * t
-                    // Blur stays in proportion to the orb, so the docked card matches the home glow.
-                    let blur = 80 * d / orb.diameter
+                    let blur = GlowOrb.fullBlur * d / GlowOrb.fullDiameter
                     if reduceMotion || orb.points.count < 2 {
                         glowCircle(orb, diameter: d, blur: blur, alpha: 0.55, point: .zero, in: geo)
                     } else {
