@@ -95,18 +95,19 @@ struct GlowBackground: View {
                 )
 
                 ForEach(orbs) { orb in
-                    let d = orb.diameter + (min(orb.diameter, geo.size.width * 0.55) - orb.diameter) * t
-                    let blur = 80 + (40 - 80) * t
-                    let alpha = 0.55 + (0.62 - 0.55) * t
+                    let fitted = min(orb.diameter, geo.size.width * 0.55)
+                    let d = orb.diameter + (fitted - orb.diameter) * t
+                    // Blur stays in proportion to the orb, so the docked card matches the home glow.
+                    let blur = 80 * d / orb.diameter
                     if reduceMotion || orb.points.count < 2 {
-                        glowCircle(orb, diameter: d, blur: blur, alpha: alpha, point: .zero, in: geo)
+                        glowCircle(orb, diameter: d, blur: blur, alpha: 0.55, point: .zero, in: geo)
                     } else {
                         TimelineView(.animation) { timeline in
                             glowCircle(
                                 orb,
                                 diameter: d,
                                 blur: blur,
-                                alpha: alpha,
+                                alpha: 0.55,
                                 point: drift(orb, at: timeline.date),
                                 in: geo
                             )
