@@ -102,6 +102,9 @@ struct SavingsTunerView: View {
         .onChange(of: portfolio.allocableTotal) { _, _ in
             if horizon != nil { applyHorizon() } else { syncYears() }
         }
+        .onChange(of: field) { old, _ in
+            finishPercent(old)
+        }
     }
 
     private var horizonNote: String? {
@@ -201,14 +204,39 @@ struct SavingsTunerView: View {
         let plan = portfolio.savings ?? .prototype
         horizon = plan.retirementYears
         costText = NumberParse.grouped(plan.annualCost)
-        withdrawText = String(format: "%.2f", plan.withdrawalRatePercent)
-        rateText = String(format: "%.2f", plan.annualRatePercent)
+        withdrawText = percentText(plan.withdrawalRatePercent)
+        rateText = percentText(plan.annualRatePercent)
         pmtText = contributionText(plan.monthlyContribution)
         if let years = plan.retirementYears {
             yearsText = yearsLabel(years)
         }
         baseline = plan
         if horizon != nil { applyHorizon() } else { syncYears() }
+    }
+
+    /// Two decimals once the field is no longer being edited. A trailing dot still counts.
+    private func finishPercent(_ focus: Field?) {
+        switch focus {
+        case .withdraw:
+            let shown = percentText(withdrawText)
+            if withdrawText != shown { withdrawText = shown }
+        case .rate:
+            let shown = percentText(rateText)
+            if rateText != shown { rateText = shown }
+        default:
+            break
+        }
+    }
+
+    private func percentText(_ text: String) -> String {
+        var raw = text
+        if raw.hasSuffix(".") { raw.removeLast() }
+        guard let value = NumberParse.double(raw) else { return text }
+        return percentText(value)
+    }
+
+    private func percentText(_ value: Double) -> String {
+        String(format: "%.2f", value)
     }
 
     /// Cost and rate keep whichever question was asked last.
