@@ -44,20 +44,20 @@ struct ColorSettingsView: View {
         .presentationDragIndicator(.visible)
     }
 
-    /// Plain swatch. The system picker stays, without its rainbow ring.
+    /// Plain swatch painted over the system well. The well still receives the tap.
     private func colorRow(_ title: String, selection: Binding<Color>) -> some View {
         HStack {
             Text(title)
-            Spacer()
-            Circle()
-                .fill(selection.wrappedValue)
-                .frame(width: 26, height: 26)
-                .overlay(Circle().strokeBorder(.separator, lineWidth: 1))
                 .accessibilityHidden(true)
+            Spacer()
+            ColorPicker(title, selection: selection, supportsOpacity: false)
+                .labelsHidden()
+                .frame(width: 28, height: 28)
                 .overlay {
-                    ColorPicker(title, selection: selection, supportsOpacity: false)
-                        .labelsHidden()
-                        .opacity(0)
+                    Circle()
+                        .fill(selection.wrappedValue)
+                        .overlay(Circle().strokeBorder(.separator, lineWidth: 1))
+                        .allowsHitTesting(false)
                 }
         }
     }
