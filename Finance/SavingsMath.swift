@@ -97,6 +97,13 @@ enum SavingsMath {
         return cost / (Decimal(withdrawalRatePercent) / 100)
     }
 
+    /// Annual spending still uncovered if today's assets are withdrawn at this rate. Surplus is 0.
+    static func incomeShortfall(cost: Decimal, presentValue: Decimal, withdrawalRatePercent: Double) -> Decimal {
+        let covered = presentValue * Decimal(withdrawalRatePercent) / 100
+        let gap = cost - covered
+        return gap > 0 ? gap : 0
+    }
+
     /// Monthly amount that reaches `futureValue` in `years`, using the same monthly compounding as `nper`.
     static func monthlyContribution(
         years: Double,

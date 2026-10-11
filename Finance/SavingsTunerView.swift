@@ -24,7 +24,7 @@ struct SavingsTunerView: View {
                 percentRow("年報酬率", text: $rateText, focus: .rate)
                 moneyRow("月投資額", text: $pmtText, field: .pmt, keepSign: true)
                 HStack {
-                    Text("幾年後退休")
+                    Text("達標時間")
                     Spacer()
                     TextField("0", text: $yearsText)
                         .keyboardType(.decimalPad)
@@ -61,6 +61,7 @@ struct SavingsTunerView: View {
 
             Section {
                 LabeledContent("目前資產", value: MoneyFormat.string(portfolio.allocableTotal, hidden: hideAmounts))
+                LabeledContent("額外收入", value: incomeShortfallText)
                 LabeledContent("目標金額") {
                     Text(draftOutlook?.targetAmount.map(MoneyFormat.string) ?? "提領率需大於 0")
                 }
@@ -130,6 +131,19 @@ struct SavingsTunerView: View {
             monthlyContribution: pmt,
             retirementYears: horizon
         )
+    }
+
+    /// Spending not covered by withdrawing from today's assets at the set rate.
+    private var incomeShortfallText: String {
+        guard let cost = NumberParse.decimal(costText), cost >= 0,
+              let withdrawal = NumberParse.double(withdrawText), withdrawal >= 0, withdrawal <= 100
+        else { return "—" }
+        let gap = SavingsMath.incomeShortfall(
+            cost: cost,
+            presentValue: portfolio.allocableTotal,
+            withdrawalRatePercent: withdrawal
+        )
+        return MoneyFormat.string(gap, hidden: hideAmounts)
     }
 
     private var draftOutlook: SavingsOutlook? {
@@ -310,6 +324,9 @@ struct SavingsTunerView: View {
     let _ = {
         let egg = SavingsMath.targetAmount(cost: 1_440_000, withdrawalRatePercent: 4)
         assert(egg == .some(36_000_000))
+        let gap = SavingsMath.incomeShortfall(cost: 1_440_000, presentValue: 10_000_000, withdrawalRatePercent: 4)
+        assert(gap == 1_040_000)
+        assert(SavingsMath.incomeShortfall(cost: 1_440_000, presentValue: 40_000_000, withdrawalRatePercent: 4) == 0)
         return egg
     }()
     NavigationStack {
