@@ -12,6 +12,7 @@ private final class DragSession {
 
 struct HomeView: View {
     @Environment(Portfolio.self) private var portfolio
+    @Environment(Palette.self) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("hideAmounts") private var hideAmounts = false
     /// -1 assets, 0 home, 1 savings
@@ -143,7 +144,7 @@ struct HomeView: View {
                     .onGeometryChange(for: CGFloat.self) { _ in Self.windowSafeArea.bottom } action: { safeBottom = $0 }
             }
             .ignoresSafeArea(edges: [.top, .bottom])
-            .background(Color.black.ignoresSafeArea())
+            .background(palette.ground.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
         }
     }
@@ -350,6 +351,7 @@ struct HomeView: View {
             ],
             savings: SavingsPlan(annualCost: 1_440_000, annualRatePercent: 7, monthlyContribution: 13_500)
         ))
+        .environment(Palette())
 }
 
 #Preview("偏離") {
@@ -357,4 +359,5 @@ struct HomeView: View {
         .environment(Portfolio(items: [
             AssetItem(name: "活存", kind: .cash, amount: 2_000_000),
         ]))
+        .environment(Palette())
 }

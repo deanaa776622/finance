@@ -11,43 +11,19 @@ struct GlowOrb: Identifiable {
 }
 
 extension GlowOrb {
-    static func orbs(for portfolio: Portfolio) -> [GlowOrb] {
+    static func orbs(for portfolio: Portfolio, palette: Palette) -> [GlowOrb] {
         AssetKind.allCases.filter(\.countsTowardAllocation).compactMap { kind in
             let achieve = portfolio.achievement(for: kind)
             guard achieve > 0 else { return nil }
             let layout = kind.glowLayout
             return GlowOrb(
                 id: kind.rawValue,
-                color: portfolio.glowColor(for: kind),
+                color: palette.glow(for: kind, factor: portfolio.driftFactor(for: kind)),
                 diameter: 520 * achieve,
                 anchor: layout.anchor,
                 points: layout.points,
                 duration: layout.duration
             )
-        }
-    }
-}
-
-private extension Color {
-    /// Muted amber — a nudge to look, not an alarm.
-    static let driftWarning = Color(red: 0.85, green: 0.58, blue: 0.42)
-}
-
-extension Portfolio {
-    /// Home orb hue for this bucket, including the drift tint.
-    func glowColor(for kind: AssetKind) -> Color {
-        kind.glowColor.mix(with: .driftWarning, by: driftFactor(for: kind))
-    }
-}
-
-extension AssetKind {
-    /// 原型藍 / 槓桿綠 / 現金黃. Same hues as the web prototype.
-    var glowColor: Color {
-        switch self {
-        case .original: Color(red: 0.22, green: 0.74, blue: 0.97)
-        case .leverage: Color(red: 0.29, green: 0.87, blue: 0.50)
-        case .cash: Color(red: 0.98, green: 0.80, blue: 0.08)
-        case .realEstate, .debt: .clear
         }
     }
 }
@@ -81,6 +57,7 @@ struct GlowBackground: View {
     let orbs: [GlowOrb]
     /// 0 = full-screen glow, 1 = the short docked card.
     var compact: CGFloat = 0
+    @Environment(Palette.self) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -88,8 +65,7 @@ struct GlowBackground: View {
             let t = min(1, max(0, compact))
             ZStack {
                 LinearGradient(
-                    colors: [Color(red: 0.06, green: 0.09, blue: 0.16),
-                             Color(red: 0.03, green: 0.05, blue: 0.10)],
+                    colors: [palette.canvasTop, palette.ground],
                     startPoint: .top,
                     endPoint: .bottom
                 )

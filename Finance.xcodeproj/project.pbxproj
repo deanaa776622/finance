@@ -11,6 +11,8 @@
 		A1C4E7B25D0F4E19C3B8D204 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7D35F1908A24C62A91E3D75 /* HomeView.swift */; };
 		B8D2F03A6E1C4D59807A9B4C /* HomeHero.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E3C14B7F2D4E6A91B0C8D5 /* HomeHero.swift */; };
 		C2E6A94371B84D3E8F71A5C6 /* GlowBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = D48F02C6AE514B75B60C287A /* GlowBackground.swift */; };
+		B5D9F2C18E304AB7C4F6D921 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4C8E1B07D2F49A6B3E5C810 /* Palette.swift */; };
+		D7F1B4E30A526CD9E618FB43 /* ColorSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6E0A3D29F415BC8D507EA32 /* ColorSettingsView.swift */; };
 		C570C3D396394F26AC8DDE7D /* Editors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 285FDE10B2E64BF885533CE6 /* Editors.swift */; };
 		CF93E2B4331F4B008B545BE9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0ACEF765DE7D48D9943D7D84 /* Assets.xcassets */; };
 		E0571D47B35541BCBAEFC46B /* FinanceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF766442653C438293CC0C5D /* FinanceApp.swift */; };
@@ -42,6 +44,8 @@
 		B7D35F1908A24C62A91E3D75 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		C99AAE8E3DC34E89A9404102 /* SavingsMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsMath.swift; sourceTree = "<group>"; };
 		D48F02C6AE514B75B60C287A /* GlowBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlowBackground.swift; sourceTree = "<group>"; };
+		A4C8E1B07D2F49A6B3E5C810 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
+		C6E0A3D29F415BC8D507EA32 /* ColorSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorSettingsView.swift; sourceTree = "<group>"; };
 		E41CEA44175B4D908817A5A0 /* SavingsTunerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsTunerView.swift; sourceTree = "<group>"; };
 		EF766442653C438293CC0C5D /* FinanceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceApp.swift; sourceTree = "<group>"; };
 		FDFCB427774A44B9832BED06 /* Finance.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Finance.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -65,6 +69,8 @@
 				B7D35F1908A24C62A91E3D75 /* HomeView.swift */,
 				A9E3C14B7F2D4E6A91B0C8D5 /* HomeHero.swift */,
 				D48F02C6AE514B75B60C287A /* GlowBackground.swift */,
+				A4C8E1B07D2F49A6B3E5C810 /* Palette.swift */,
+				C6E0A3D29F415BC8D507EA32 /* ColorSettingsView.swift */,
 				2D4C730906A644DC837867DB /* AssetListView.swift */,
 				C3A91E7B4F2D48A0B6E15C84 /* AssetGrouping.swift */,
 				F8D52B10C3E74A69B2D14F88 /* StockLink.swift */,
@@ -167,6 +173,8 @@
 				A1C4E7B25D0F4E19C3B8D204 /* HomeView.swift in Sources */,
 				B8D2F03A6E1C4D59807A9B4C /* HomeHero.swift in Sources */,
 				C2E6A94371B84D3E8F71A5C6 /* GlowBackground.swift in Sources */,
+				B5D9F2C18E304AB7C4F6D921 /* Palette.swift in Sources */,
+				D7F1B4E30A526CD9E618FB43 /* ColorSettingsView.swift in Sources */,
 				F449C90D5036484FB22DD932 /* AssetListView.swift in Sources */,
 				D4B02F8C5A3E49B1C7F26D95 /* AssetGrouping.swift in Sources */,
 				E7C41A09B2D64F58A1C03E77 /* StockLink.swift in Sources */,

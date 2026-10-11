@@ -21,6 +21,7 @@ struct AssetListView: View {
     @State private var showAdd = false
     @State private var addKind: AssetKind = .original
     @State private var showTargets = false
+    @State private var showColors = false
     @State private var isRefreshing = false
     @State private var refreshMessage: String?
     @State private var expandedKinds: Set<AssetKind>
@@ -127,6 +128,9 @@ struct AssetListView: View {
         }
         .sheet(isPresented: $showTargets) {
             TargetEditor()
+        }
+        .sheet(isPresented: $showColors) {
+            ColorSettingsView()
         }
         .onChange(of: exposureOnly) { wasExposure, isExposure in
             cancelMergeIfNeeded()
@@ -349,6 +353,8 @@ struct AssetListView: View {
             }
             .frame(width: 44, height: 44)
             Button("目標配置") { showTargets = true }
+                .padding(.horizontal, 4)
+            Button("設定") { showColors = true }
                 .padding(.horizontal, 4)
             Button {
                 addKind = .original
@@ -1224,6 +1230,7 @@ private struct AssetRow: View {
                 ),
                 AssetItem(name: "活存", kind: .cash, amount: 300_000),
             ]))
+            .environment(Palette())
     }
 }
 
@@ -1242,6 +1249,7 @@ private struct AssetRow: View {
                 AssetItem(name: "00631L", kind: .leverage, amount: 600_000, leverageMultiple: 2),
                 AssetItem(name: "活存", kind: .cash, amount: 300_000),
             ]))
+            .environment(Palette())
     }
     .preferredColorScheme(.dark)
 }

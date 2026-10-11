@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TargetEditor: View {
     @Environment(Portfolio.self) private var portfolio
+    @Environment(Palette.self) private var palette
     @Environment(\.dismiss) private var dismiss
     @AppStorage("hideAmounts") private var hideAmounts = false
     @FocusState private var field: Field?
@@ -79,7 +80,7 @@ struct TargetEditor: View {
                     .foregroundStyle(.secondary)
             }
             .font(.title3.weight(.semibold))
-            .foregroundStyle(portfolio.glowColor(for: kind))
+            .foregroundStyle(palette.glow(for: kind, factor: portfolio.driftFactor(for: kind)))
             if portfolio.allocableTotal > 0 {
                 let label = gapLabel(kind: kind, percent: NumberParse.double(text.wrappedValue) ?? 0)
                 Text(label)
@@ -129,6 +130,7 @@ struct TargetEditor: View {
 
 private struct AllocationGlowTrack: View {
     @Environment(Portfolio.self) private var portfolio
+    @Environment(Palette.self) private var palette
     var original: Double
     var leverage: Double
     var onChange: (Double, Double) -> Void
@@ -140,9 +142,9 @@ private struct AllocationGlowTrack: View {
         let lev = min(max(0, leverage), 100 - orig)
         let p1 = orig / 100
         let p2 = (orig + lev) / 100
-        let originalColor = portfolio.glowColor(for: .original)
-        let leverageColor = portfolio.glowColor(for: .leverage)
-        let cashColor = portfolio.glowColor(for: .cash)
+        let originalColor = palette.glow(for: .original, factor: portfolio.driftFactor(for: .original))
+        let leverageColor = palette.glow(for: .leverage, factor: portfolio.driftFactor(for: .leverage))
+        let cashColor = palette.glow(for: .cash, factor: portfolio.driftFactor(for: .cash))
         GeometryReader { geo in
             Capsule()
                 .fill(LinearGradient(stops: [
