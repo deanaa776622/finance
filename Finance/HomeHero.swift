@@ -7,6 +7,7 @@ struct HomeHero: View {
     /// 0 = 總淨值, 1 = 總曝險, including the in-flight drag.
     var lens: CGFloat
     var showsDots: Bool
+    var screen: CGSize
     @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
 
@@ -17,7 +18,7 @@ struct HomeHero: View {
 
     var body: some View {
         ZStack {
-            GlowBackground(orbs: GlowOrb.orbs(for: portfolio, palette: palette), compact: reveal)
+            GlowBackground(orbs: GlowOrb.orbs(for: portfolio, palette: palette), screen: screen)
 
             ZStack {
                 statusCopy.opacity(1 - settledReveal)

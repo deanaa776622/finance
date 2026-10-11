@@ -81,7 +81,8 @@ struct HomeView: View {
                         position: position,
                         settled: panel,
                         lens: lensPosition,
-                        showsDots: showDots
+                        showsDots: showDots,
+                        screen: geo.size
                     )
                         .frame(height: geo.size.height - range * reveal)
                         .overlay(alignment: .bottom) {

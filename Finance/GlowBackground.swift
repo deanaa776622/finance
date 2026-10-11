@@ -59,14 +59,15 @@ private extension AssetKind {
 
 struct GlowBackground: View {
     let orbs: [GlowOrb]
-    /// 0 = full-screen glow, 1 = the short docked card.
-    var compact: CGFloat = 0
+    /// Home canvas. The glow's area uses the same multiple as this view's area.
+    var screen: CGSize
     @Environment(Palette.self) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         GeometryReader { geo in
-            let t = min(1, max(0, compact))
+            let home = max(screen.width * screen.height, 1)
+            let scale = sqrt(geo.size.width * geo.size.height / home)
             ZStack {
                 LinearGradient(
                     colors: [palette.canvasTop, palette.ground],
@@ -75,8 +76,7 @@ struct GlowBackground: View {
                 )
 
                 ForEach(orbs) { orb in
-                    let fitted = min(orb.diameter, geo.size.width * 0.55)
-                    let d = orb.diameter + (fitted - orb.diameter) * t
+                    let d = orb.diameter * scale
                     let blur = GlowOrb.fullBlur * d / GlowOrb.fullDiameter
                     if reduceMotion || orb.points.count < 2 {
                         glowCircle(orb, diameter: d, blur: blur, alpha: 0.55, point: .zero, in: geo)
