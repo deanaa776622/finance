@@ -18,16 +18,19 @@ struct ColorSettingsView: View {
                 } footer: {
                     Text("光球、配置條、目標百分比共用")
                 }
+                .listRowBackground(palette.panel)
                 Section {
                     colorRow(.drift)
                 } footer: {
                     Text("偏離目標時混進那一桶")
                 }
+                .listRowBackground(palette.panel)
                 Section {
                     colorRow(.ground)
                 } footer: {
-                    Text("首屏、總淨值、總曝險、距離目標。首屏上沿會稍亮")
+                    Text("首屏、總淨值、總曝險、距離目標。首屏上沿會稍亮，滑出視窗再淺一點")
                 }
+                .listRowBackground(palette.panel)
                 Section {
                     Button("恢復預設") { palette.reset() }
                     Button("儲存主題") {
@@ -36,19 +39,19 @@ struct ColorSettingsView: View {
                     }
                     Button("選取主題") { showThemes = true }
                 }
+                .listRowBackground(palette.panel)
             }
+            .palettePanel(palette)
             .navigationTitle("顏色")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("完成") { dismiss() }
                 }
             }
         }
+        .presentationBackground(palette.panel)
         .presentationDetents([.medium, .large])
-        .presentationBackground(Color(.systemGroupedBackground))
         .presentationDragIndicator(.visible)
         .background {
             ColorDraftPresenter(
@@ -148,7 +151,9 @@ private struct ThemeList: View {
                             Text(theme.name)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
+                        .listRowBackground(palette.panel)
                     }
+                    .palettePanel(palette)
                 }
             }
             .navigationTitle("選取主題")
@@ -159,9 +164,9 @@ private struct ThemeList: View {
                 }
             }
         }
+        .palettePanel(palette)
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
-        .presentationBackground(Color(.systemGroupedBackground))
     }
 }
 

@@ -37,11 +37,10 @@ struct TargetEditor: View {
                     }
                 }
             }
+            .palettePanel(palette)
             .scrollEdgeFade()
             .navigationTitle("目標配置")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }
@@ -56,8 +55,8 @@ struct TargetEditor: View {
             }
             .onAppear(perform: load)
         }
+        .presentationBackground(palette.panel)
         .presentationDetents([.height(300)])
-        .presentationBackground(Color(.systemGroupedBackground))
         .presentationDragIndicator(.visible)
     }
 
@@ -82,7 +81,7 @@ struct TargetEditor: View {
             .font(.title3.weight(.semibold))
             .foregroundStyle(
                 palette.glow(for: kind, factor: portfolio.driftFactor(for: kind))
-                    .readable(on: Color(.systemGroupedBackground), scheme: palette.colorScheme)
+                    .readable(on: palette.panel, scheme: palette.colorScheme)
             )
             if portfolio.allocableTotal > 0 {
                 let label = gapLabel(kind: kind, percent: NumberParse.double(text.wrappedValue) ?? 0)

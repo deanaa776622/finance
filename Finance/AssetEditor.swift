@@ -3,6 +3,7 @@ import UIKit
 
 struct AssetEditor: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(Palette.self) private var palette
     @FocusState private var focus: Field?
     @State private var name: String
     @State private var symbol: String
@@ -218,6 +219,7 @@ struct AssetEditor: View {
                         alignedTitle("幣值")
                     }
                 }
+                .listRowBackground(palette.panel)
 
                 LabeledContent {
                     HStack {
@@ -245,22 +247,23 @@ struct AssetEditor: View {
                 } label: {
                     alignedTitle("總金額")
                 }
+                .listRowBackground(palette.panel)
 
                 if existingID != nil, onDelete != nil {
                     Button("刪除", role: .destructive) {
                         onDelete?()
                         dismiss()
                     }
+                    .listRowBackground(palette.panel)
                 }
             }
+            .palettePanel(palette)
             .onPreferenceChange(LabelWidthKey.self) { width in
                 if width != labelWidth { labelWidth = width }
             }
             .scrollEdgeFade()
             .navigationTitle(existingID == nil ? "新增資產與負債" : "編輯資產")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color(.systemGroupedBackground), for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }
@@ -275,9 +278,9 @@ struct AssetEditor: View {
                 }
             }
         }
+        .presentationBackground(palette.panel)
         .presentationDetents([.medium, .large], selection: sheetDetent)
         .presentationContentInteraction(.scrolls)
-        .presentationBackground(Color(.systemGroupedBackground))
         .presentationDragIndicator(.visible)
     }
 

@@ -12,6 +12,9 @@ final class Palette {
     /// Top of the home gradient: the same night, a little brighter.
     var canvasTop: Color { ground.mix(with: .white, by: 0.05) }
 
+    /// Sliding sheets: the same night, a step lighter than the page.
+    var panel: Color { ground.mix(with: .white, by: 0.10) }
+
     /// Light ground gets dark text and system surfaces; dark ground stays in night mode.
     var colorScheme: ColorScheme {
         ground.relativeLuminance(scheme: .dark) > 0.179 ? .light : .dark
@@ -152,6 +155,18 @@ struct PaletteTheme: Identifiable, Codable {
     var id: UUID
     var name: String
     fileprivate var colors: Stored
+}
+
+extension View {
+    /// Sheet chrome and rows, one step lighter than the page.
+    func palettePanel(_ palette: Palette) -> some View {
+        scrollContentBackground(.hidden)
+            .background(palette.panel)
+            .listRowBackground(palette.panel)
+            .toolbarBackground(palette.panel, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .presentationBackground(palette.panel)
+    }
 }
 
 extension Color {
