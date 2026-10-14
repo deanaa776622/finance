@@ -1158,6 +1158,7 @@ private struct AssetMenuBar<Bar: View>: ViewModifier {
 private struct GroupCardBackground: View {
     var isFirst: Bool
     var isLast: Bool
+    @Environment(Palette.self) private var palette
     static let radius: CGFloat = 26
     static let inset: CGFloat = 16
     /// Matches the group title's leading inset, so the card's left edge lines up with the first glyph.
@@ -1171,7 +1172,7 @@ private struct GroupCardBackground: View {
             topTrailingRadius: isFirst ? Self.radius : 0,
             style: .continuous
         )
-        .fill(Color(.secondarySystemGroupedBackground))
+        .fill(palette.ground)
         .overlay(alignment: .bottom) {
             if !isLast {
                 Rectangle()
