@@ -180,10 +180,6 @@ struct AssetListView: View {
         netJoinRange(baseBuckets) != nil
     }
 
-    private func headerColor(open: Bool) -> Color {
-        open ? .secondary : .primary
-    }
-
     @ViewBuilder
     private func bucketHeader(_ bucket: AssetBucket) -> some View {
         let header = groupHeader(bucket.title, open: isOpen(bucket), amount: amount(of: bucket), titleFrame: { trackTitle(bucket, $0) }) {
@@ -241,14 +237,14 @@ struct AssetListView: View {
             HStack {
                 Text(title)
                     .font(.system(size: titleSize, weight: .semibold))
-                    .foregroundStyle(headerColor(open: open))
+                    .foregroundStyle(headerInk)
                     .contentTransition(.interpolate)
                     .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { titleFrame?($0) }
                 Spacer()
                 Text(MoneyFormat.string(amount, hidden: hideAmounts))
                     .font(.system(size: titleSize))
                     .monospacedDigit()
-                    .foregroundStyle(headerColor(open: open))
+                    .foregroundStyle(headerInk)
                     .contentTransition(.numericText())
             }
             .contentShape(Rectangle())
@@ -256,6 +252,11 @@ struct AssetListView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(title)
         .accessibilityHint(open ? "收合" : "展開")
+    }
+
+    /// White on a dark page, black on a light one. Not the system label gray.
+    private var headerInk: Color {
+        palette.colorScheme == .dark ? .white : .black
     }
 
     private func headerChrome<V: View>(_ view: V) -> some View {
