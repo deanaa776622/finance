@@ -24,9 +24,24 @@ struct TargetEditor: View {
                     }
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
-                    AllocationGlowTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios)
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
+                    VStack(alignment: .leading, spacing: 18) {
+                        AllocationGlowTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios)
+                        if portfolio.allocableTotal > 0 {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("目前")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                AllocationGlowTrack(
+                                    original: portfolio.actualPercent(for: .original),
+                                    leverage: portfolio.actualPercent(for: .leverage),
+                                    tracksDrift: true,
+                                    label: "目前比例"
+                                )
+                            }
+                        }
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                     if portfolio.allocableTotal <= 0 {
                         Text("新增資產後，會顯示再平衡差額")
                             .font(.footnote)
@@ -56,7 +71,7 @@ struct TargetEditor: View {
             .onAppear(perform: load)
         }
         .presentationBackground(palette.panel)
-        .presentationDetents([.height(300)])
+        .presentationDetents([.height(portfolio.allocableTotal > 0 ? 360 : 300)])
         .presentationDragIndicator(.visible)
     }
 
@@ -80,7 +95,7 @@ struct TargetEditor: View {
             }
             .font(.title3.weight(.semibold))
             .foregroundStyle(
-                palette.glow(for: kind, factor: portfolio.driftFactor(for: kind))
+                palette.glow(for: kind, factor: 0)
                     .readable(on: palette.panel, scheme: palette.colorScheme)
             )
             if portfolio.allocableTotal > 0 {
@@ -135,7 +150,9 @@ private struct AllocationGlowTrack: View {
     @Environment(Palette.self) private var palette
     var original: Double
     var leverage: Double
-    var onChange: (Double, Double) -> Void
+    var onChange: ((Double, Double) -> Void)? = nil
+    var tracksDrift = false
+    var label: String = "目標比例"
     @State private var boundary = 0
     @State private var hapticTick = 0
 
@@ -144,11 +161,11 @@ private struct AllocationGlowTrack: View {
         let lev = min(max(0, leverage), 100 - orig)
         let p1 = orig / 100
         let p2 = (orig + lev) / 100
-        let originalColor = palette.glow(for: .original, factor: portfolio.driftFactor(for: .original))
-        let leverageColor = palette.glow(for: .leverage, factor: portfolio.driftFactor(for: .leverage))
-        let cashColor = palette.glow(for: .cash, factor: portfolio.driftFactor(for: .cash))
+        let originalColor = palette.glow(for: .original, factor: drift(.original))
+        let leverageColor = palette.glow(for: .leverage, factor: drift(.leverage))
+        let cashColor = palette.glow(for: .cash, factor: drift(.cash))
         GeometryReader { geo in
-            Capsule()
+            let bar = Capsule()
                 .fill(LinearGradient(stops: [
                     .init(color: originalColor, location: 0),
                     .init(color: originalColor, location: p1),
@@ -169,13 +186,21 @@ private struct AllocationGlowTrack: View {
                 }
                 .overlay(Capsule().strokeBorder(Color.primary.opacity(0.2), lineWidth: 1))
                 .shadow(color: Color.primary.opacity(0.28), radius: 8)
-                .highPriorityGesture(drag(width: geo.size.width))
+            if onChange != nil {
+                bar.highPriorityGesture(drag(width: geo.size.width))
+            } else {
+                bar
+            }
         }
         .frame(height: 20)
         .sensoryFeedback(.selection, trigger: hapticTick)
         .accessibilityElement()
-        .accessibilityLabel("目標比例")
+        .accessibilityLabel(label)
         .accessibilityValue("原型 \(Int(orig.rounded()))%，槓桿 \(Int(lev.rounded()))%，現金 \(Int((100 - orig - lev).rounded()))%")
+    }
+
+    private func drift(_ kind: AssetKind) -> Double {
+        tracksDrift ? portfolio.driftFactor(for: kind) : 0
     }
 
     private var seam: some View {
@@ -213,7 +238,7 @@ private struct AllocationGlowTrack: View {
                 }
                 let after = Int(orig.rounded()) * 100 + Int(lev.rounded())
                 if after != before { hapticTick += 1 }
-                onChange(orig, lev)
+                onChange?(orig, lev)
             }
             .onEnded { _ in boundary = 0 }
     }

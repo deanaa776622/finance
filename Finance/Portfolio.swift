@@ -135,9 +135,9 @@ final class Portfolio {
         abs(actualPercent(for: kind) - targets.percent(for: kind))
     }
 
-    /// 0 below 2% drift, 1 at 12% and beyond — used to tint the home glow.
+    /// 0 at no drift, 1 at 10% and beyond.
     func driftFactor(for kind: AssetKind) -> Double {
-        min(1, max(0, (drift(for: kind) - 2) / 10))
+        min(1, drift(for: kind) / 10)
     }
 
     var maxAllocationDrift: Double {
