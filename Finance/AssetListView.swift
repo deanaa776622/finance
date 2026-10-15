@@ -24,7 +24,7 @@ struct AssetListView: View {
     @State private var showTargets = false
     @State private var showColors = false
     @State private var isRefreshing = false
-    @State private var refreshMessage: String?
+    @State private var refreshConfirmed = false
     @State private var expandedKinds: Set<AssetKind>
     @State private var openGroupIDs: Set<String>
     @State private var stocksMerged = false
@@ -77,13 +77,6 @@ struct AssetListView: View {
 
     var body: some View {
         List {
-            if let refreshMessage {
-                Text(refreshMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-            }
             ForEach(shownBuckets) { bucket in
                 Section {
                     bucketItems(bucket)
@@ -344,6 +337,10 @@ struct AssetListView: View {
             Group {
                 if isRefreshing {
                     ProgressView()
+                        .accessibilityLabel("更新中")
+                } else if refreshConfirmed {
+                    Image(systemName: "checkmark")
+                        .accessibilityLabel("已更新")
                 } else {
                     Button {
                         Task { await refreshQuotes() }
@@ -1095,26 +1092,19 @@ struct AssetListView: View {
     private func refreshQuotes() async {
         let targets = portfolio.items.filter(\.canRefreshQuote)
         let hasUsd = portfolio.items.contains { $0.currency == .usd }
-        guard !targets.isEmpty || hasUsd else {
-            refreshMessage = "沒有可更新的持股"
-            return
-        }
+        guard !targets.isEmpty || hasUsd else { return }
         isRefreshing = true
-        defer { isRefreshing = false }
         let quotes = targets.isEmpty ? [:] : await QuoteClient.fetchAll(
             symbols: Dictionary(uniqueKeysWithValues: targets.map { ($0.id, $0.symbol) })
         )
         portfolio.applyQuotes(quotes)
         let rate = hasUsd ? try? await QuoteClient.fetchUsdTwd() : nil
         if let rate { portfolio.applyUsdTwd(rate) }
-        refreshMessage = statusAfterRefresh(quoteCount: quotes.count, attemptedQuotes: !targets.isEmpty, rateUpdated: rate != nil)
-    }
-
-    private func statusAfterRefresh(quoteCount: Int, attemptedQuotes: Bool, rateUpdated: Bool) -> String {
-        if quoteCount > 0, rateUpdated { return "已更新 \(quoteCount) 筆現值與匯率" }
-        if quoteCount > 0 { return "已更新 \(quoteCount) 筆現值" }
-        if rateUpdated { return attemptedQuotes ? "現值未改，已更新匯率" : "已更新匯率" }
-        return attemptedQuotes ? "更新失敗，現值未改" : "匯率更新失敗"
+        isRefreshing = false
+        guard !quotes.isEmpty || rate != nil else { return }
+        refreshConfirmed = true
+        try? await Task.sleep(for: .seconds(3))
+        refreshConfirmed = false
     }
 }
 
