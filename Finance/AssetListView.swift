@@ -334,22 +334,15 @@ struct AssetListView: View {
 
     private var trailingCluster: some View {
         HStack(spacing: 0) {
-            Group {
-                if isRefreshing {
-                    ProgressView()
-                        .accessibilityLabel("更新中")
-                } else if refreshConfirmed {
-                    Image(systemName: "checkmark")
-                        .accessibilityLabel("已更新")
-                } else {
-                    Button {
-                        Task { await refreshQuotes() }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .accessibilityLabel("更新現值")
-                }
+            Button {
+                Task { await refreshQuotes() }
+            } label: {
+                Image(systemName: isRefreshing || !refreshConfirmed ? "arrow.clockwise" : "checkmark")
+                    .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
+                    .symbolEffect(.rotate, options: .repeating, isActive: isRefreshing && !reduceMotion)
             }
+            .disabled(isRefreshing || refreshConfirmed)
+            .accessibilityLabel(isRefreshing ? "更新中" : refreshConfirmed ? "已更新" : "更新現值")
             .frame(width: 44, height: 44)
             Button("目標配置") { showTargets = true }
                 .padding(.horizontal, 4)
