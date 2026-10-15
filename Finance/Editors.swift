@@ -17,25 +17,28 @@ struct TargetEditor: View {
         NavigationStack {
             Form {
                 Section {
-                    HStack(spacing: 16) {
-                        percentField("原型", text: $originalText, field: .original, kind: .original)
-                        percentField("槓桿", text: $leverageText, field: .leverage, kind: .leverage)
-                        percentField("現金", text: $cashText, field: .cash, kind: .cash)
-                    }
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    VStack(alignment: .leading, spacing: 18) {
-                        AllocationGlowTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios)
+                    VStack(alignment: .leading, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 16) {
+                                percentField("原型", text: $originalText, field: .original, kind: .original)
+                                percentField("槓桿", text: $leverageText, field: .leverage, kind: .leverage)
+                                percentField("現金", text: $cashText, field: .cash, kind: .cash)
+                            }
+                            centeredTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios)
+                        }
                         if portfolio.allocableTotal > 0 {
+                            HStack(spacing: 16) {
+                                gapReadout("原型", kind: .original, percent: originalPercent)
+                                gapReadout("槓桿", kind: .leverage, percent: leveragePercent)
+                                gapReadout("現金", kind: .cash, percent: cashPercent)
+                            }
                             VStack(alignment: .leading, spacing: 6) {
-                                Text("目前")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                AllocationGlowTrack(
+                                centeredTrack(
                                     original: portfolio.actualPercent(for: .original),
                                     leverage: portfolio.actualPercent(for: .leverage),
                                     tracksDrift: true,
-                                    label: "目前比例"
+                                    label: "目前比例",
+                                    showsTitle: true
                                 )
                                 HStack(spacing: 16) {
                                     percentReadout("原型", percent: portfolio.actualPercent(for: .original), kind: .original)
@@ -80,6 +83,39 @@ struct TargetEditor: View {
         .presentationDragIndicator(.visible)
     }
 
+    private func centeredTrack(
+        original: Double,
+        leverage: Double,
+        onChange: ((Double, Double) -> Void)? = nil,
+        tracksDrift: Bool = false,
+        label: String = "目標比例",
+        showsTitle: Bool = false
+    ) -> some View {
+        HStack(spacing: 6) {
+            trackGutter(showsTitle: showsTitle)
+            AllocationGlowTrack(
+                original: original,
+                leverage: leverage,
+                onChange: onChange,
+                tracksDrift: tracksDrift,
+                label: label
+            )
+            trackGutter(showsTitle: false)
+        }
+    }
+
+    /// Same width on both sides, so the two bars match and sit in the center. Only the current bar shows the title.
+    /// Leading inset is tighter than the word, so the bars use the spare margin without covering「目前」.
+    private func trackGutter(showsTitle: Bool) -> some View {
+        Text("目前")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize()
+            .padding(.leading, -16)
+            .opacity(showsTitle ? 1 : 0)
+            .accessibilityHidden(true)
+    }
+
     private func percentField(_ title: String, text: Binding<String>, field: Field, kind: AssetKind) -> some View {
         VStack(spacing: 2) {
             Text(title)
@@ -103,43 +139,39 @@ struct TargetEditor: View {
                 palette.glow(for: kind, factor: 0)
                     .readable(on: palette.panel, scheme: palette.colorScheme)
             )
-            if portfolio.allocableTotal > 0 {
-                let label = gapLabel(kind: kind, percent: NumberParse.double(text.wrappedValue) ?? 0)
-                Text(label)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .accessibilityLabel("\(title)，\(label)")
-            }
         }
         .frame(maxWidth: .infinity)
     }
 
+    private func gapReadout(_ title: String, kind: AssetKind, percent: Double) -> some View {
+        let label = gapLabel(kind: kind, percent: percent)
+        return Text(label)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+            .frame(maxWidth: .infinity)
+            .accessibilityLabel("\(title)，\(label)")
+    }
+
     private func percentReadout(_ title: String, percent: Double, kind: AssetKind) -> some View {
         let shown = NumberParse.displayPercent(percent.rounded())
-        return VStack(spacing: 2) {
-            Text(title)
-                .font(.caption)
+        return HStack(alignment: .firstTextBaseline, spacing: 1) {
+            TextField("0", text: .constant(shown))
+                .multilineTextAlignment(.trailing)
+                .monospacedDigit()
+                .allowsHitTesting(false)
+                .frame(width: 36)
+            Text("%")
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-            HStack(alignment: .firstTextBaseline, spacing: 1) {
-                TextField("0", text: .constant(shown))
-                    .multilineTextAlignment(.trailing)
-                    .monospacedDigit()
-                    .allowsHitTesting(false)
-                    .frame(width: 36)
-                Text("%")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            .font(.title3.weight(.semibold))
-            .foregroundStyle(
-                palette.glow(for: kind, factor: portfolio.driftFactor(for: kind))
-                    .readable(on: palette.panel, scheme: palette.colorScheme)
-            )
         }
+        .font(.title3.weight(.semibold))
+        .foregroundStyle(
+            palette.glow(for: kind, factor: portfolio.driftFactor(for: kind))
+                .readable(on: palette.panel, scheme: palette.colorScheme)
+        )
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(title)，\(shown)%")
@@ -155,6 +187,7 @@ struct TargetEditor: View {
 
     private var originalPercent: Double { NumberParse.double(originalText) ?? 0 }
     private var leveragePercent: Double { NumberParse.double(leverageText) ?? 0 }
+    private var cashPercent: Double { NumberParse.double(cashText) ?? 0 }
 
     private func setRatios(original: Double, leverage: Double) {
         let orig = min(100, max(0, original))
