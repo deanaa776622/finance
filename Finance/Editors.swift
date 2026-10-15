@@ -24,7 +24,7 @@ struct TargetEditor: View {
                                 percentField("槓桿", text: $leverageText, field: .leverage, kind: .leverage)
                                 percentField("現金", text: $cashText, field: .cash, kind: .cash)
                             }
-                            centeredTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios)
+                            centeredTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios, title: "目標")
                         }
                         if portfolio.allocableTotal > 0 {
                             HStack(spacing: 16) {
@@ -38,7 +38,7 @@ struct TargetEditor: View {
                                     leverage: portfolio.actualPercent(for: .leverage),
                                     tracksDrift: true,
                                     label: "目前比例",
-                                    showsTitle: true
+                                    title: "目前"
                                 )
                                 HStack(spacing: 16) {
                                     percentReadout("原型", percent: portfolio.actualPercent(for: .original), kind: .original)
@@ -89,10 +89,10 @@ struct TargetEditor: View {
         onChange: ((Double, Double) -> Void)? = nil,
         tracksDrift: Bool = false,
         label: String = "目標比例",
-        showsTitle: Bool = false
+        title: String = "目標"
     ) -> some View {
         HStack(spacing: 6) {
-            trackGutter(showsTitle: showsTitle)
+            trackGutter(title, visible: true)
             AllocationGlowTrack(
                 original: original,
                 leverage: leverage,
@@ -100,19 +100,19 @@ struct TargetEditor: View {
                 tracksDrift: tracksDrift,
                 label: label
             )
-            trackGutter(showsTitle: false)
+            trackGutter(title, visible: false)
         }
     }
 
-    /// Same width on both sides, so the two bars match and sit in the center. Only the current bar shows the title.
-    /// Leading inset is tighter than the word, so the bars use the spare margin without covering「目前」.
-    private func trackGutter(showsTitle: Bool) -> some View {
-        Text("目前")
+    /// Same word on both sides, so the two bars match and sit in the center. The right copy only holds the width.
+    /// Leading inset is tighter than the word, so the bars use the spare margin without covering the title.
+    private func trackGutter(_ title: String, visible: Bool) -> some View {
+        Text(title)
             .font(.caption)
             .foregroundStyle(.secondary)
             .fixedSize()
             .padding(.leading, -16)
-            .opacity(showsTitle ? 1 : 0)
+            .opacity(visible ? 1 : 0)
             .accessibilityHidden(true)
     }
 
