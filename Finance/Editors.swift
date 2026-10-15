@@ -37,6 +37,11 @@ struct TargetEditor: View {
                                     tracksDrift: true,
                                     label: "目前比例"
                                 )
+                                HStack(spacing: 16) {
+                                    percentReadout("原型", percent: portfolio.actualPercent(for: .original), kind: .original)
+                                    percentReadout("槓桿", percent: portfolio.actualPercent(for: .leverage), kind: .leverage)
+                                    percentReadout("現金", percent: portfolio.actualPercent(for: .cash), kind: .cash)
+                                }
                             }
                         }
                     }
@@ -71,7 +76,7 @@ struct TargetEditor: View {
             .onAppear(perform: load)
         }
         .presentationBackground(palette.panel)
-        .presentationDetents([.height(portfolio.allocableTotal > 0 ? 360 : 300)])
+        .presentationDetents([.height(portfolio.allocableTotal > 0 ? 440 : 300)])
         .presentationDragIndicator(.visible)
     }
 
@@ -110,6 +115,34 @@ struct TargetEditor: View {
             }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func percentReadout(_ title: String, percent: Double, kind: AssetKind) -> some View {
+        let shown = NumberParse.displayPercent(percent.rounded())
+        return VStack(spacing: 2) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            HStack(alignment: .firstTextBaseline, spacing: 1) {
+                TextField("0", text: .constant(shown))
+                    .multilineTextAlignment(.trailing)
+                    .monospacedDigit()
+                    .allowsHitTesting(false)
+                    .frame(width: 36)
+                Text("%")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .font(.title3.weight(.semibold))
+            .foregroundStyle(
+                palette.glow(for: kind, factor: portfolio.driftFactor(for: kind))
+                    .readable(on: palette.panel, scheme: palette.colorScheme)
+            )
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(title)，\(shown)%")
     }
 
     private func gapLabel(kind: AssetKind, percent: Double) -> String {
