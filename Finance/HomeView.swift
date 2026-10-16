@@ -86,28 +86,7 @@ struct HomeView: View {
                     )
                         .frame(height: geo.size.height - range * reveal)
                         .overlay(alignment: .bottom) {
-                            Rectangle()
-                                .fill(Color.primary.opacity(0.12))
-                                .frame(height: 3)
-                                .overlay(alignment: .leading) {
-                                    GeometryReader { bar in
-                                        if savingsProgress > 0 {
-                                            UnevenRoundedRectangle(
-                                                topLeadingRadius: 0,
-                                                bottomLeadingRadius: 0,
-                                                bottomTrailingRadius: 2,
-                                                topTrailingRadius: 2
-                                            )
-                                            .fill(LinearGradient(
-                                                colors: [Color.primary.opacity(0.35), Color.primary],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            ))
-                                            .frame(width: bar.size.width * savingsProgress, height: 3)
-                                            .shadow(color: Color.primary.opacity(0.45), radius: 8)
-                                        }
-                                    }
-                                }
+                            YearsProgressBar(progress: savingsProgress)
                                 .opacity(max(panel, 0))
                                 .accessibilityHidden(true)
                                 .allowsHitTesting(false)
@@ -340,6 +319,36 @@ struct HomeView: View {
             return "總淨值 \(MoneyFormat.string(portfolio.netWorth))"
         }
         return "\(portfolio.statusTitle)。\(portfolio.allocationStatus)"
+    }
+}
+
+/// Hairline under 距離目標.
+struct YearsProgressBar: View {
+    var progress: Double
+
+    var body: some View {
+        Rectangle()
+            .fill(Color.primary.opacity(0.12))
+            .frame(height: 3)
+            .overlay(alignment: .leading) {
+                GeometryReader { bar in
+                    if progress > 0 {
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: 0,
+                            bottomLeadingRadius: 0,
+                            bottomTrailingRadius: 2,
+                            topTrailingRadius: 2
+                        )
+                        .fill(LinearGradient(
+                            colors: [Color.primary.opacity(0.35), Color.primary],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ))
+                        .frame(width: bar.size.width * min(1, max(0, progress)), height: 3)
+                        .shadow(color: Color.primary.opacity(0.45), radius: 8)
+                    }
+                }
+            }
     }
 }
 
