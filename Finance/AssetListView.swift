@@ -1176,21 +1176,14 @@ private struct AssetRow: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(item.name)
-                    Text(item.currency.rawValue)
+            HStack(spacing: 6) {
+                Text(item.name)
+                Text(item.currency.rawValue)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                if item.kind == .leverage, let multiple = item.leverageMultiple {
+                    Text(String(format: "%g×", multiple))
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    if item.kind == .leverage, let multiple = item.leverageMultiple {
-                        Text(String(format: "%g×", multiple))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                if item.usesSharePrice, let shares = item.shares, let price = item.price {
-                    Text(hideAmounts ? "••••" : "\(NumberParse.grouped(shares)) 股 · \(NumberParse.price(price))")
-                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
