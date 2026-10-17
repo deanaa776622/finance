@@ -10,6 +10,16 @@ final class Palette {
     var debt: Color { didSet { store() } }
     var drift: Color { didSet { store() } }
     var ground: Color { didSet { store() } }
+    /// Nil until the user picks a text color. Until then, ink follows the night color.
+    private var inkChoice: Color? { didSet { store() } }
+
+    /// Text that has no color of its own. Secondary copy is the same ink, quieter.
+    var ink: Color {
+        get { inkChoice ?? Self.automaticInk(on: ground) }
+        set { inkChoice = newValue }
+    }
+
+    var quietInk: Color { ink.opacity(0.62) }
 
     /// Top of the home gradient: the same night, a little brighter.
     var canvasTop: Color { ground.mix(with: .white, by: 0.05) }
@@ -29,7 +39,8 @@ final class Palette {
         realEstate: Color = Palette.defaultRealEstate,
         debt: Color = Palette.defaultDebt,
         drift: Color = Palette.defaultDrift,
-        ground: Color = Palette.defaultGround
+        ground: Color = Palette.defaultGround,
+        ink: Color? = nil
     ) {
         self.original = original
         self.leverage = leverage
@@ -38,6 +49,7 @@ final class Palette {
         self.debt = debt
         self.drift = drift
         self.ground = ground
+        self.inkChoice = ink
         themes = Self.loadThemes()
     }
 
@@ -53,7 +65,8 @@ final class Palette {
             drift: RGB(drift),
             ground: RGB(ground),
             realEstate: RGB(realEstate),
-            debt: RGB(debt)
+            debt: RGB(debt),
+            ink: RGB(ink)
         )
         if let index = themes.firstIndex(where: { $0.name == name }) {
             themes[index].colors = colors
@@ -71,6 +84,7 @@ final class Palette {
         debt = theme.colors.debt?.color ?? Self.defaultDebt
         drift = theme.colors.drift.color
         ground = theme.colors.ground.color
+        inkChoice = theme.colors.ink?.color
     }
 
     static func load() -> Palette {
@@ -85,7 +99,8 @@ final class Palette {
             realEstate: stored.realEstate?.color ?? Palette.defaultRealEstate,
             debt: stored.debt?.color ?? Palette.defaultDebt,
             drift: stored.drift.color,
-            ground: stored.ground.color
+            ground: stored.ground.color,
+            ink: stored.ink?.color
         )
     }
 
@@ -97,6 +112,7 @@ final class Palette {
         debt = Self.defaultDebt
         drift = Self.defaultDrift
         ground = Self.defaultGround
+        inkChoice = nil
     }
 
     func glow(for kind: AssetKind, factor: Double) -> Color {
@@ -123,7 +139,8 @@ final class Palette {
             drift: RGB(drift),
             ground: RGB(ground),
             realEstate: RGB(realEstate),
-            debt: RGB(debt)
+            debt: RGB(debt),
+            ink: inkChoice.map { RGB($0) }
         )
         if let data = try? JSONEncoder().encode(stored) {
             UserDefaults.standard.set(data, forKey: Self.key)
@@ -153,6 +170,10 @@ final class Palette {
     static let defaultDebt = Color(red: 0.58, green: 0.64, blue: 0.72)
     static let defaultDrift = Color(red: 0.85, green: 0.58, blue: 0.42)
     static let defaultGround = Color(red: 0.03, green: 0.05, blue: 0.10)
+
+    private static func automaticInk(on ground: Color) -> Color {
+        ground.relativeLuminance(scheme: .dark) > 0.179 ? .black : .white
+    }
 }
 
 private struct RGB: Codable {
@@ -172,6 +193,8 @@ private struct Stored: Codable {
     /// Absent in palettes saved before these two colors existed.
     var realEstate: RGB?
     var debt: RGB?
+    /// Absent until the user chooses a text color.
+    var ink: RGB?
 }
 
 struct PaletteTheme: Identifiable, Codable {

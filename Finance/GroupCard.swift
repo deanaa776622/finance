@@ -17,14 +17,14 @@ struct GroupTitle: View {
             HStack {
                 Text(title)
                     .font(.system(size: titleSize, weight: .semibold))
-                    .foregroundStyle(ink)
+                    .foregroundStyle(palette.ink)
                     .contentTransition(.interpolate)
                     .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { titleFrame?($0) }
                 Spacer()
                 Text(value)
                     .font(.system(size: titleSize))
                     .monospacedDigit()
-                    .foregroundStyle(valueMuted ? AnyShapeStyle(.secondary) : AnyShapeStyle(ink))
+                    .foregroundStyle(valueMuted ? AnyShapeStyle(palette.quietInk) : AnyShapeStyle(palette.ink))
                     .contentTransition(.numericText())
             }
             .contentShape(Rectangle())
@@ -33,10 +33,6 @@ struct GroupTitle: View {
         .accessibilityLabel(title)
         .accessibilityValue(value)
         .accessibilityHint(open ? "收合" : "展開")
-    }
-
-    private var ink: Color {
-        palette.colorScheme == .dark ? .white : .black
     }
 }
 

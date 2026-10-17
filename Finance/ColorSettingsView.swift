@@ -39,6 +39,12 @@ struct ColorSettingsView: View {
                 }
                 .listRowBackground(palette.panel)
                 Section {
+                    colorRow(.ink)
+                } footer: {
+                    Text("資產頁與距離目標頁尚未指定顏色的文字")
+                }
+                .listRowBackground(palette.panel)
+                Section {
                     Button("恢復預設") { palette.reset() }
                     Button("儲存主題") {
                         themeName = ""
@@ -103,7 +109,7 @@ struct ColorSettingsView: View {
 }
 
 private enum Swatch: String, Identifiable {
-    case original, leverage, cash, realEstate, debt, drift, ground
+    case original, leverage, cash, realEstate, debt, drift, ground, ink
 
     var id: String { rawValue }
 
@@ -116,6 +122,7 @@ private enum Swatch: String, Identifiable {
         case .debt: "負債"
         case .drift: "偏離"
         case .ground: "底"
+        case .ink: "字"
         }
     }
 
@@ -128,6 +135,7 @@ private enum Swatch: String, Identifiable {
         case .debt: palette.debt
         case .drift: palette.drift
         case .ground: palette.ground
+        case .ink: palette.ink
         }
     }
 
@@ -140,6 +148,7 @@ private enum Swatch: String, Identifiable {
         case .debt: palette.debt = color
         case .drift: palette.drift = color
         case .ground: palette.ground = color
+        case .ink: palette.ink = color
         }
     }
 }

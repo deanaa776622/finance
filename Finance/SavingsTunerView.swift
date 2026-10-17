@@ -34,6 +34,7 @@ struct SavingsTunerView: View {
                 }
                 .groupHeaderChrome()
             }
+            .foregroundStyle(palette.ink)
 
             Section {
                 if planOpen {
@@ -46,7 +47,7 @@ struct SavingsTunerView: View {
                     if let note = horizonNote {
                         Text(note)
                             .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(palette.quietInk)
                             .groupCardRow(isFirst: false, isLast: true)
                     }
                 }
@@ -56,6 +57,7 @@ struct SavingsTunerView: View {
                 }
                 .groupHeaderChrome()
             }
+            .foregroundStyle(palette.ink)
 
             if let points = draftOutlook?.points, !points.isEmpty {
                 Section {
@@ -80,15 +82,16 @@ struct SavingsTunerView: View {
             Section {
                 LabeledContent("目前資產") {
                     Text(MoneyFormat.string(portfolio.allocableTotal, hidden: hideAmounts))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(palette.quietInk)
                 }
                 .groupPlainRow()
                 LabeledContent("額外收入") {
                     Text(incomeShortfallText)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(palette.quietInk)
                 }
                 .groupPlainRow()
             }
+            .foregroundStyle(palette.ink)
         }
         .listStyle(.plain)
         .listSectionSeparator(.hidden)
@@ -199,8 +202,9 @@ struct SavingsTunerView: View {
                 .multilineTextAlignment(.trailing)
                 .focused($field, equals: .years)
                 .frame(width: 72)
-            Text("年").foregroundStyle(.secondary)
+            Text("年").foregroundStyle(palette.quietInk)
         }
+        .foregroundStyle(palette.ink)
     }
 
     private func percentRow(_ title: String, text: Binding<String>, focus: Field) -> some View {
@@ -212,8 +216,9 @@ struct SavingsTunerView: View {
                 .multilineTextAlignment(.trailing)
                 .focused($field, equals: focus)
                 .frame(width: 72)
-            Text("%").foregroundStyle(.secondary)
+            Text("%").foregroundStyle(palette.quietInk)
         }
+        .foregroundStyle(palette.ink)
     }
 
     private func moneyRow(
@@ -241,6 +246,7 @@ struct SavingsTunerView: View {
                     )
             }
         }
+        .foregroundStyle(palette.ink)
         .accessibilityElement(children: .combine)
     }
 

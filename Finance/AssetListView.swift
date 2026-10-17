@@ -252,7 +252,7 @@ struct AssetListView: View {
     private func rowsOrEmpty(_ rows: [AssetItem], trackLink bucketID: String? = nil, onLink: (() -> Void)? = nil) -> some View {
         if rows.isEmpty {
             Text("尚無紀錄")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(palette.quietInk)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(Self.rowPadding)
                 .stockLinkHit(enabled: onLink != nil, margin: 24) { onLink?() }
@@ -289,7 +289,7 @@ struct AssetListView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.primary)
+            .foregroundStyle(palette.ink)
             .stockLinkHit(enabled: onLink != nil, margin: 24) { onLink?() }
             .overlay(alignment: .bottom) {
                 if trackLink {
@@ -342,8 +342,10 @@ struct AssetListView: View {
             .frame(width: 44, height: 44)
             Button("目標配置") { showTargets = true }
                 .padding(.horizontal, 4)
+                .foregroundStyle(palette.ink)
             Button("設定") { showColors = true }
                 .padding(.horizontal, 4)
+                .foregroundStyle(palette.ink)
             Button {
                 addKind = .original
                 showAdd = true
@@ -1147,17 +1149,17 @@ private struct AssetRow: View {
                     Text(item.name)
                     Text(item.currency.rawValue)
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(palette.quietInk)
                     if item.kind == .leverage, let multiple = item.leverageMultiple {
                         Text(String(format: "%g×", multiple))
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(palette.quietInk)
                     }
                 }
                 Spacer()
                 Text(MoneyFormat.string(item.twdValue, hidden: hideAmounts))
                     .monospacedDigit()
-                    .foregroundStyle(item.kind == .debt ? .secondary : .primary)
+                    .foregroundStyle(item.kind == .debt ? palette.quietInk : palette.ink)
             }
             shareBar
         }
@@ -1175,7 +1177,7 @@ private struct AssetRow: View {
                         Text(shareLabel)
                             .font(.caption2.weight(.semibold))
                             .monospacedDigit()
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(palette.quietInk)
                             .accessibilityLabel("佔該群組 \(shareLabel)")
                     }
                 let lane = row.size.width * 0.5
