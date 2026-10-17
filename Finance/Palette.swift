@@ -1,11 +1,13 @@
 import SwiftUI
 
-/// Five colors shared by the home glow, allocation bar, and night background of home, net worth, exposure, and savings.
+/// Bucket colors, drift, and the night background of home, net worth, exposure, and savings.
 @Observable
 final class Palette {
     var original: Color { didSet { store() } }
     var leverage: Color { didSet { store() } }
     var cash: Color { didSet { store() } }
+    var realEstate: Color { didSet { store() } }
+    var debt: Color { didSet { store() } }
     var drift: Color { didSet { store() } }
     var ground: Color { didSet { store() } }
 
@@ -24,12 +26,16 @@ final class Palette {
         original: Color = Palette.defaultOriginal,
         leverage: Color = Palette.defaultLeverage,
         cash: Color = Palette.defaultCash,
+        realEstate: Color = Palette.defaultRealEstate,
+        debt: Color = Palette.defaultDebt,
         drift: Color = Palette.defaultDrift,
         ground: Color = Palette.defaultGround
     ) {
         self.original = original
         self.leverage = leverage
         self.cash = cash
+        self.realEstate = realEstate
+        self.debt = debt
         self.drift = drift
         self.ground = ground
         themes = Self.loadThemes()
@@ -45,7 +51,9 @@ final class Palette {
             leverage: RGB(leverage),
             cash: RGB(cash),
             drift: RGB(drift),
-            ground: RGB(ground)
+            ground: RGB(ground),
+            realEstate: RGB(realEstate),
+            debt: RGB(debt)
         )
         if let index = themes.firstIndex(where: { $0.name == name }) {
             themes[index].colors = colors
@@ -59,6 +67,8 @@ final class Palette {
         original = theme.colors.original.color
         leverage = theme.colors.leverage.color
         cash = theme.colors.cash.color
+        realEstate = theme.colors.realEstate?.color ?? Self.defaultRealEstate
+        debt = theme.colors.debt?.color ?? Self.defaultDebt
         drift = theme.colors.drift.color
         ground = theme.colors.ground.color
     }
@@ -72,6 +82,8 @@ final class Palette {
             original: stored.original.color,
             leverage: stored.leverage.color,
             cash: stored.cash.color,
+            realEstate: stored.realEstate?.color ?? Palette.defaultRealEstate,
+            debt: stored.debt?.color ?? Palette.defaultDebt,
             drift: stored.drift.color,
             ground: stored.ground.color
         )
@@ -81,13 +93,16 @@ final class Palette {
         original = Self.defaultOriginal
         leverage = Self.defaultLeverage
         cash = Self.defaultCash
+        realEstate = Self.defaultRealEstate
+        debt = Self.defaultDebt
         drift = Self.defaultDrift
         ground = Self.defaultGround
     }
 
     func glow(for kind: AssetKind, factor: Double) -> Color {
-        guard kind.countsTowardAllocation else { return .clear }
-        return swatch(for: kind).mix(with: drift, by: factor)
+        let color = swatch(for: kind)
+        guard kind.countsTowardAllocation else { return color }
+        return color.mix(with: drift, by: factor)
     }
 
     private func swatch(for kind: AssetKind) -> Color {
@@ -95,7 +110,8 @@ final class Palette {
         case .original: original
         case .leverage: leverage
         case .cash: cash
-        case .realEstate, .debt: .clear
+        case .realEstate: realEstate
+        case .debt: debt
         }
     }
 
@@ -105,7 +121,9 @@ final class Palette {
             leverage: RGB(leverage),
             cash: RGB(cash),
             drift: RGB(drift),
-            ground: RGB(ground)
+            ground: RGB(ground),
+            realEstate: RGB(realEstate),
+            debt: RGB(debt)
         )
         if let data = try? JSONEncoder().encode(stored) {
             UserDefaults.standard.set(data, forKey: Self.key)
@@ -131,6 +149,8 @@ final class Palette {
     static let defaultOriginal = Color(red: 0.22, green: 0.74, blue: 0.97)
     static let defaultLeverage = Color(red: 0.29, green: 0.87, blue: 0.50)
     static let defaultCash = Color(red: 0.98, green: 0.80, blue: 0.08)
+    static let defaultRealEstate = Color(red: 0.93, green: 0.94, blue: 0.95)
+    static let defaultDebt = Color(red: 0.58, green: 0.64, blue: 0.72)
     static let defaultDrift = Color(red: 0.85, green: 0.58, blue: 0.42)
     static let defaultGround = Color(red: 0.03, green: 0.05, blue: 0.10)
 }
@@ -149,6 +169,9 @@ private struct RGB: Codable {
 
 private struct Stored: Codable {
     var original, leverage, cash, drift, ground: RGB
+    /// Absent in palettes saved before these two colors existed.
+    var realEstate: RGB?
+    var debt: RGB?
 }
 
 struct PaletteTheme: Identifiable, Codable {

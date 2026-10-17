@@ -20,6 +20,13 @@ struct ColorSettingsView: View {
                 }
                 .listRowBackground(palette.panel)
                 Section {
+                    colorRow(.realEstate)
+                    colorRow(.debt)
+                } footer: {
+                    Text("展開列表的佔比條")
+                }
+                .listRowBackground(palette.panel)
+                Section {
                     colorRow(.drift)
                 } footer: {
                     Text("偏離目標時混進那一桶")
@@ -96,7 +103,7 @@ struct ColorSettingsView: View {
 }
 
 private enum Swatch: String, Identifiable {
-    case original, leverage, cash, drift, ground
+    case original, leverage, cash, realEstate, debt, drift, ground
 
     var id: String { rawValue }
 
@@ -105,6 +112,8 @@ private enum Swatch: String, Identifiable {
         case .original: "原型"
         case .leverage: "槓桿"
         case .cash: "現金"
+        case .realEstate: "實體"
+        case .debt: "負債"
         case .drift: "偏離"
         case .ground: "底"
         }
@@ -115,6 +124,8 @@ private enum Swatch: String, Identifiable {
         case .original: palette.original
         case .leverage: palette.leverage
         case .cash: palette.cash
+        case .realEstate: palette.realEstate
+        case .debt: palette.debt
         case .drift: palette.drift
         case .ground: palette.ground
         }
@@ -125,6 +136,8 @@ private enum Swatch: String, Identifiable {
         case .original: palette.original = color
         case .leverage: palette.leverage = color
         case .cash: palette.cash = color
+        case .realEstate: palette.realEstate = color
+        case .debt: palette.debt = color
         case .drift: palette.drift = color
         case .ground: palette.ground = color
         }

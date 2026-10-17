@@ -1268,7 +1268,7 @@ private struct AssetRow: View {
 
     /// Pure swatch from 顏色. Drift stays on the orbs and the target page.
     private var barColor: Color {
-        item.kind.countsTowardAllocation ? palette.glow(for: item.kind, factor: 0) : .primary
+        palette.glow(for: item.kind, factor: 0)
     }
 
     /// A small step off the page. Only the background color moves it.
