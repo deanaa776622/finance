@@ -14,14 +14,19 @@ struct SavingsTunerView: View {
     /// Nil asks “given this monthly amount, how many years?” A number asks the other way.
     @State private var horizon: Double?
     @State private var baseline: SavingsPlan?
+    @State private var goalOpen = false
 
     private enum Field: Hashable { case cost, withdraw, rate, pmt, years }
 
     var body: some View {
         Form {
             Section {
-                moneyRow("年花費", text: $costText, field: .cost)
-                percentRow("提領率", text: $withdrawText, focus: .withdraw)
+                DisclosureGroup(isExpanded: $goalOpen) {
+                    moneyRow("年花費", text: $costText, field: .cost)
+                    percentRow("提領率", text: $withdrawText, focus: .withdraw)
+                } label: {
+                    LabeledContent("目標", value: targetAmountText)
+                }
                 percentRow("年報酬率", text: $rateText, focus: .rate)
                 moneyRow("月投資額", text: $pmtText, field: .pmt, keepSign: true)
                 HStack {
@@ -63,9 +68,6 @@ struct SavingsTunerView: View {
             Section {
                 LabeledContent("目前資產", value: MoneyFormat.string(portfolio.allocableTotal, hidden: hideAmounts))
                 LabeledContent("額外收入", value: incomeShortfallText)
-                LabeledContent("目標金額") {
-                    Text(draftOutlook?.targetAmount.map(MoneyFormat.string) ?? "提領率需大於 0")
-                }
             }
         }
         .scrollContentBackground(.hidden)
@@ -134,6 +136,14 @@ struct SavingsTunerView: View {
             monthlyContribution: pmt,
             retirementYears: horizon
         )
+    }
+
+    private var targetAmountText: String {
+        guard let cost = NumberParse.decimal(costText), cost >= 0,
+              let withdrawal = NumberParse.double(withdrawText), withdrawal > 0, withdrawal <= 100,
+              let amount = SavingsMath.targetAmount(cost: cost, withdrawalRatePercent: withdrawal)
+        else { return "提領率需大於 0" }
+        return MoneyFormat.string(amount, hidden: hideAmounts)
     }
 
     /// Spending not covered by withdrawing from today's assets at the set rate.
