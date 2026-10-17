@@ -53,10 +53,6 @@ struct AssetListView: View {
     /// Bumped when the pair merges or splits, so row bottoms are measured again after the list shifts.
     @State private var linkEpoch = 0
     @State private var linkRowEpoch: [String: Int] = [:]
-    /// Row under the finger while a share long-press is held. Nil lets the list scroll.
-    @State private var scrubbedID: UUID?
-    @State private var shareFrames: [UUID: CGRect] = [:]
-    @Environment(\.isScrollEnabled) private var isScrollEnabled
     /// Groups on screen just before a merge, so expanding returns to that level.
     @State private var netChildren: [AssetChild] = []
     @State private var netHeldStocks = false
@@ -96,7 +92,6 @@ struct AssetListView: View {
             }
         }
         .listStyle(.plain)
-        .scrollDisabled(!isScrollEnabled || scrubbedID != nil)
         .listSectionSeparator(.hidden)
         .listSectionSpacing(0)
         .scrollContentBackground(.hidden)
@@ -300,19 +295,11 @@ struct AssetListView: View {
             let isFirst = item.id == rows.first?.id
             let isLast = item.id == rows.last?.id
             Button { editing = item } label: {
-                AssetRow(
-                    item: item,
-                    share: portion(item.twdValue, of: total),
-                    hideAmounts: hideAmounts,
-                    showsShare: scrubbedID == item.id,
-                    onScrub: { scrub($0, from: item.id) }
-                )
+                AssetRow(item: item, share: portion(item.twdValue, of: total), hideAmounts: hideAmounts)
                     .padding(Self.rowPadding)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
             }
-            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { shareFrames[item.id] = $0 }
-            .onDisappear { shareFrames[item.id] = nil }
             .buttonStyle(.plain)
             .foregroundStyle(.primary)
             .stockLinkHit(enabled: onLink != nil, margin: 24) { onLink?() }
@@ -326,28 +313,6 @@ struct AssetListView: View {
             .listRowBackground(GroupCardBackground(isFirst: isFirst, isLast: isLast))
         }
         .onDelete { portfolio.delete(rows, at: $0) }
-    }
-
-    private func scrub(_ phase: ShareScrub, from item: UUID) {
-        switch phase {
-        case .began:
-            scrubbedID = item
-        case .moved(let point):
-            scrubbedID = shareRow(at: point) ?? item
-        case .ended:
-            scrubbedID = nil
-        }
-    }
-
-    /// Nearest asset row, so the label stays put while the finger crosses a gap.
-    private func shareRow(at point: CGPoint) -> UUID? {
-        shareFrames.min { verticalDistance($0.value, point.y) < verticalDistance($1.value, point.y) }?.key
-    }
-
-    private func verticalDistance(_ rect: CGRect, _ y: CGFloat) -> CGFloat {
-        if y < rect.minY { return rect.minY - y }
-        if y > rect.maxY { return y - rect.maxY }
-        return 0
     }
 
     /// Share of the amounts listed in this group. Absolutes, so a merged net-worth group still sums to 1.
@@ -1205,25 +1170,11 @@ private struct GroupCardBackground: View {
     }
 }
 
-private enum ShareScrub {
-    case began
-    case moved(CGPoint)
-    case ended
-}
-
-private enum ShareTouch: Equatable {
-    case began
-    case at(CGPoint)
-}
-
 private struct AssetRow: View {
     @Environment(Palette.self) private var palette
     let item: AssetItem
     var share: Double = 0
     var hideAmounts = false
-    var showsShare = false
-    var onScrub: (ShareScrub) -> Void = { _ in }
-    @GestureState private var touch: ShareTouch?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1249,9 +1200,14 @@ private struct AssetRow: View {
     }
 
     private var shareBar: some View {
-        HStack(spacing: 0) {
-            GeometryReader { bar in
-                let width = bar.size.width * min(1, max(0, share))
+        GeometryReader { row in
+            HStack(alignment: .center, spacing: 6) {
+                Text(shareLabel)
+                    .font(.caption2.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .fixedSize()
+                    .accessibilityLabel("佔該群組 \(shareLabel)")
                 UnevenRoundedRectangle(
                     topLeadingRadius: 0,
                     bottomLeadingRadius: 0,
@@ -1259,60 +1215,15 @@ private struct AssetRow: View {
                     topTrailingRadius: 2
                 )
                 .fill(barColor)
-                .frame(width: width, height: 3)
-                .padding(.vertical, 4)
-                .contentShape(Rectangle())
-                .highPriorityGesture(shareHold)
-                .padding(.vertical, -4)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                .allowsHitTesting(share > 0)
-            }
-            .frame(height: 3)
-            .contentShape(Path())
-            Color.clear
-                .allowsHitTesting(false)
-        }
-        .onChange(of: touch) { _, touch in
-            switch touch {
-            case .began:
-                onScrub(.began)
-            case .at(let point):
-                onScrub(.moved(point))
-            case nil:
-                onScrub(.ended)
+                .frame(width: row.size.width * 0.5 * min(1, max(0, share)), height: 3)
+                Spacer(minLength: 0)
             }
         }
-        .overlay(alignment: .trailing) {
-            if showsShare {
-                Text(shareLabel)
-                    .font(.caption2.weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-                    .allowsHitTesting(false)
-            }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("佔該群組 \(shareLabel)")
+        .frame(height: 14)
     }
 
     private var shareLabel: String {
         "\(Int((min(1, max(0, share)) * 100).rounded()))%"
-    }
-
-    /// GestureState drops when the finger lifts, including if the list cancels the drag.
-    private var shareHold: some Gesture {
-        LongPressGesture(minimumDuration: 0.5)
-            .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .global))
-            .updating($touch) { value, state, _ in
-                switch value {
-                case .first(true), .second(true, nil):
-                    state = .began
-                case .second(true, let drag?):
-                    state = .at(drag.location)
-                default:
-                    break
-                }
-            }
     }
 
     /// Pure swatch from 顏色. Drift stays on the orbs and the target page.
