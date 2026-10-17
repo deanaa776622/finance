@@ -23,6 +23,7 @@ struct AssetEditor: View {
     @State private var isRefreshingTotal = false
     @State private var lumpShowsTwd = false
     @State private var labelWidth: CGFloat = 0
+    @State private var confirmDelete = false
     /// "medium" or "large". Missing key stays full height.
     @AppStorage("assetSheetDetent") private var detentID = "large"
     private let existingID: UUID?
@@ -250,14 +251,20 @@ struct AssetEditor: View {
                 .listRowBackground(palette.panel)
 
                 if existingID != nil, onDelete != nil {
-                    Button("刪除", role: .destructive) {
-                        onDelete?()
-                        dismiss()
-                    }
-                    .listRowBackground(palette.panel)
+                    Button("刪除", role: .destructive) { confirmDelete = true }
+                        .listRowBackground(palette.panel)
                 }
             }
             .palettePanel(palette)
+            .alert(deleteTitle, isPresented: $confirmDelete) {
+                Button("刪除", role: .destructive) {
+                    onDelete?()
+                    dismiss()
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("刪除後會從清單移除。")
+            }
             .onPreferenceChange(LabelWidthKey.self) { width in
                 if width != labelWidth { labelWidth = width }
             }
@@ -282,6 +289,11 @@ struct AssetEditor: View {
         .presentationDetents([.medium, .large], selection: sheetDetent)
         .presentationContentInteraction(.scrolls)
         .presentationDragIndicator(.visible)
+    }
+
+    private var deleteTitle: String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "刪除這筆資產？" : "刪除「\(trimmed)」？"
     }
 
     private var sheetDetent: Binding<PresentationDetent> {

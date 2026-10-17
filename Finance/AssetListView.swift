@@ -64,6 +64,7 @@ struct AssetListView: View {
     @State private var liquidChildren: [AssetChild] = []
     @State private var liquidHeldStocks = false
     @State private var stockChildren: [AssetChild] = []
+    @State private var pendingDelete: [AssetItem] = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .title3) private var titleSize: CGFloat = 20
 
@@ -126,12 +127,36 @@ struct AssetListView: View {
         .sheet(isPresented: $showColors) {
             ColorSettingsView()
         }
+        .alert(deleteTitle, isPresented: showDeleteConfirm) {
+            Button("刪除", role: .destructive) {
+                portfolio.delete(ids: pendingDelete.map(\.id))
+                pendingDelete = []
+            }
+            Button("取消", role: .cancel) { pendingDelete = [] }
+        } message: {
+            Text("刪除後會從清單移除。")
+        }
         .onChange(of: exposureOnly) { wasExposure, isExposure in
             cancelMergeIfNeeded()
             if wasExposure { AssetListMemory.exposureKinds = expandedKinds }
             if isExposure { expandedKinds = AssetListMemory.exposureKinds }
         }
         .onDisappear(perform: persistGroups)
+    }
+
+    private var showDeleteConfirm: Binding<Bool> {
+        Binding(
+            get: { !pendingDelete.isEmpty },
+            set: { if !$0 { pendingDelete = [] } }
+        )
+    }
+
+    private var deleteTitle: String {
+        guard pendingDelete.count == 1, let item = pendingDelete.first else {
+            return "刪除這 \(pendingDelete.count) 筆？"
+        }
+        let name = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return name.isEmpty ? "刪除這筆資產？" : "刪除「\(name)」？"
     }
 
     private var baseBuckets: [AssetBucket] {
@@ -312,7 +337,7 @@ struct AssetListView: View {
             .listRowSeparator(.hidden)
             .listRowBackground(GroupCardBackground(isFirst: isFirst, isLast: isLast))
         }
-        .onDelete { portfolio.delete(rows, at: $0) }
+        .onDelete { pendingDelete = $0.map { rows[$0] } }
     }
 
     /// Share of the amounts listed in this group. Absolutes, so a merged net-worth group still sums to 1.
