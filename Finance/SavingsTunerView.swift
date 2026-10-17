@@ -15,6 +15,7 @@ struct SavingsTunerView: View {
     @State private var horizon: Double?
     @State private var baseline: SavingsPlan?
     @State private var goalOpen = false
+    @State private var planOpen = false
 
     private enum Field: Hashable { case cost, withdraw, rate, pmt, years }
 
@@ -27,22 +28,26 @@ struct SavingsTunerView: View {
                 } label: {
                     LabeledContent("目標", value: targetAmountText)
                 }
-                percentRow("年報酬率", text: $rateText, focus: .rate)
-                moneyRow("月投資額", text: $pmtText, field: .pmt, keepSign: true)
-                HStack {
-                    Text("達標時間")
-                    Spacer()
-                    TextField("0", text: $yearsText)
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
-                        .focused($field, equals: .years)
-                        .frame(width: 72)
-                    Text("年").foregroundStyle(.secondary)
-                }
-                if let note = horizonNote {
-                    Text(note)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                DisclosureGroup(isExpanded: $planOpen) {
+                    percentRow("年報酬率", text: $rateText, focus: .rate)
+                    moneyRow("月投資額", text: $pmtText, field: .pmt, keepSign: true)
+                    HStack {
+                        Text("達標時間")
+                        Spacer()
+                        TextField("0", text: $yearsText)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .focused($field, equals: .years)
+                            .frame(width: 72)
+                        Text("年").foregroundStyle(.secondary)
+                    }
+                    if let note = horizonNote {
+                        Text(note)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                } label: {
+                    LabeledContent("計畫", value: planTimeText)
                 }
             }
 
@@ -144,6 +149,10 @@ struct SavingsTunerView: View {
               let amount = SavingsMath.targetAmount(cost: cost, withdrawalRatePercent: withdrawal)
         else { return "提領率需大於 0" }
         return MoneyFormat.string(amount, hidden: hideAmounts)
+    }
+
+    private var planTimeText: String {
+        yearsText.isEmpty ? "--" : "\(yearsText) 年"
     }
 
     /// Spending not covered by withdrawing from today's assets at the set rate.
