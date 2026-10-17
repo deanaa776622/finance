@@ -1224,13 +1224,13 @@ private struct AssetRow: View {
                 )
                 shape
                     .fill(trackColor)
-                    .frame(width: lane, height: 3)
+                    .frame(width: lane, height: 1)
                     .overlay(alignment: .leading) {
-                        Rectangle()
+                        shape
                             .fill(barColor)
                             .frame(width: filled, height: 3)
                     }
-                    .clipShape(shape)
+                    .frame(width: lane, height: 3, alignment: .leading)
                 Spacer(minLength: 0)
             }
         }
@@ -1246,7 +1246,7 @@ private struct AssetRow: View {
         item.kind.countsTowardAllocation ? palette.glow(for: item.kind, factor: 0) : .primary
     }
 
-    /// A small step off the page, so the unfilled part of the bar stays quiet.
+    /// A small step off the page. Only the background color moves it.
     private var trackColor: Color {
         let ink: Color = palette.colorScheme == .dark ? .white : .black
         return palette.ground.mix(with: ink, by: 0.14)
