@@ -1214,14 +1214,23 @@ private struct AssetRow: View {
                             .foregroundStyle(.secondary)
                             .accessibilityLabel("佔該群組 \(shareLabel)")
                     }
-                UnevenRoundedRectangle(
+                let lane = row.size.width * 0.5
+                let filled = lane * min(1, max(0, share))
+                let shape = UnevenRoundedRectangle(
                     topLeadingRadius: 0,
                     bottomLeadingRadius: 0,
                     bottomTrailingRadius: 2,
                     topTrailingRadius: 2
                 )
-                .fill(barColor)
-                .frame(width: row.size.width * 0.5 * min(1, max(0, share)), height: 3)
+                shape
+                    .fill(trackColor)
+                    .frame(width: lane, height: 3)
+                    .overlay(alignment: .leading) {
+                        Rectangle()
+                            .fill(barColor)
+                            .frame(width: filled, height: 3)
+                    }
+                    .clipShape(shape)
                 Spacer(minLength: 0)
             }
         }
@@ -1235,6 +1244,12 @@ private struct AssetRow: View {
     /// Pure swatch from 顏色. Drift stays on the orbs and the target page.
     private var barColor: Color {
         item.kind.countsTowardAllocation ? palette.glow(for: item.kind, factor: 0) : .primary
+    }
+
+    /// A small step off the page, so the unfilled part of the bar stays quiet.
+    private var trackColor: Color {
+        let ink: Color = palette.colorScheme == .dark ? .white : .black
+        return palette.ground.mix(with: ink, by: 0.14)
     }
 }
 
