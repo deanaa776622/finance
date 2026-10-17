@@ -20,35 +20,41 @@ struct SavingsTunerView: View {
     private enum Field: Hashable { case cost, withdraw, rate, pmt, years }
 
     var body: some View {
-        Form {
+        List {
             Section {
-                DisclosureGroup(isExpanded: $goalOpen) {
+                if goalOpen {
                     moneyRow("年花費", text: $costText, field: .cost)
+                        .groupCardRow(isFirst: true, isLast: false)
                     percentRow("提領率", text: $withdrawText, focus: .withdraw)
-                } label: {
-                    LabeledContent("目標", value: targetAmountText)
+                        .groupCardRow(isFirst: false, isLast: true)
                 }
-                DisclosureGroup(isExpanded: $planOpen) {
+            } header: {
+                GroupTitle(title: "目標", value: targetAmountText, open: goalOpen, valueMuted: true) {
+                    withAnimation { goalOpen.toggle() }
+                }
+                .groupHeaderChrome()
+            }
+
+            Section {
+                if planOpen {
                     percentRow("年報酬率", text: $rateText, focus: .rate)
+                        .groupCardRow(isFirst: true, isLast: false)
                     moneyRow("月投資額", text: $pmtText, field: .pmt, keepSign: true)
-                    HStack {
-                        Text("達標時間")
-                        Spacer()
-                        TextField("0", text: $yearsText)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .focused($field, equals: .years)
-                            .frame(width: 72)
-                        Text("年").foregroundStyle(.secondary)
-                    }
+                        .groupCardRow(isFirst: false, isLast: false)
+                    yearsRow
+                        .groupCardRow(isFirst: false, isLast: horizonNote == nil)
                     if let note = horizonNote {
                         Text(note)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
+                            .groupCardRow(isFirst: false, isLast: true)
                     }
-                } label: {
-                    LabeledContent("計畫", value: planTimeText)
                 }
+            } header: {
+                GroupTitle(title: "計畫", value: planTimeText, open: planOpen, valueMuted: true) {
+                    withAnimation { planOpen.toggle() }
+                }
+                .groupHeaderChrome()
             }
 
             if let points = draftOutlook?.points, !points.isEmpty {
@@ -67,14 +73,26 @@ struct SavingsTunerView: View {
                     .chartLegend(.hidden)
                     .frame(height: 120)
                     .accessibilityLabel("預估資產曲線")
+                    .groupPlainRow()
                 }
             }
 
             Section {
-                LabeledContent("目前資產", value: MoneyFormat.string(portfolio.allocableTotal, hidden: hideAmounts))
-                LabeledContent("額外收入", value: incomeShortfallText)
+                LabeledContent("目前資產") {
+                    Text(MoneyFormat.string(portfolio.allocableTotal, hidden: hideAmounts))
+                        .foregroundStyle(.secondary)
+                }
+                .groupPlainRow()
+                LabeledContent("額外收入") {
+                    Text(incomeShortfallText)
+                        .foregroundStyle(.secondary)
+                }
+                .groupPlainRow()
             }
         }
+        .listStyle(.plain)
+        .listSectionSeparator(.hidden)
+        .listSectionSpacing(0)
         .scrollContentBackground(.hidden)
         .background(palette.ground)
         .scrollEdgeFade()
@@ -170,6 +188,19 @@ struct SavingsTunerView: View {
 
     private var draftOutlook: SavingsOutlook? {
         draft.map { SavingsMath.outlook(plan: $0, presentValue: portfolio.allocableTotal) }
+    }
+
+    private var yearsRow: some View {
+        HStack {
+            Text("達標時間")
+            Spacer()
+            TextField("0", text: $yearsText)
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .focused($field, equals: .years)
+                .frame(width: 72)
+            Text("年").foregroundStyle(.secondary)
+        }
     }
 
     private func percentRow(_ title: String, text: Binding<String>, focus: Field) -> some View {

@@ -66,7 +66,6 @@ struct AssetListView: View {
     @State private var stockChildren: [AssetChild] = []
     @State private var pendingDelete: [AssetItem] = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @ScaledMetric(relativeTo: .title3) private var titleSize: CGFloat = 20
 
     init(showsChrome: Bool = true, topInset: CGFloat = restingTopInset, exposureOnly: Bool = false) {
         self.showsChrome = showsChrome
@@ -200,16 +199,21 @@ struct AssetListView: View {
 
     @ViewBuilder
     private func bucketHeader(_ bucket: AssetBucket) -> some View {
-        let header = groupHeader(bucket.title, open: isOpen(bucket), amount: amount(of: bucket), titleFrame: { trackTitle(bucket, $0) }) {
+        let header = GroupTitle(
+            title: bucket.title,
+            value: MoneyFormat.string(amount(of: bucket), hidden: hideAmounts),
+            open: isOpen(bucket),
+            titleFrame: { trackTitle(bucket, $0) }
+        ) {
             toggleBucket(bucket)
         }
         .opacity(linkBucketFades(bucket.kinds) ? 0 : 1)
         .stockLinkHit(enabled: linkAction(for: bucket) != nil, margin: 24) { linkAction(for: bucket)?() }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { trackLink(bucket, frame: $0) }
         if let title = linkActionTitle(bucket) {
-            headerChrome(header.accessibilityAction(named: Text(title)) { linkAction(for: bucket)?() })
+            header.accessibilityAction(named: Text(title)) { linkAction(for: bucket)?() }.groupHeaderChrome()
         } else {
-            headerChrome(header)
+            header.groupHeaderChrome()
         }
     }
 
@@ -242,47 +246,6 @@ struct AssetListView: View {
             if kind == .debt, kinds.count > 1 { return partial - value }
             return partial + value
         }
-    }
-
-    private func groupHeader(
-        _ title: String,
-        open: Bool,
-        amount: Decimal,
-        titleFrame: ((CGRect) -> Void)? = nil,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack {
-                Text(title)
-                    .font(.system(size: titleSize, weight: .semibold))
-                    .foregroundStyle(headerInk)
-                    .contentTransition(.interpolate)
-                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { titleFrame?($0) }
-                Spacer()
-                Text(MoneyFormat.string(amount, hidden: hideAmounts))
-                    .font(.system(size: titleSize))
-                    .monospacedDigit()
-                    .foregroundStyle(headerInk)
-                    .contentTransition(.numericText())
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
-        .accessibilityHint(open ? "收合" : "展開")
-    }
-
-    /// White on a dark page, black on a light one. Not the system label gray.
-    private var headerInk: Color {
-        palette.colorScheme == .dark ? .white : .black
-    }
-
-    private func headerChrome<V: View>(_ view: V) -> some View {
-        view
-            .listRowInsets(EdgeInsets(top: 18, leading: 32, bottom: 8, trailing: 32))
-            .listRowSeparator(.hidden)
-            .listRowBackground(palette.ground)
-            .textCase(nil)
     }
 
     @ViewBuilder
@@ -1168,30 +1131,6 @@ private struct AssetMenuBar<Bar: View>: ViewModifier {
                     .padding(.bottom, 8)
             }
         }
-    }
-}
-
-private struct GroupCardBackground: View {
-    var isFirst: Bool
-    var isLast: Bool
-    @Environment(Palette.self) private var palette
-    static let radius: CGFloat = 26
-    static let inset: CGFloat = 16
-    /// Matches the group title's leading inset, so the card's left edge lines up with the first glyph.
-    static let leading: CGFloat = 32
-
-    var body: some View {
-        UnevenRoundedRectangle(
-            topLeadingRadius: isFirst ? Self.radius : 0,
-            bottomLeadingRadius: isLast ? Self.radius : 0,
-            bottomTrailingRadius: isLast ? Self.radius : 0,
-            topTrailingRadius: isFirst ? Self.radius : 0,
-            style: .continuous
-        )
-        .fill(palette.ground)
-        .padding(.leading, Self.leading)
-        .padding(.trailing, Self.inset)
-        .allowsHitTesting(false)
     }
 }
 
