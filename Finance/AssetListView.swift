@@ -1202,12 +1202,18 @@ private struct AssetRow: View {
     private var shareBar: some View {
         GeometryReader { row in
             HStack(alignment: .center, spacing: 6) {
-                Text(shareLabel)
+                Text("100%")
                     .font(.caption2.weight(.semibold))
                     .monospacedDigit()
-                    .foregroundStyle(.secondary)
-                    .fixedSize()
-                    .accessibilityLabel("佔該群組 \(shareLabel)")
+                    .hidden()
+                    .accessibilityHidden(true)
+                    .overlay(alignment: .leading) {
+                        Text(shareLabel)
+                            .font(.caption2.weight(.semibold))
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel("佔該群組 \(shareLabel)")
+                    }
                 UnevenRoundedRectangle(
                     topLeadingRadius: 0,
                     bottomLeadingRadius: 0,
