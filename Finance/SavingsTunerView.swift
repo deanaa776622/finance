@@ -16,6 +16,7 @@ struct SavingsTunerView: View {
     @State private var baseline: SavingsPlan?
     @State private var goalOpen = false
     @State private var planOpen = false
+    @State private var statusOpen = false
 
     private enum Field: Hashable { case cost, withdraw, rate, pmt, years }
 
@@ -80,16 +81,23 @@ struct SavingsTunerView: View {
             }
 
             Section {
-                LabeledContent("目前資產") {
-                    Text(MoneyFormat.string(portfolio.allocableTotal, hidden: hideAmounts))
-                        .foregroundStyle(palette.quietInk)
+                if statusOpen {
+                    LabeledContent("目前資產") {
+                        Text(currentAssetsText)
+                            .foregroundStyle(palette.quietInk)
+                    }
+                    .groupCardRow(isFirst: true, isLast: false)
+                    LabeledContent("額外收入") {
+                        Text(incomeShortfallText)
+                            .foregroundStyle(palette.quietInk)
+                    }
+                    .groupCardRow(isFirst: false, isLast: true)
                 }
-                .groupPlainRow()
-                LabeledContent("額外收入") {
-                    Text(incomeShortfallText)
-                        .foregroundStyle(palette.quietInk)
+            } header: {
+                GroupTitle(title: "現狀", value: currentAssetsText, open: statusOpen, valueMuted: true) {
+                    withAnimation { statusOpen.toggle() }
                 }
-                .groupPlainRow()
+                .groupHeaderChrome()
             }
             .foregroundStyle(palette.ink)
         }
@@ -170,6 +178,10 @@ struct SavingsTunerView: View {
               let amount = SavingsMath.targetAmount(cost: cost, withdrawalRatePercent: withdrawal)
         else { return "提領率需大於 0" }
         return MoneyFormat.string(amount, hidden: hideAmounts)
+    }
+
+    private var currentAssetsText: String {
+        MoneyFormat.string(portfolio.allocableTotal, hidden: hideAmounts)
     }
 
     private var planTimeText: String {
