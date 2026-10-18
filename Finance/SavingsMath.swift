@@ -56,9 +56,9 @@ extension SavingsPlan: Codable {
 }
 
 struct SavingsPoint: Identifiable {
-    var year: Int
+    var year: Double
     var amount: Double
-    var id: Int { year }
+    var id: Double { year }
 }
 
 struct SavingsOutlook {
@@ -66,6 +66,8 @@ struct SavingsOutlook {
     var months: Double?
     var progress: Double
     var points: [SavingsPoint]
+    /// Same contributions, with no market return. Drawn beside `points` over the same years.
+    var cashPoints: [SavingsPoint] = []
     var alreadyReached: Bool
     var needsPositiveRate: Bool
     var unreachable: Bool
@@ -156,15 +158,25 @@ enum SavingsMath {
             rawMonths = nil
         }
         let unreachable = rawMonths == nil && !reached && !needsRate && fvDec != nil
-        let yearSpan = max(Int(ceil((rawMonths ?? 0) / 12)) + 1, 5)
-        let points = (fvDec == nil || unreachable) ? [] : projection(
-            pv: pv, monthlyPmt: pmt, annualRate: annualRate, years: yearSpan
-        )
+        let points: [SavingsPoint]
+        let cashPoints: [SavingsPoint]
+        if let rawMonths, rawMonths > 0, fv > 0, !needsRate, !unreachable {
+            let years = rawMonths / 12
+            points = path(
+                pv: pv, monthlyPmt: pmt, annualRate: annualRate,
+                years: years, endAmount: fv
+            )
+            cashPoints = path(pv: pv, monthlyPmt: pmt, annualRate: 0, years: years)
+        } else {
+            points = []
+            cashPoints = []
+        }
         return SavingsOutlook(
             targetAmount: fvDec,
             months: rawMonths,
             progress: fv > 0 ? min(1, max(0, pv / fv)) : 0,
             points: points,
+            cashPoints: cashPoints,
             alreadyReached: reached,
             needsPositiveRate: needsRate,
             unreachable: unreachable
@@ -203,13 +215,36 @@ enum SavingsMath {
         return log(ratio) / log(1 + rate)
     }
 
-    static func projection(pv: Double, monthlyPmt: Double, annualRate: Double, years: Int) -> [SavingsPoint] {
+    /// Yearly steps over `years`. `endAmount` pins the last point, so the invested path can meet the target.
+    static func path(
+        pv: Double,
+        monthlyPmt: Double,
+        annualRate: Double,
+        years: Double,
+        endAmount: Double? = nil
+    ) -> [SavingsPoint] {
+        guard years > 0, pv.isFinite else { return [] }
         let monthlyRate = annualRate / 12
+        let totalMonths = years * 12
         var asset = pv
-        return (0...years).map { year in
-            let point = SavingsPoint(year: year, amount: asset)
-            for _ in 0..<12 { asset = (asset + monthlyPmt) * (1 + monthlyRate) }
-            return point
+        var points = [SavingsPoint(year: 0, amount: asset)]
+        let wholeMonths = Int(totalMonths.rounded(.down))
+        if wholeMonths >= 1 {
+            for month in 1...wholeMonths {
+                asset = (asset + monthlyPmt) * (1 + monthlyRate)
+                if month.isMultiple(of: 12) {
+                    let year = Double(month) / 12
+                    if year + 0.05 < years {
+                        points.append(SavingsPoint(year: year, amount: asset))
+                    }
+                }
+            }
         }
+        let fraction = totalMonths - Double(wholeMonths)
+        if fraction > 0.001 {
+            asset = (asset + monthlyPmt * fraction) * (1 + monthlyRate * fraction)
+        }
+        points.append(SavingsPoint(year: years, amount: endAmount ?? asset))
+        return points
     }
 }

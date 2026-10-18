@@ -1,4 +1,3 @@
-import Charts
 import SwiftUI
 
 struct SavingsTunerView: View {
@@ -60,23 +59,10 @@ struct SavingsTunerView: View {
             }
             .foregroundStyle(palette.ink)
 
-            if let points = draftOutlook?.points, !points.isEmpty {
+            if let outlook = draftOutlook {
                 Section {
-                    Chart(points) { p in
-                        AreaMark(x: .value("年", p.year), y: .value("資產", p.amount))
-                            .interpolationMethod(.catmullRom)
-                            .foregroundStyle(Color.primary.opacity(0.18).gradient)
-                        LineMark(x: .value("年", p.year), y: .value("資產", p.amount))
-                            .interpolationMethod(.catmullRom)
-                            .foregroundStyle(Color.primary)
-                            .lineStyle(StrokeStyle(lineWidth: 2))
-                    }
-                    .chartXAxis(.hidden)
-                    .chartYAxis(.hidden)
-                    .chartLegend(.hidden)
-                    .frame(height: 120)
-                    .accessibilityLabel("預估資產曲線")
-                    .groupPlainRow()
+                    SavingsCurve(outlook: outlook, nowText: currentAssetsText, targetText: targetAmountText)
+                        .groupPlainRow()
                 }
             }
 
@@ -398,6 +384,11 @@ struct SavingsTunerView: View {
         let gap = SavingsMath.incomeShortfall(cost: 1_440_000, presentValue: 10_000_000, withdrawalRatePercent: 4)
         assert(gap == 1_040_000)
         assert(SavingsMath.incomeShortfall(cost: 1_440_000, presentValue: 40_000_000, withdrawalRatePercent: 4) == 0)
+        let path = SavingsMath.path(pv: 0, monthlyPmt: 1_000, annualRate: 0, years: 2, endAmount: 24_000)
+        assert(path.last?.year == 2)
+        assert(path.last?.amount == 24_000)
+        let cash = SavingsMath.path(pv: 0, monthlyPmt: 1_000, annualRate: 0, years: 2.5)
+        assert(cash.last?.amount == 30_000)
         return egg
     }()
     NavigationStack {
