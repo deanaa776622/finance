@@ -82,7 +82,7 @@ struct SavingsTunerView: View {
 
             if let outlook = draftOutlook {
                 Section {
-                    SavingsCurve(outlook: outlook, nowText: currentAssetsText, targetText: targetAmountText)
+                    SavingsCurve(outlook: outlook)
                         .groupPlainRow()
                 }
             }

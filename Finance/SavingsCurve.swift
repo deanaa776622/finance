@@ -1,27 +1,21 @@
 import Charts
 import SwiftUI
 
-/// The path from today's assets to the target. The two ends name the line; no title above it.
+/// The path from today's assets to the target. Press the line to read a year and the two amounts.
 struct SavingsCurve: View {
     var outlook: SavingsOutlook
-    var nowText: String
-    var targetText: String
     @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
     @State private var selectedYear: Double?
+    @State private var markerX: CGFloat?
+    @State private var yearLabelWidth: CGFloat = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if showsCurve, let years = outlook.years, years > 0,
                let target = outlook.targetAmount.map({ NSDecimalNumber(decimal: $0).doubleValue }) {
-                Text(selectedYear.map { "\(plainYears($0)) 年" } ?? " ")
-                    .font(.footnote)
-                    .monospacedDigit()
-                    .foregroundStyle(palette.ink)
-                    .opacity(selectedYear == nil ? 0 : 1)
                 curve(years: years, target: target)
                 legend
-                anchors(years: years)
             } else if !caption.isEmpty {
                 Text(caption)
                     .font(.footnote)
@@ -88,15 +82,53 @@ struct SavingsCurve: View {
                         DragGesture(minimumDistance: 0)
                             .onChanged { drag in
                                 guard let plotFrame = proxy.plotFrame else { return }
-                                let origin = geometry[plotFrame].origin
-                                let x = drag.location.x - origin.x
+                                let plot = geometry[plotFrame]
+                                let x = drag.location.x - plot.origin.x
                                 guard let year: Double = proxy.value(atX: x) else { return }
-                                selectedYear = min(max(year, 0), years)
+                                let clamped = min(max(year, 0), years)
+                                selectedYear = clamped
+                                if let plotX = proxy.position(forX: clamped) {
+                                    markerX = plot.minX + plotX
+                                }
                             }
-                            .onEnded { _ in selectedYear = nil }
+                            .onEnded { _ in
+                                selectedYear = nil
+                                markerX = nil
+                            }
                     )
             }
         }
+        .padding(.top, 20)
+        .overlay(alignment: .top) { yearLabel }
+    }
+
+    /// Sits in the padding above the plot and tracks the pressed year.
+    private var yearLabel: some View {
+        GeometryReader { row in
+            Text(selectedYear.map(yearText) ?? " ")
+                .font(.footnote)
+                .monospacedDigit()
+                .foregroundStyle(palette.ink)
+                .fixedSize()
+                .background {
+                    GeometryReader { text in
+                        Color.clear
+                            .onChange(of: text.size.width, initial: true) { _, width in
+                                if yearLabelWidth != width { yearLabelWidth = width }
+                            }
+                    }
+                }
+                .position(x: placedYearX(in: row.size.width), y: row.size.height / 2)
+                .opacity(selectedYear == nil ? 0 : 1)
+        }
+        .frame(height: 20)
+        .allowsHitTesting(false)
+    }
+
+    private func placedYearX(in width: CGFloat) -> CGFloat {
+        let half = yearLabelWidth / 2
+        let x = markerX ?? width / 2
+        return min(max(x, half), max(half, width - half))
     }
 
     private var legend: some View {
@@ -150,20 +182,9 @@ struct SavingsCurve: View {
         return lower.amount + (upper.amount - lower.amount) * t
     }
 
-    private func anchors(years: Double) -> some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("現在")
-                Text(nowText).monospacedDigit()
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(plainYears(years) + " 年").monospacedDigit()
-                Text(targetText).monospacedDigit()
-            }
-        }
-        .font(.caption)
-        .foregroundStyle(palette.quietInk)
+    private func yearText(_ year: Double) -> String {
+        let years = plainYears(year)
+        return years == "0" ? "現在" : "\(years) 年"
     }
 
     private func plainYears(_ years: Double) -> String {
