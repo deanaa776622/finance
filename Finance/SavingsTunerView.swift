@@ -22,21 +22,24 @@ struct SavingsTunerView: View {
     var body: some View {
         List {
             Section {
+                GroupTitle(title: "目標", value: targetAmountText, open: goalOpen, valueMuted: true) {
+                    withAnimation { goalOpen.toggle() }
+                }
+                .groupHeaderChrome()
                 if goalOpen {
                     moneyRow("年花費", text: $costText, field: .cost)
                         .groupCardRow(isFirst: true, isLast: false)
                     percentRow("提領率", text: $withdrawText, focus: .withdraw)
                         .groupCardRow(isFirst: false, isLast: true)
                 }
-            } header: {
-                GroupTitle(title: "目標", value: targetAmountText, open: goalOpen, valueMuted: true) {
-                    withAnimation { goalOpen.toggle() }
-                }
-                .groupHeaderChrome()
             }
             .foregroundStyle(palette.ink)
 
             Section {
+                GroupTitle(title: "計畫", value: planTimeText, open: planOpen, valueMuted: true) {
+                    withAnimation { planOpen.toggle() }
+                }
+                .groupHeaderChrome()
                 if planOpen {
                     percentRow("年報酬率", text: $rateText, focus: .rate)
                         .groupCardRow(isFirst: true, isLast: false)
@@ -51,15 +54,14 @@ struct SavingsTunerView: View {
                             .groupCardRow(isFirst: false, isLast: true)
                     }
                 }
-            } header: {
-                GroupTitle(title: "計畫", value: planTimeText, open: planOpen, valueMuted: true) {
-                    withAnimation { planOpen.toggle() }
-                }
-                .groupHeaderChrome()
             }
             .foregroundStyle(palette.ink)
 
             Section {
+                GroupTitle(title: "現狀", value: currentAssetsText, open: statusOpen, valueMuted: true) {
+                    withAnimation { statusOpen.toggle() }
+                }
+                .groupHeaderChrome()
                 if statusOpen {
                     LabeledContent("目前資產") {
                         Text(currentAssetsText)
@@ -72,11 +74,6 @@ struct SavingsTunerView: View {
                     }
                     .groupCardRow(isFirst: false, isLast: true)
                 }
-            } header: {
-                GroupTitle(title: "現狀", value: currentAssetsText, open: statusOpen, valueMuted: true) {
-                    withAnimation { statusOpen.toggle() }
-                }
-                .groupHeaderChrome()
             }
             .foregroundStyle(palette.ink)
 
@@ -90,8 +87,10 @@ struct SavingsTunerView: View {
         .listStyle(.plain)
         .listSectionSeparator(.hidden)
         .listSectionSpacing(0)
+        .environment(\.defaultMinListHeaderHeight, 0)
         .scrollContentBackground(.hidden)
         .background(palette.ground)
+        .contentMargins(.top, ScrollFade.depth - 18, for: .scrollContent)
         .contentMargins(.bottom, ScrollFade.depth + 8, for: .scrollContent)
         .scrollEdgeFade()
         .scrollDismissesKeyboard(.interactively)
