@@ -43,9 +43,6 @@ struct SavingsCurve: View {
         let floor = min(0, amounts.min() ?? 0)
         let top = max(peak * 1.08, floor + 1)
         return Chart {
-            RuleMark(y: .value("目標", target))
-                .foregroundStyle(palette.quietInk.opacity(0.7))
-                .lineStyle(StrokeStyle(lineWidth: 1))
             ForEach(outlook.points) { point in
                 AreaMark(x: .value("年", point.year), y: .value("資產", point.amount), series: .value("線", "股市"))
                     .interpolationMethod(.monotone)
