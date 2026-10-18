@@ -251,7 +251,6 @@ private struct AllocationGlowTrack: View {
                     }
                 }
                 .overlay(Capsule().strokeBorder(Color.primary.opacity(0.2), lineWidth: 1))
-                .shadow(color: Color.primary.opacity(0.28), radius: 8)
             if onChange != nil {
                 bar.highPriorityGesture(drag(width: geo.size.width))
             } else {
