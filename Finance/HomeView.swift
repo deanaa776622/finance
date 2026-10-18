@@ -54,8 +54,9 @@ struct HomeView: View {
                     presentValue: portfolio.allocableTotal
                 ).progress
 
+                let savingsGap: CGFloat = position > 0 ? 12 * position : 0
                 let assetHeight = position < 0 ? max(0, range * -position - bottomLift - assetTop) : 0
-                let savingsHeight = position > 0 ? max(0, range * position - topLift) : 0
+                let savingsHeight = position > 0 ? max(0, range * position - topLift - savingsGap) : 0
 
                 VStack(spacing: 0) {
                     shellSlot(height: assetHeight) {
@@ -111,7 +112,7 @@ struct HomeView: View {
                             .opacity(position > 0 ? position : 0)
                             .allowsHitTesting(position > 0.85)
                     }
-                    .padding(.top, position > 0 ? 12 * position : 0)
+                    .padding(.top, savingsGap)
                 }
                 .padding(.top, topLift + assetTop)
                 .padding(.bottom, bottomLift)

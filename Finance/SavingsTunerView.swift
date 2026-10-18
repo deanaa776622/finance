@@ -92,6 +92,7 @@ struct SavingsTunerView: View {
         .listSectionSpacing(0)
         .scrollContentBackground(.hidden)
         .background(palette.ground)
+        .contentMargins(.bottom, ScrollFade.depth + 8, for: .scrollContent)
         .scrollEdgeFade()
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
