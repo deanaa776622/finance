@@ -59,13 +59,6 @@ struct SavingsTunerView: View {
             }
             .foregroundStyle(palette.ink)
 
-            if let outlook = draftOutlook {
-                Section {
-                    SavingsCurve(outlook: outlook, nowText: currentAssetsText, targetText: targetAmountText)
-                        .groupPlainRow()
-                }
-            }
-
             Section {
                 if statusOpen {
                     LabeledContent("目前資產") {
@@ -86,6 +79,13 @@ struct SavingsTunerView: View {
                 .groupHeaderChrome()
             }
             .foregroundStyle(palette.ink)
+
+            if let outlook = draftOutlook {
+                Section {
+                    SavingsCurve(outlook: outlook, nowText: currentAssetsText, targetText: targetAmountText)
+                        .groupPlainRow()
+                }
+            }
         }
         .listStyle(.plain)
         .listSectionSeparator(.hidden)

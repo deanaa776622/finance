@@ -1,7 +1,7 @@
 import Charts
 import SwiftUI
 
-/// The path from today's assets to the target. No axes; the sentence and the two ends carry the meaning.
+/// The path from today's assets to the target. The two ends name the line; no title above it.
 struct SavingsCurve: View {
     var outlook: SavingsOutlook
     var nowText: String
@@ -10,14 +10,15 @@ struct SavingsCurve: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(caption)
-                .font(.footnote)
-                .foregroundStyle(palette.ink)
             if showsCurve, let years = outlook.years, years > 0,
                let target = outlook.targetAmount.map({ NSDecimalNumber(decimal: $0).doubleValue }) {
                 curve(years: years, target: target)
                 legend
                 anchors(years: years)
+            } else if !caption.isEmpty {
+                Text(caption)
+                    .font(.footnote)
+                    .foregroundStyle(palette.ink)
             }
         }
         .accessibilityElement(children: .combine)
@@ -32,8 +33,7 @@ struct SavingsCurve: View {
         if outlook.alreadyReached { return "已達目標" }
         if outlook.retiresNow { return "現在補上差額，就到達目標" }
         if outlook.unreachable { return "這個計畫到不了目標" }
-        guard let years = outlook.years else { return "預估資產" }
-        return "預估資產，約 \(plainYears(years)) 年到達目標"
+        return ""
     }
 
     private func curve(years: Double, target: Double) -> some View {
