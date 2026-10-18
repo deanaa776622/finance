@@ -27,11 +27,6 @@ struct TargetEditor: View {
                             centeredTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios, title: "目標")
                         }
                         if portfolio.allocableTotal > 0 {
-                            HStack(spacing: 16) {
-                                gapReadout("原型", kind: .original, percent: originalPercent)
-                                gapReadout("槓桿", kind: .leverage, percent: leveragePercent)
-                                gapReadout("現金", kind: .cash, percent: cashPercent)
-                            }
                             VStack(alignment: .leading, spacing: 6) {
                                 centeredTrack(
                                     original: portfolio.actualPercent(for: .original),
@@ -40,10 +35,17 @@ struct TargetEditor: View {
                                     label: "目前比例",
                                     title: "目前"
                                 )
-                                HStack(spacing: 16) {
-                                    percentReadout("原型", percent: portfolio.actualPercent(for: .original), kind: .original)
-                                    percentReadout("槓桿", percent: portfolio.actualPercent(for: .leverage), kind: .leverage)
-                                    percentReadout("現金", percent: portfolio.actualPercent(for: .cash), kind: .cash)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    HStack(spacing: 16) {
+                                        percentReadout("原型", percent: portfolio.actualPercent(for: .original), kind: .original)
+                                        percentReadout("槓桿", percent: portfolio.actualPercent(for: .leverage), kind: .leverage)
+                                        percentReadout("現金", percent: portfolio.actualPercent(for: .cash), kind: .cash)
+                                    }
+                                    HStack(spacing: 16) {
+                                        gapReadout("原型", kind: .original, percent: originalPercent)
+                                        gapReadout("槓桿", kind: .leverage, percent: leveragePercent)
+                                        gapReadout("現金", kind: .cash, percent: cashPercent)
+                                    }
                                 }
                             }
                         }
