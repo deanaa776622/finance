@@ -65,6 +65,8 @@ struct AssetListView: View {
     @State private var liquidHeldStocks = false
     @State private var stockChildren: [AssetChild] = []
     @State private var pendingDelete: [AssetItem] = []
+    @AppStorage("assetSortKey") private var sortKey = "stored"
+    @AppStorage("assetSortAscending") private var sortAscending = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(showsChrome: Bool = true, topInset: CGFloat = restingTopInset, exposureOnly: Bool = false) {
@@ -233,7 +235,24 @@ struct AssetListView: View {
     }
 
     private func items(in kinds: [AssetKind]) -> [AssetItem] {
-        kinds.flatMap { portfolio.items(for: $0) }
+        sorted(kinds.flatMap { portfolio.items(for: $0) })
+    }
+
+    /// Order within the group on screen. Share uses that group's total.
+    private func sorted(_ rows: [AssetItem]) -> [AssetItem] {
+        let total = rows.reduce(Decimal.zero) { $0 + $1.twdValue }
+        let ordered: [AssetItem]
+        switch sortKey {
+        case "share":
+            ordered = rows.sorted { portion($0.twdValue, of: total) < portion($1.twdValue, of: total) }
+        case "currency":
+            ordered = rows.sorted { $0.currency.rawValue < $1.currency.rawValue }
+        case "name":
+            ordered = rows.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        default:
+            ordered = rows
+        }
+        return sortAscending ? ordered : ordered.reversed()
     }
 
     private func amount(of bucket: AssetBucket) -> Decimal {
@@ -330,6 +349,7 @@ struct AssetListView: View {
 
     private var trailingCluster: some View {
         HStack(spacing: 0) {
+            sortMenu
             Button {
                 Task { await refreshQuotes() }
             } label: {
@@ -358,6 +378,25 @@ struct AssetListView: View {
         .buttonStyle(.plain)
         .padding(.horizontal, 4)
         .modifier(CapsuleGlass())
+    }
+
+    private var sortMenu: some View {
+        Menu {
+            Picker("依據", selection: $sortKey) {
+                Text("佔比").tag("share")
+                Text("幣別").tag("currency")
+                Text("名稱").tag("name")
+                Text("預設").tag("stored")
+            }
+            Picker("方向", selection: $sortAscending) {
+                Text("順序").tag(true)
+                Text("逆序").tag(false)
+            }
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+        }
+        .accessibilityLabel("排序")
+        .frame(width: 44, height: 44)
     }
 
     private func persistGroups() {
