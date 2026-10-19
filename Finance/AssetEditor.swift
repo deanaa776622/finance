@@ -113,7 +113,7 @@ struct AssetEditor: View {
                             .keyboardType(.decimalPad)
                             .focused($focus, equals: .shares)
                     } label: {
-                        alignedTitle("股數")
+                        alignedTitle(isPledge ? "質押股數" : "股數")
                     }
                     .editable(usesSharePrice)
                     .listRowSeparator(.hidden)
@@ -224,8 +224,8 @@ struct AssetEditor: View {
 
                 LabeledContent {
                     HStack {
-                        if usesSharePrice || lumpShowsTwd {
-                            Text(MoneyFormat.string(usesSharePrice ? liveTotal : lumpTwd))
+                        if valueFollowsShares || lumpShowsTwd {
+                            Text(MoneyFormat.string(valueFollowsShares ? liveTotal : lumpTwd))
                                 .foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         } else {
@@ -246,7 +246,7 @@ struct AssetEditor: View {
                         .disabled(!canRefreshTotal)
                     }
                 } label: {
-                    alignedTitle("總金額")
+                    alignedTitle(isPledge ? "借款金額" : "總金額")
                 }
                 .listRowBackground(palette.panel)
 
@@ -302,7 +302,13 @@ struct AssetEditor: View {
         } set: { detentID = $0 == .medium ? "medium" : "large" }
     }
 
-    /// TWD total from shares, price, and the currency rate. Matches `AssetItem.twdValue`.
+    /// Debt entered as shares records a pledge. The loan is typed; shares and price are collateral.
+    private var isPledge: Bool { kind == .debt && usesSharePrice }
+
+    /// Share-priced holdings. A pledge keeps the typed loan instead.
+    private var valueFollowsShares: Bool { kind.valueFollowsShares(usesSharePrice) }
+
+    /// TWD total from shares, price, and the currency rate. Pledged loans use `lumpTwd`.
     private var liveTotal: Decimal {
         let shares = NumberParse.decimal(sharesText) ?? 0
         return shares * priceValue * rateValue
@@ -326,15 +332,16 @@ struct AssetEditor: View {
         return NumberParse.decimal(priceText) ?? 0
     }
 
-    /// Disabled while a refresh is running, or when shares/price/amount are missing so the total cannot be computed.
+    /// Disabled while a refresh is running, or when there is nothing to reprice.
     /// The rate is fetched by the button itself. A share price can also be fetched when a ticker is present.
     private var canRefreshTotal: Bool {
         if isRefreshingTotal { return false }
-        if usesSharePrice {
+        if valueFollowsShares {
             guard NumberParse.decimal(sharesText) != nil else { return false }
             if NumberParse.decimal(priceText) != nil { return true }
             return !symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
+        if isPledge, !symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return true }
         return NumberParse.decimal(amountText) != nil
     }
 
@@ -347,7 +354,7 @@ struct AssetEditor: View {
             if !ticker.isEmpty { await lookup(force: true) }
         }
         let rateUpdated = await lookupRate(force: true)
-        if !usesSharePrice, rateUpdated, NumberParse.decimal(amountText) != nil {
+        if !valueFollowsShares, rateUpdated, NumberParse.decimal(amountText) != nil {
             lumpShowsTwd = true
         }
     }
@@ -355,9 +362,9 @@ struct AssetEditor: View {
     private var canSave: Bool {
         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
         if currency != .twd, NumberParse.decimal(rateText) == nil { return false }
-        if usesSharePrice {
-            return NumberParse.decimal(sharesText) != nil && NumberParse.decimal(priceText) != nil
-        }
+        let quoted = NumberParse.decimal(sharesText) != nil && NumberParse.decimal(priceText) != nil
+        if isPledge { return quoted && NumberParse.decimal(amountText) != nil }
+        if usesSharePrice { return quoted }
         return NumberParse.decimal(amountText) != nil
     }
 
@@ -365,7 +372,7 @@ struct AssetEditor: View {
         let rate = currency == .twd ? 1 : rateValue
         let shares = NumberParse.decimal(sharesText)
         let price = priceValue
-        let amount = usesSharePrice ? 0 : (NumberParse.decimal(amountText) ?? 0)
+        let amount = valueFollowsShares ? 0 : (NumberParse.decimal(amountText) ?? 0)
         guard amount >= 0, (shares ?? 0) >= 0, price >= 0 else { return }
         onSave(AssetItem(
             id: existingID ?? UUID(),

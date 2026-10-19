@@ -38,6 +38,11 @@ enum AssetKind: String, Codable, CaseIterable, Identifiable {
         case .cash, .realEstate, .debt: false
         }
     }
+
+    /// Holdings are valued as shares times price. A debt using that entry stores collateral; the loan is `amount`.
+    func valueFollowsShares(_ usesSharePrice: Bool) -> Bool {
+        usesSharePrice && self != .debt
+    }
 }
 
 enum AssetCurrency: String, Codable, CaseIterable, Identifiable {
@@ -81,7 +86,8 @@ struct AssetItem: Identifiable, Codable, Hashable {
     /// Ticker used for quotes. Empty for assets that are not priced by symbol.
     var symbol: String
     var kind: AssetKind
-    /// Native-currency lump sum when `usesSharePrice` is false.
+    /// Native-currency amount. Share-priced holdings leave this at 0.
+    /// A pledged debt stores the loan here; shares and price are the collateral.
     var amount: Decimal
     var currency: AssetCurrency
     var usdTwdRate: Decimal
@@ -120,7 +126,7 @@ struct AssetItem: Identifiable, Codable, Hashable {
     var fxRate: Decimal { currency == .twd ? 1 : usdTwdRate }
 
     var twdValue: Decimal {
-        let native = usesSharePrice ? (shares ?? 0) * (price ?? 0) : amount
+        let native = kind.valueFollowsShares(usesSharePrice) ? (shares ?? 0) * (price ?? 0) : amount
         return native * fxRate
     }
 
