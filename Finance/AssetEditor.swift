@@ -570,15 +570,21 @@ private struct PaletteSegments: UIViewRepresentable {
         @objc func changed(_ sender: UISegmentedControl) {
             let index = sender.selectedSegmentIndex
             guard index >= 0 else { return }
+            (sender as? KindSegments)?.beginTravel()
             select(index)
         }
     }
 }
 
-/// Selected title follows the kind color, then the control's own gray while the glass knob is clear.
+/// Selected title follows the kind color once the glass has landed on it. Until then it follows the track.
 private final class KindSegments: UISegmentedControl {
     var restingInk: UIColor?
     private var holding = false
+    private var traveling = false
+    private var sawFlight = false
+    private var travelStarted: CFTimeInterval = 0
+    private var link: CADisplayLink?
+    private var watch: FlightWatch?
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         holding = true
@@ -593,6 +599,11 @@ private final class KindSegments: UISegmentedControl {
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         holding = false
+        if let point = touches.first?.location(in: self),
+           let index = segmentIndex(at: point),
+           index != selectedSegmentIndex {
+            beginTravel()
+        }
         super.touchesEnded(touches, with: event)
         applyTitle()
     }
@@ -603,6 +614,39 @@ private final class KindSegments: UISegmentedControl {
         applyTitle()
     }
 
+    deinit { link?.invalidate() }
+
+    /// The chosen word sits on the gray track until the glass knob is actually over it.
+    func beginTravel() {
+        traveling = true
+        sawFlight = false
+        travelStarted = CACurrentMediaTime()
+        applyTitle()
+        guard link == nil else { return }
+        let watch = FlightWatch()
+        watch.control = self
+        self.watch = watch
+        let link = CADisplayLink(target: watch, selector: #selector(FlightWatch.tick))
+        link.add(to: .main, forMode: .common)
+        self.link = link
+    }
+
+    fileprivate func watchFlight() {
+        guard traveling else { stopWatch(); return }
+        if glassHasLanded() {
+            traveling = false
+            stopWatch()
+            applyTitle()
+            return
+        }
+        // ponytail: if the glass view can't be seen, don't leave the word on the track forever
+        if CACurrentMediaTime() - travelStarted > 1 {
+            traveling = false
+            stopWatch()
+            applyTitle()
+        }
+    }
+
     func applyTitle() {
         guard let restingInk else {
             setTitleTextAttributes(nil, for: .selected)
@@ -610,10 +654,74 @@ private final class KindSegments: UISegmentedControl {
             return
         }
         let track: UIColor = traitCollection.userInterfaceStyle == .dark ? .white : .black
-        setTitleTextAttributes([.foregroundColor: holding ? track : restingInk], for: .selected)
+        let onTrack = holding || traveling
+        setTitleTextAttributes([.foregroundColor: onTrack ? track : restingInk], for: .selected)
         setTitleTextAttributes([.foregroundColor: track], for: [.selected, .highlighted])
         let index = selectedSegmentIndex
         guard index >= 0, let title = titleForSegment(at: index) else { return }
         setTitle(title, forSegmentAt: index)
+    }
+
+    private func stopWatch() {
+        link?.invalidate()
+        link = nil
+        watch = nil
+    }
+
+    /// True once the moving glass sits on the selected option, which is when its color is showing.
+    private func glassHasLanded() -> Bool {
+        guard !holding, selectedSegmentIndex >= 0, numberOfSegments > 0 else { return false }
+        let pills = glassPills()
+        let segmentWidth = bounds.width / CGFloat(numberOfSegments)
+        let target = (CGFloat(selectedSegmentIndex) + 0.5) * segmentWidth
+        if let moving = pills.first(where: isMoving) {
+            sawFlight = true
+            guard let frame = presentedFrame(of: moving) else { return false }
+            return abs(frame.midX - target) < segmentWidth * 0.28
+        }
+        return sawFlight
+    }
+
+    private func glassPills() -> [UIView] {
+        guard numberOfSegments > 0, bounds.width > 0 else { return [] }
+        let segmentWidth = bounds.width / CGFloat(numberOfSegments)
+        var candidates: [UIView] = []
+        func walk(_ view: UIView) {
+            if view !== self, !(view is UILabel) {
+                let frame = view.convert(view.bounds, to: self)
+                if frame.width > segmentWidth * 0.5,
+                   frame.width < segmentWidth * 2.5,
+                   frame.width < bounds.width * 0.8,
+                   frame.height > bounds.height * 0.45 {
+                    candidates.append(view)
+                }
+            }
+            view.subviews.forEach(walk)
+        }
+        walk(self)
+        return candidates
+    }
+
+    private func isMoving(_ view: UIView) -> Bool {
+        guard let presentation = view.layer.presentation() else { return false }
+        return abs(presentation.frame.midX - view.layer.frame.midX) > 0.5
+            || abs(presentation.frame.width - view.bounds.width) > 0.5
+    }
+
+    private func presentedFrame(of view: UIView) -> CGRect? {
+        guard let presentation = view.layer.presentation(), let superview = view.superview else { return nil }
+        return superview.convert(presentation.frame, to: self)
+    }
+
+    private func segmentIndex(at point: CGPoint) -> Int? {
+        guard numberOfSegments > 0, bounds.width > 0 else { return nil }
+        let index = Int(point.x / (bounds.width / CGFloat(numberOfSegments)))
+        guard (0..<numberOfSegments).contains(index) else { return nil }
+        return index
+    }
+
+    private final class FlightWatch: NSObject {
+        weak var control: KindSegments?
+        @objc func tick() { control?.watchFlight() }
     }
 }
