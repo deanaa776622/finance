@@ -66,28 +66,43 @@ struct AssetEditor: View {
         return 1
     }
 
+    private static let leverageSteps: [(title: String, value: Double)] = [
+        ("1×", 1), ("1.5×", 1.5), ("2×", 2), ("3×", 3)
+    ]
+
+    /// The selected kind's own color, with no drift mixed in.
+    private var kindTint: Color { palette.glow(for: kind, factor: 0) }
+
+    /// Black or white, so the title stays readable on the selected knob.
+    private var knobInk: Color {
+        kindTint.relativeLuminance(scheme: palette.colorScheme) > 0.179 ? .black : .white
+    }
+
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    Picker("類別", selection: $kind) {
-                        ForEach(AssetKind.allCases) { Text($0.compactTitle).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .listRowSeparator(.hidden)
-                    .onChange(of: kind) { _, new in
+                    PaletteSegments(
+                        titles: AssetKind.allCases.map(\.compactTitle),
+                        index: AssetKind.allCases.firstIndex(of: kind) ?? 0,
+                        enabled: true,
+                        tint: UIColor(kindTint),
+                        titleInk: UIColor(knobInk)
+                    ) { index in
+                        let new = AssetKind.allCases[index]
+                        kind = new
                         if new.prefersSharePrice { usesSharePrice = true }
                         leverage = Self.clampedLeverage(kind: new, value: leverage)
                     }
-                    Picker("輸入方式", selection: $usesSharePrice) {
-                        Text("總金額").tag(false)
-                        Text("股數與單價").tag(true)
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .editable(!kind.prefersSharePrice)
-                    .onChange(of: usesSharePrice) { _, _ in
+                    .listRowSeparator(.hidden)
+                    PaletteSegments(
+                        titles: ["總金額", "股數與單價"],
+                        index: usesSharePrice ? 1 : 0,
+                        enabled: !kind.prefersSharePrice,
+                        tint: kind.prefersSharePrice ? nil : UIColor(kindTint),
+                        titleInk: kind.prefersSharePrice ? nil : UIColor(knobInk)
+                    ) { index in
+                        usesSharePrice = index == 1
                         lumpShowsTwd = false
                     }
                     .listRowSeparator(.hidden, edges: .top)
@@ -131,7 +146,7 @@ struct AssetEditor: View {
                                 }
                             }
                             .buttonStyle(.bordered)
-                            .tint(.primary)
+                            .tint(canQuote ? kindTint : .primary)
                             .accessibilityLabel(quoteButtonTitle)
                             .disabled(!canQuote)
                         }
@@ -141,7 +156,14 @@ struct AssetEditor: View {
                     }
                     .listRowSeparator(.hidden)
                     LabeledContent {
-                        LeveragePicker(leverage: $leverage, oneTimesEnabled: kind != .leverage)
+                        PaletteSegments(
+                            titles: Self.leverageSteps.map(\.title),
+                            index: Self.leverageSteps.firstIndex { $0.value == leverage } ?? 2,
+                            enabled: kind == .leverage,
+                            off: kind == .leverage ? [0] : [],
+                            tint: kind == .leverage ? UIColor(kindTint) : nil,
+                            titleInk: kind == .leverage ? UIColor(knobInk) : nil
+                        ) { leverage = Self.leverageSteps[$0].value }
                     } label: {
                         alignedTitle("槓桿倍數")
                     }
@@ -155,7 +177,7 @@ struct AssetEditor: View {
                                 name = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
                             }
                             .buttonStyle(.bordered)
-                            .tint(.primary)
+                            .tint(canCopySymbol ? kindTint : .primary)
                             .disabled(!canCopySymbol)
                         }
                     } label: {
@@ -181,7 +203,7 @@ struct AssetEditor: View {
                                     .imageScale(.small)
                             }
                         }
-                        .tint(.primary)
+                        .tint(kindTint)
                     } label: {
                         alignedTitle("幣別")
                     }
@@ -212,7 +234,7 @@ struct AssetEditor: View {
                                 }
                             }
                             .buttonStyle(.bordered)
-                            .tint(.primary)
+                            .tint(canLookupRate && !isRefreshingTotal ? kindTint : .primary)
                             .accessibilityLabel(rateButtonTitle)
                             .disabled(!canLookupRate || isRefreshingTotal)
                         }
@@ -241,7 +263,7 @@ struct AssetEditor: View {
                             }
                         }
                         .buttonStyle(.bordered)
-                        .tint(.primary)
+                        .tint(canRefreshTotal ? kindTint : .primary)
                         .accessibilityLabel("更新總金額")
                         .disabled(!canRefreshTotal)
                     }
@@ -278,6 +300,7 @@ struct AssetEditor: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("儲存") { save() }
                         .disabled(!canSave)
+                        .tint(canSave ? kindTint : .primary)
                 }
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
@@ -491,15 +514,18 @@ private extension View {
     }
 }
 
-/// Segmented leverage choices. 1× is disabled, and therefore gray, for leverage assets.
-private struct LeveragePicker: UIViewRepresentable {
-    @Binding var leverage: Double
-    var oneTimesEnabled: Bool
-
-    private static let choices: [Double] = [1, 1.5, 2, 3]
+/// Segmented choices. The selected knob uses the kind color only while the control can be changed.
+private struct PaletteSegments: UIViewRepresentable {
+    var titles: [String]
+    var index: Int
+    var enabled: Bool
+    var off: Set<Int> = []
+    var tint: UIColor?
+    var titleInk: UIColor?
+    var select: (Int) -> Void
 
     func makeUIView(context: Context) -> UISegmentedControl {
-        let control = UISegmentedControl(items: Self.choices.map(Self.title))
+        let control = UISegmentedControl(items: titles)
         control.apportionsSegmentWidthsByContent = false
         control.setTitleTextAttributes([.foregroundColor: UIColor.secondaryLabel], for: .disabled)
         control.addTarget(context.coordinator, action: #selector(Coordinator.changed(_:)), for: .valueChanged)
@@ -507,39 +533,47 @@ private struct LeveragePicker: UIViewRepresentable {
     }
 
     func updateUIView(_ control: UISegmentedControl, context: Context) {
-        context.coordinator.leverage = $leverage
-        let index = Self.choices.firstIndex(of: leverage) ?? 2
-        if control.selectedSegmentIndex != index {
-            control.selectedSegmentIndex = index
+        context.coordinator.select = select
+        if control.numberOfSegments != titles.count {
+            control.removeAllSegments()
+            for (offset, title) in titles.enumerated() {
+                control.insertSegment(withTitle: title, at: offset, animated: false)
+            }
         }
-        control.setEnabled(oneTimesEnabled, forSegmentAt: 0)
+        for (offset, title) in titles.enumerated() where control.titleForSegment(at: offset) != title {
+            control.setTitle(title, forSegmentAt: offset)
+        }
+        let selected = titles.indices.contains(index) ? index : UISegmentedControl.noSegment
+        if control.selectedSegmentIndex != selected {
+            control.selectedSegmentIndex = selected
+        }
+        control.isEnabled = enabled
+        if enabled {
+            for segment in 0..<control.numberOfSegments {
+                control.setEnabled(!off.contains(segment), forSegmentAt: segment)
+            }
+        }
+        control.selectedSegmentTintColor = enabled ? tint : nil
+        if enabled, let titleInk {
+            control.setTitleTextAttributes([.foregroundColor: titleInk], for: .selected)
+        } else {
+            control.setTitleTextAttributes(nil, for: .selected)
+        }
     }
 
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UISegmentedControl, context: Context) -> CGSize? {
         CGSize(width: proposal.width ?? uiView.intrinsicContentSize.width, height: uiView.intrinsicContentSize.height)
     }
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(leverage: $leverage)
-    }
-
-    private static func title(_ value: Double) -> String {
-        value == 1.5 ? "1.5×" : "\(Int(value))×"
-    }
+    func makeCoordinator() -> Coordinator { Coordinator(select: select) }
 
     final class Coordinator: NSObject {
-        var leverage: Binding<Double>
-
-        init(leverage: Binding<Double>) {
-            self.leverage = leverage
-        }
-
+        var select: (Int) -> Void
+        init(select: @escaping (Int) -> Void) { self.select = select }
         @objc func changed(_ sender: UISegmentedControl) {
             let index = sender.selectedSegmentIndex
-            guard choices.indices.contains(index) else { return }
-            leverage.wrappedValue = choices[index]
+            guard index >= 0 else { return }
+            select(index)
         }
-
-        private var choices: [Double] { LeveragePicker.choices }
     }
 }

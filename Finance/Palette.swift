@@ -230,7 +230,7 @@ extension Color {
         return mixed
     }
 
-    fileprivate func relativeLuminance(scheme: ColorScheme) -> Double {
+    func relativeLuminance(scheme: ColorScheme) -> Double {
         var environment = EnvironmentValues()
         environment.colorScheme = scheme
         let resolved = resolve(in: environment)
