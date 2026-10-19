@@ -5,13 +5,10 @@ struct TargetEditor: View {
     @Environment(Palette.self) private var palette
     @Environment(\.dismiss) private var dismiss
     @AppStorage("hideAmounts") private var hideAmounts = false
-    @FocusState private var field: Field?
 
     @State private var originalText = ""
     @State private var leverageText = ""
     @State private var cashText = ""
-
-    private enum Field: Hashable { case original, leverage, cash }
 
     var body: some View {
         NavigationStack {
@@ -20,9 +17,9 @@ struct TargetEditor: View {
                     VStack(alignment: .leading, spacing: 14) {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack(spacing: 16) {
-                                percentField("原型", text: $originalText, field: .original, kind: .original)
-                                percentField("槓桿", text: $leverageText, field: .leverage, kind: .leverage)
-                                percentField("現金", text: $cashText, field: .cash, kind: .cash)
+                                percentField("原型", text: originalText, kind: .original)
+                                percentField("槓桿", text: leverageText, kind: .leverage)
+                                percentField("現金", text: cashText, kind: .cash)
                             }
                             centeredTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios, title: "目標")
                         }
@@ -73,10 +70,6 @@ struct TargetEditor: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("儲存") { commit(); dismiss() }
                 }
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("完成") { field = nil }
-                }
             }
             .onAppear(perform: load)
         }
@@ -118,20 +111,16 @@ struct TargetEditor: View {
             .accessibilityHidden(true)
     }
 
-    private func percentField(_ title: String, text: Binding<String>, field: Field, kind: AssetKind) -> some View {
+    private func percentField(_ title: String, text: String, kind: AssetKind) -> some View {
         VStack(spacing: 2) {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             HStack(alignment: .firstTextBaseline, spacing: 1) {
-                TextField("0", text: text)
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.trailing)
+                Text(text)
                     .monospacedDigit()
-                    .focused($field, equals: field)
-                    .frame(width: 36)
-                    .accessibilityLabel(title)
+                    .frame(width: 36, alignment: .trailing)
                 Text("%")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -143,6 +132,8 @@ struct TargetEditor: View {
             )
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(title)，\(text)%")
     }
 
     private func gapReadout(_ title: String, kind: AssetKind, percent: Double) -> some View {
@@ -294,7 +285,7 @@ private struct AllocationGlowTrack: View {
                 if boundary == 0 {
                     boundary = abs(percent - orig) <= abs(percent - (orig + lev)) ? 1 : 2
                 }
-                let snapped = (percent / 10).rounded() * 10
+                let snapped = (percent / 5).rounded() * 5
                 if boundary == 1 {
                     let edge = orig + lev
                     orig = min(edge, max(0, snapped))
