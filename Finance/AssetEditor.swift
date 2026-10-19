@@ -524,15 +524,15 @@ private struct PaletteSegments: UIViewRepresentable {
     var titleInk: UIColor?
     var select: (Int) -> Void
 
-    func makeUIView(context: Context) -> UISegmentedControl {
-        let control = UISegmentedControl(items: titles)
+    func makeUIView(context: Context) -> KindSegments {
+        let control = KindSegments(items: titles)
         control.apportionsSegmentWidthsByContent = false
         control.setTitleTextAttributes([.foregroundColor: UIColor.secondaryLabel], for: .disabled)
         control.addTarget(context.coordinator, action: #selector(Coordinator.changed(_:)), for: .valueChanged)
         return control
     }
 
-    func updateUIView(_ control: UISegmentedControl, context: Context) {
+    func updateUIView(_ control: KindSegments, context: Context) {
         context.coordinator.select = select
         if control.numberOfSegments != titles.count {
             control.removeAllSegments()
@@ -554,14 +554,11 @@ private struct PaletteSegments: UIViewRepresentable {
             }
         }
         control.selectedSegmentTintColor = enabled ? tint : nil
-        if enabled, let titleInk {
-            control.setTitleTextAttributes([.foregroundColor: titleInk], for: .selected)
-        } else {
-            control.setTitleTextAttributes(nil, for: .selected)
-        }
+        control.restingInk = enabled ? titleInk : nil
+        control.applyTitle()
     }
 
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UISegmentedControl, context: Context) -> CGSize? {
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: KindSegments, context: Context) -> CGSize? {
         CGSize(width: proposal.width ?? uiView.intrinsicContentSize.width, height: uiView.intrinsicContentSize.height)
     }
 
@@ -575,5 +572,48 @@ private struct PaletteSegments: UIViewRepresentable {
             guard index >= 0 else { return }
             select(index)
         }
+    }
+}
+
+/// Selected title follows the kind color, then the control's own gray while the glass knob is clear.
+private final class KindSegments: UISegmentedControl {
+    var restingInk: UIColor?
+    private var holding = false
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        holding = true
+        applyTitle()
+        super.touchesBegan(touches, with: event)
+        applyTitle()
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.holding else { return }
+            self.applyTitle()
+        }
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        holding = false
+        super.touchesEnded(touches, with: event)
+        applyTitle()
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        holding = false
+        super.touchesCancelled(touches, with: event)
+        applyTitle()
+    }
+
+    func applyTitle() {
+        guard let restingInk else {
+            setTitleTextAttributes(nil, for: .selected)
+            setTitleTextAttributes(nil, for: [.selected, .highlighted])
+            return
+        }
+        let track: UIColor = traitCollection.userInterfaceStyle == .dark ? .white : .black
+        setTitleTextAttributes([.foregroundColor: holding ? track : restingInk], for: .selected)
+        setTitleTextAttributes([.foregroundColor: track], for: [.selected, .highlighted])
+        let index = selectedSegmentIndex
+        guard index >= 0, let title = titleForSegment(at: index) else { return }
+        setTitle(title, forSegmentAt: index)
     }
 }
