@@ -92,6 +92,10 @@ enum RateBook {
         load()[currency]
     }
 
+    static func rates() -> [AssetCurrency: Decimal] {
+        load()
+    }
+
     static func merge(_ rates: [AssetCurrency: Decimal]) {
         var book = load()
         for (code, rate) in rates { book[code] = rate }

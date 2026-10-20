@@ -8,6 +8,8 @@ final class Portfolio {
     /// Nil or ≤0 → orb sizing falls back to current allocable total (same as web).
     var targetTotal: Decimal?
     var savings: SavingsPlan?
+    var histories: [UUID: [AssetMonthMark]]
+    var rateMonths: [String: [String: Decimal]]
 
     private static var fileURL: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -18,28 +20,56 @@ final class Portfolio {
         items: [AssetItem] = [],
         targets: TargetWeights = TargetWeights(),
         targetTotal: Decimal? = nil,
-        savings: SavingsPlan? = nil
+        savings: SavingsPlan? = nil,
+        histories: [UUID: [AssetMonthMark]] = [:],
+        rateMonths: [String: [String: Decimal]] = [:]
     ) {
         self.items = items
         self.targets = targets
         self.targetTotal = targetTotal
         self.savings = savings
+        self.histories = histories
+        self.rateMonths = rateMonths
     }
 
     static func load() -> Portfolio {
         guard let data = try? Data(contentsOf: fileURL),
               let snap = try? JSONDecoder().decode(Snapshot.self, from: data)
         else { return Portfolio() }
-        return Portfolio(
+        let portfolio = Portfolio(
             items: snap.items,
             targets: snap.targets,
             targetTotal: snap.targetTotal,
-            savings: snap.savings
+            savings: snap.savings,
+            histories: Dictionary(uniqueKeysWithValues: snap.marks.map { ($0.assetID, $0.months) }),
+            rateMonths: Dictionary(uniqueKeysWithValues: snap.rateMonths.map { ($0.month, $0.twdPerUnit) })
         )
+        if AssetHistory.stamp(
+            items: portfolio.items,
+            histories: &portfolio.histories,
+            rateMonths: &portfolio.rateMonths,
+            book: RateBook.rates()
+        ) {
+            portfolio.save()
+        }
+        return portfolio
     }
 
     func save() {
-        let snap = Snapshot(items: items, targets: targets, targetTotal: targetTotal, savings: savings)
+        _ = AssetHistory.stamp(
+            items: items,
+            histories: &histories,
+            rateMonths: &rateMonths,
+            book: RateBook.rates()
+        )
+        let snap = Snapshot(
+            items: items,
+            targets: targets,
+            targetTotal: targetTotal,
+            savings: savings,
+            marks: histories.map { AssetMarks(assetID: $0.key, months: $0.value) },
+            rateMonths: rateMonths.map { RateMonth(month: $0.key, twdPerUnit: $0.value) }
+        )
         guard let data = try? JSONEncoder().encode(snap) else { return }
         try? data.write(to: Self.fileURL, options: [.atomic])
     }
@@ -172,6 +202,7 @@ final class Portfolio {
     func delete(ids: [UUID]) {
         let set = Set(ids)
         items.removeAll { set.contains($0.id) }
+        for id in set { histories[id] = nil }
         save()
     }
 

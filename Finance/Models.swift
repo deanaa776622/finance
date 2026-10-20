@@ -125,10 +125,12 @@ struct AssetItem: Identifiable, Codable, Hashable {
     /// Rate of this currency into TWD. TWD itself is 1.
     var fxRate: Decimal { currency == .twd ? 1 : usdTwdRate }
 
-    var twdValue: Decimal {
-        let native = kind.valueFollowsShares(usesSharePrice) ? (shares ?? 0) * (price ?? 0) : amount
-        return native * fxRate
+    /// Amount in `currency`, before any conversion.
+    var nativeValue: Decimal {
+        kind.valueFollowsShares(usesSharePrice) ? (shares ?? 0) * (price ?? 0) : amount
     }
+
+    var twdValue: Decimal { nativeValue * fxRate }
 
     var canRefreshQuote: Bool {
         usesSharePrice && !symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -184,6 +186,50 @@ struct Snapshot: Codable, Equatable {
     /// Long-term total to grow toward; nil means size orbs against current holdings.
     var targetTotal: Decimal?
     var savings: SavingsPlan?
+    /// One row per asset. Old files omit it.
+    var marks: [AssetMarks] = []
+    /// TWD-per-unit rates for each month, so a later display currency can cross.
+    var rateMonths: [RateMonth] = []
+
+    enum CodingKeys: String, CodingKey {
+        case items, targets, targetTotal, savings, marks, rateMonths
+    }
+
+    init(
+        items: [AssetItem],
+        targets: TargetWeights,
+        targetTotal: Decimal?,
+        savings: SavingsPlan?,
+        marks: [AssetMarks] = [],
+        rateMonths: [RateMonth] = []
+    ) {
+        self.items = items
+        self.targets = targets
+        self.targetTotal = targetTotal
+        self.savings = savings
+        self.marks = marks
+        self.rateMonths = rateMonths
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        items = try c.decode([AssetItem].self, forKey: .items)
+        targets = try c.decodeIfPresent(TargetWeights.self, forKey: .targets) ?? TargetWeights()
+        targetTotal = try c.decodeIfPresent(Decimal.self, forKey: .targetTotal)
+        savings = try c.decodeIfPresent(SavingsPlan.self, forKey: .savings)
+        marks = try c.decodeIfPresent([AssetMarks].self, forKey: .marks) ?? []
+        rateMonths = try c.decodeIfPresent([RateMonth].self, forKey: .rateMonths) ?? []
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(items, forKey: .items)
+        try c.encode(targets, forKey: .targets)
+        try c.encodeIfPresent(targetTotal, forKey: .targetTotal)
+        try c.encodeIfPresent(savings, forKey: .savings)
+        try c.encode(marks, forKey: .marks)
+        try c.encode(rateMonths, forKey: .rateMonths)
+    }
 }
 
 enum MoneyFormat {
