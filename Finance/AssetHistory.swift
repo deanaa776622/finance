@@ -83,7 +83,7 @@ enum AssetHistory {
         return changed
     }
 
-    /// One point per recorded month. Debt is subtracted only when the group mixes it with other kinds.
+    /// One point per recorded month. Debt is negative, including when it is the only kind in the group.
     static func months(
         kinds: [AssetKind],
         items: [AssetItem],
@@ -92,13 +92,12 @@ enum AssetHistory {
     ) -> [GroupMonthPoint] {
         let mine = items.filter { kinds.contains($0.kind) }
         let keys = Set(mine.flatMap { histories[$0.id]?.map(\.month) ?? [] }).sorted()
-        let subtractDebt = kinds.count > 1
         return keys.map { month in
             let rates = rateMonths[month] ?? [:]
             let total = mine.reduce(Decimal.zero) { partial, item in
                 guard let mark = histories[item.id]?.last(where: { $0.month == month }),
                       let amount = mark.amount(in: .twd, rates: rates) else { return partial }
-                if subtractDebt, item.kind == .debt { return partial - amount }
+                if item.kind == .debt { return partial - amount }
                 return partial + amount
             }
             return GroupMonthPoint(month: month, amount: total)

@@ -32,7 +32,10 @@ struct GroupTrendChart: View, Equatable {
                 RuleMark(x: .value("月", selected))
                     .foregroundStyle(palette.quietInk.opacity(0.7))
             }
+            RuleMark(y: .value("金額", 0))
+                .foregroundStyle(palette.quietInk.opacity(0.35))
         }
+        .chartYScale(domain: yDomain)
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
         .chartLegend(.hidden)
@@ -45,6 +48,15 @@ struct GroupTrendChart: View, Equatable {
                     .simultaneousGesture(scrub(proxy: proxy, geometry: geometry))
             }
         }
+    }
+
+    /// Includes zero so the baseline stays visible when every group is positive.
+    private var yDomain: ClosedRange<Double> {
+        let plots = series.flatMap(\.points).map(\.plot)
+        let low = min(0, plots.min() ?? 0)
+        let high = max(0, plots.max() ?? 0)
+        let pad = max((high - low) * 0.08, 1)
+        return (low - pad)...(high + pad)
     }
 
     /// Horizontal only, and shared with the list, so a vertical flick can still scroll.
