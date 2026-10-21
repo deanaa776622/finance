@@ -126,21 +126,48 @@ struct GroupTrendChart: View, Equatable {
     }
 
     private var legend: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ForEach(series) { line in
-                HStack(spacing: 6) {
-                    Capsule().fill(line.color).frame(width: 16, height: 2)
-                    Text(line.title)
-                    Spacer(minLength: 8)
-                    Text(amountText(line))
-                        .monospacedDigit()
-                        .foregroundStyle(line.color)
-                        .opacity(selected == nil ? 0 : 1)
+        let lines = series
+        return Group {
+            if isFiveKindLegend(lines) {
+                HStack(alignment: .top, spacing: 12) {
+                    legendColumn(lines, ids: ["original", "leverage", "cash"])
+                    legendColumn(lines, ids: ["realEstate", "debt"])
                 }
+            } else {
+                legendColumn(lines, ids: lines.map(\.id))
             }
         }
         .font(.caption)
         .foregroundStyle(palette.quietInk)
+    }
+
+    /// 原型、槓桿、現金在左半；實體、負債在右半。
+    private func isFiveKindLegend(_ lines: [TrendLine]) -> Bool {
+        Set(lines.map(\.id)) == ["original", "leverage", "cash", "realEstate", "debt"]
+    }
+
+    private func legendColumn(_ lines: [TrendLine], ids: [String]) -> some View {
+        let shown = ids.compactMap { id in lines.first { $0.id == id } }
+        return VStack(alignment: .leading, spacing: 6) {
+            ForEach(shown) { line in
+                legendRow(line)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func legendRow(_ line: TrendLine) -> some View {
+        HStack(spacing: 6) {
+            Capsule().fill(line.color).frame(width: 16, height: 2)
+            Text(line.title).lineLimit(1)
+            Spacer(minLength: 4)
+            Text(amountText(line))
+                .monospacedDigit()
+                .foregroundStyle(line.color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .opacity(selected == nil ? 0 : 1)
+        }
     }
 
     private func amountText(_ line: TrendLine) -> String {
