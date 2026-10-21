@@ -83,7 +83,7 @@ func assetJoinRange(_ buckets: [AssetBucket]) -> Range<Int>? {
     return head..<(real + 1)
 }
 
-struct AssetBucket: Identifiable {
+struct AssetBucket: Identifiable, Equatable {
     var id: String
     var title: String
     var kinds: [AssetKind]
