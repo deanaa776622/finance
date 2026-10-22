@@ -217,7 +217,10 @@ struct GroupTrendChart: View, Equatable {
     private var legend: some View {
         let lines = series
         let leftCount = (lines.count + 1) / 2
-        return Group {
+        return ZStack(alignment: .topLeading) {
+            legendColumn(slotLines)
+                .hidden()
+                .accessibilityHidden(true)
             if lines.count < 2 {
                 legendColumn(lines)
             } else {
@@ -229,6 +232,11 @@ struct GroupTrendChart: View, Equatable {
         }
         .font(.caption)
         .foregroundStyle(palette.quietInk)
+    }
+
+    /// Tallest legend is three rows. Fewer groups keep that height so the chart does not jump.
+    private var slotLines: [TrendLine] {
+        (0..<3).map { TrendLine(id: "slot-\($0)", title: " ", color: .clear, points: []) }
     }
 
     private func legendColumn(_ lines: [TrendLine]) -> some View {
