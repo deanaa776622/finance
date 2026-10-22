@@ -171,11 +171,6 @@ struct GroupTrendChart: View, Equatable {
     private func marks(_ line: DrawnLine) -> some ChartContent {
         if line.points.count >= 2 {
             ForEach(line.points) { point in
-                if visibleLines.count == 1 {
-                    AreaMark(x: .value("月", point.month), y: .value("位置", point.unit))
-                        .interpolationMethod(.monotone)
-                        .foregroundStyle(line.color.opacity(0.16).gradient)
-                }
                 LineMark(
                     x: .value("月", point.month),
                     y: .value("位置", point.unit),
