@@ -216,29 +216,24 @@ struct GroupTrendChart: View, Equatable {
 
     private var legend: some View {
         let lines = series
+        let leftCount = (lines.count + 1) / 2
         return Group {
-            if isFiveKindLegend(lines) {
-                HStack(alignment: .top, spacing: 12) {
-                    legendColumn(lines, ids: ["original", "leverage", "cash"])
-                    legendColumn(lines, ids: ["realEstate", "debt"])
-                }
+            if lines.count < 2 {
+                legendColumn(lines)
             } else {
-                legendColumn(lines, ids: lines.map(\.id))
+                HStack(alignment: .top, spacing: 12) {
+                    legendColumn(Array(lines.prefix(leftCount)))
+                    legendColumn(Array(lines.suffix(lines.count - leftCount)))
+                }
             }
         }
         .font(.caption)
         .foregroundStyle(palette.quietInk)
     }
 
-    /// 原型、槓桿、現金在左半；實體、負債在右半。
-    private func isFiveKindLegend(_ lines: [TrendLine]) -> Bool {
-        Set(lines.map(\.id)) == ["original", "leverage", "cash", "realEstate", "debt"]
-    }
-
-    private func legendColumn(_ lines: [TrendLine], ids: [String]) -> some View {
-        let shown = ids.compactMap { id in lines.first { $0.id == id } }
-        return VStack(alignment: .leading, spacing: 6) {
-            ForEach(shown) { line in
+    private func legendColumn(_ lines: [TrendLine]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(lines) { line in
                 legendRow(line)
             }
         }
