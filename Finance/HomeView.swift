@@ -28,6 +28,9 @@ struct HomeView: View {
     @State private var dotToken = 0
     @State private var safeTop: CGFloat = 0
     @State private var safeBottom: CGFloat = 0
+    /// 總淨值 and 總曝險 keep their own grouping. The home screen owns both, so closing the page does not drop them.
+    @State private var netGroups = AssetGroups()
+    @State private var exposureGroups = AssetGroups()
 
     init() {
         let exposure = AssetListMemory.showsExposure
@@ -63,7 +66,8 @@ struct HomeView: View {
                         AssetListView(
                             showsChrome: position < -0.5,
                             topInset: AssetListView.restingTopInset * drop,
-                            exposureOnly: exposureList
+                            exposureOnly: exposureList,
+                            groups: exposureList ? exposureGroups : netGroups
                         )
                         .ignoresSafeArea(edges: .bottom)
                         .mask {

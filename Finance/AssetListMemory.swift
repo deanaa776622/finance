@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 
 /// Last asset lens, and which groups were open.
 enum AssetListMemory {
@@ -31,4 +32,34 @@ enum AssetListMemory {
             UserDefaults.standard.set(newValue.sorted().joined(separator: ","), forKey: netOpenGroupsKey)
         }
     }
+}
+
+/// A group that was on screen just before a merge, restored when that merge splits.
+struct AssetChild: Identifiable {
+    var id: String
+    var title: String
+    var kinds: [AssetKind]
+    var storageID: String
+    var open: Bool
+}
+
+/// One lens's grouping. The home screen keeps a separate one for 總淨值 and 總曝險.
+@Observable
+final class AssetGroups {
+    var stocksMerged = false
+    var liquidMerged = false
+    var assetMerged = false
+    var netMerged = false
+    var netHeldStocks = false
+    var netHeldLiquid = false
+    var netHeldAsset = false
+    var assetHeldStocks = false
+    var assetHeldLiquid = false
+    var liquidHeldStocks = false
+    var stockChildren: [AssetChild] = []
+    var liquidChildren: [AssetChild] = []
+    var assetChildren: [AssetChild] = []
+    var netChildren: [AssetChild] = []
+    var openGroupIDs: Set<String> = AssetListMemory.netOpenGroups
+    var expandedKinds: Set<AssetKind> = AssetListMemory.exposureKinds
 }

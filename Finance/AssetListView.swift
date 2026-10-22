@@ -1,20 +1,12 @@
 import SwiftUI
 
-/// A group that was on screen just before a merge, restored when that merge splits.
-private struct AssetChild: Identifiable {
-    var id: String
-    var title: String
-    var kinds: [AssetKind]
-    var storageID: String
-    var open: Bool
-}
-
 struct AssetListView: View {
     static let restingTopInset: CGFloat = 44
     var showsChrome = true
     var topInset = restingTopInset
     /// Exposure lens keeps 原／槓／現. Net worth lists every kind.
     var exposureOnly = false
+    var groups = AssetGroups()
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
@@ -25,14 +17,8 @@ struct AssetListView: View {
     @State private var showColors = false
     @State private var isRefreshing = false
     @State private var refreshConfirmed = false
-    @State private var expandedKinds: Set<AssetKind>
-    @State private var openGroupIDs: Set<String>
-    @State private var stocksMerged = false
-    @State private var liquidMerged = false
     @State private var collapsingLiquid = false
-    @State private var assetMerged = false
     @State private var collapsingAsset = false
-    @State private var netMerged = false
     @State private var collapsingNet = false
     @State private var linkCollapsed = false
     @State private var listGlobalOrigin: CGPoint = .zero
@@ -53,28 +39,21 @@ struct AssetListView: View {
     /// Bumped when the pair merges or splits, so row bottoms are measured again after the list shifts.
     @State private var linkEpoch = 0
     @State private var linkRowEpoch: [String: Int] = [:]
-    /// Groups on screen just before a merge, so expanding returns to that level.
-    @State private var netChildren: [AssetChild] = []
-    @State private var netHeldStocks = false
-    @State private var netHeldLiquid = false
-    @State private var netHeldAsset = false
-    @State private var assetChildren: [AssetChild] = []
-    @State private var assetHeldStocks = false
-    @State private var assetHeldLiquid = false
-    @State private var liquidChildren: [AssetChild] = []
-    @State private var liquidHeldStocks = false
-    @State private var stockChildren: [AssetChild] = []
     @State private var pendingDelete: [AssetItem] = []
     @AppStorage("assetSortKey") private var sortKey = "stored"
     @AppStorage("assetSortAscending") private var sortAscending = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(showsChrome: Bool = true, topInset: CGFloat = restingTopInset, exposureOnly: Bool = false) {
+    init(
+        showsChrome: Bool = true,
+        topInset: CGFloat = restingTopInset,
+        exposureOnly: Bool = false,
+        groups: AssetGroups = AssetGroups()
+    ) {
         self.showsChrome = showsChrome
         self.topInset = topInset
         self.exposureOnly = exposureOnly
-        _expandedKinds = State(initialValue: exposureOnly ? AssetListMemory.exposureKinds : [])
-        _openGroupIDs = State(initialValue: AssetListMemory.netOpenGroups)
+        self.groups = groups
     }
 
     var body: some View {
@@ -113,10 +92,10 @@ struct AssetListView: View {
         } action: { listGlobalOrigin = $0 }
         .overlay(alignment: .topLeading) { stockLinkLayer }
         .scrollEdgeFade(edges: .bottom)
-        .sensoryFeedback(.impact(flexibility: .soft), trigger: stocksMerged)
-        .sensoryFeedback(.impact(flexibility: .soft), trigger: liquidMerged)
-        .sensoryFeedback(.impact(flexibility: .soft), trigger: assetMerged)
-        .sensoryFeedback(.impact(flexibility: .soft), trigger: netMerged)
+        .sensoryFeedback(.impact(flexibility: .soft), trigger: groups.stocksMerged)
+        .sensoryFeedback(.impact(flexibility: .soft), trigger: groups.liquidMerged)
+        .sensoryFeedback(.impact(flexibility: .soft), trigger: groups.assetMerged)
+        .sensoryFeedback(.impact(flexibility: .soft), trigger: groups.netMerged)
         .navigationTitle(showsChrome ? "資產" : "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .navigationBar)
@@ -143,11 +122,6 @@ struct AssetListView: View {
             Button("取消", role: .cancel) { pendingDelete = [] }
         } message: {
             Text("刪除後會從清單移除。")
-        }
-        .onChange(of: exposureOnly) { wasExposure, isExposure in
-            cancelMergeIfNeeded()
-            if wasExposure { AssetListMemory.exposureKinds = expandedKinds }
-            if isExposure { expandedKinds = AssetListMemory.exposureKinds }
         }
         .onDisappear(perform: persistGroups)
     }
@@ -181,10 +155,16 @@ struct AssetListView: View {
     }
 
     private var shownBuckets: [AssetBucket] {
-        if netMerged { return bucketsMergingNetWorth(baseBuckets, merged: true) }
-        if assetMerged { return bucketsMergingAssets(baseBuckets, merged: true) }
-        if liquidMerged { return bucketsMergingLiquid(baseBuckets, merged: true) }
-        return bucketsMergingStocks(baseBuckets, merged: stocksMerged)
+        if groups.netMerged, netJoinRange(baseBuckets) != nil {
+            return bucketsMergingNetWorth(baseBuckets, merged: true)
+        }
+        if groups.assetMerged, assetJoinRange(baseBuckets) != nil {
+            return bucketsMergingAssets(baseBuckets, merged: true)
+        }
+        if groups.liquidMerged, cashJoinAvailable {
+            return bucketsMergingLiquid(baseBuckets, merged: true)
+        }
+        return bucketsMergingStocks(baseBuckets, merged: groups.stocksMerged)
     }
 
     /// 原型 sits directly above 槓桿, so a join line has somewhere to land.
@@ -415,24 +395,29 @@ struct AssetListView: View {
     }
 
     private func persistGroups() {
-        guard exposureOnly else { return }
-        AssetListMemory.exposureKinds = expandedKinds
+        if exposureOnly {
+            AssetListMemory.exposureKinds = groups.expandedKinds
+        } else {
+            AssetListMemory.netOpenGroups = groups.openGroupIDs
+        }
     }
 
     private func isOpen(_ bucket: AssetBucket) -> Bool {
         if exposureOnly {
-            return bucket.kinds.contains { expandedKinds.contains($0) }
+            return bucket.kinds.contains { groups.expandedKinds.contains($0) }
         }
-        return openGroupIDs.contains(bucket.id)
+        return groups.openGroupIDs.contains(bucket.id)
     }
 
     private func toggleBucket(_ bucket: AssetBucket) {
         if exposureOnly {
             withAnimation {
                 let open = isOpen(bucket)
+                var next = groups.expandedKinds
                 for kind in bucket.kinds {
-                    if open { expandedKinds.remove(kind) } else { expandedKinds.insert(kind) }
+                    if open { next.remove(kind) } else { next.insert(kind) }
                 }
+                groups.expandedKinds = next
             }
             persistGroups()
             return
@@ -448,14 +433,14 @@ struct AssetListView: View {
     }
 
     private func tracksLinkRows(_ bucket: AssetBucket) -> Bool {
-        if netMerged { return bucket.kinds == [.original, .leverage, .cash, .realEstate, .debt] }
-        if bucket.kinds == [.debt] { return netJoinAvailable && !netMerged }
-        if assetMerged { return bucket.kinds == [.original, .leverage, .cash, .realEstate] }
-        if bucket.kinds == [.realEstate] { return assetJoinAvailable && !assetMerged }
-        if liquidMerged { return bucket.kinds == [.original, .leverage, .cash] }
-        if bucket.kinds == [.cash] { return cashJoinAvailable && !liquidMerged && !assetMerged }
+        if groups.netMerged { return bucket.kinds == [.original, .leverage, .cash, .realEstate, .debt] }
+        if bucket.kinds == [.debt] { return netJoinAvailable && !groups.netMerged }
+        if groups.assetMerged { return bucket.kinds == [.original, .leverage, .cash, .realEstate] }
+        if bucket.kinds == [.realEstate] { return assetJoinAvailable && !groups.assetMerged }
+        if groups.liquidMerged { return bucket.kinds == [.original, .leverage, .cash] }
+        if bucket.kinds == [.cash] { return cashJoinAvailable && !groups.liquidMerged && !groups.assetMerged }
         if isLinkBucket(bucket) { return true }
-        if let above = bucketAboveReal, above.id == bucket.id { return assetJoinAvailable && !assetMerged }
+        if let above = bucketAboveReal, above.id == bucket.id { return assetJoinAvailable && !groups.assetMerged }
         return false
     }
 
@@ -473,40 +458,40 @@ struct AssetListView: View {
     }
 
     private func linkAction(for bucket: AssetBucket) -> (() -> Void)? {
-        if netMerged {
+        if groups.netMerged {
             return bucket.kinds == [.original, .leverage, .cash, .realEstate, .debt] ? splitNet : nil
         }
         if netJoinAvailable, bucket.kinds == [.debt] { return mergeNet }
-        if assetMerged {
+        if groups.assetMerged {
             return bucket.kinds == [.original, .leverage, .cash, .realEstate] ? splitAssets : nil
         }
         if assetJoinAvailable, bucket.kinds == [.realEstate] { return mergeAssets }
-        if liquidMerged {
+        if groups.liquidMerged {
             return bucket.kinds == [.original, .leverage, .cash] ? splitLiquid : nil
         }
         if isLinkBucket(bucket) { return tapStockLink }
-        if cashJoinAvailable, !liquidMerged, bucket.kinds == [.cash] { return mergeLiquid }
+        if cashJoinAvailable, !groups.liquidMerged, bucket.kinds == [.cash] { return mergeLiquid }
         return nil
     }
 
     private func linkActionTitle(_ bucket: AssetBucket) -> String? {
-        if netMerged, bucket.kinds == [.original, .leverage, .cash, .realEstate, .debt] {
-            return splitTitle(netChildren, fallback: "分開總淨值")
+        if groups.netMerged, bucket.kinds == [.original, .leverage, .cash, .realEstate, .debt] {
+            return splitTitle(groups.netChildren, fallback: "分開總淨值")
         }
         if netJoinAvailable, bucket.kinds == [.debt] { return "合併為總淨值" }
-        if assetMerged, bucket.kinds == [.original, .leverage, .cash, .realEstate] { return assetSplitTitle }
+        if groups.assetMerged, bucket.kinds == [.original, .leverage, .cash, .realEstate] { return assetSplitTitle }
         if assetJoinAvailable, bucket.kinds == [.realEstate] { return "合併為資產" }
-        if liquidMerged, bucket.kinds == [.original, .leverage, .cash] { return splitTitle(liquidChildren, fallback: "分開為原型、槓桿與現金") }
-        if stocksMerged, bucket.kinds == [.original, .leverage] {
-            return splitTitle(stockChildren, fallback: "分開為原型與槓桿")
+        if groups.liquidMerged, bucket.kinds == [.original, .leverage, .cash] { return splitTitle(groups.liquidChildren, fallback: "分開為原型、槓桿與現金") }
+        if groups.stocksMerged, bucket.kinds == [.original, .leverage] {
+            return splitTitle(groups.stockChildren, fallback: "分開為原型與槓桿")
         }
         if isLinkBucket(bucket) { return "合併為股票" }
-        if cashJoinAvailable, !liquidMerged, bucket.kinds == [.cash] { return "合併為流動" }
+        if cashJoinAvailable, !groups.liquidMerged, bucket.kinds == [.cash] { return "合併為流動" }
         return nil
     }
 
     private var assetSplitTitle: String {
-        splitTitle(assetChildren, fallback: "分開資產")
+        splitTitle(groups.assetChildren, fallback: "分開資產")
     }
 
     private func splitTitle(_ children: [AssetChild], fallback: String) -> String {
@@ -518,7 +503,7 @@ struct AssetListView: View {
         guard frame.width > 1, frame.height > 1 else { return }
         if bucket.kinds == [.leverage] {
             // Collapse moves this header; keeping the resting frame lets the line return on split.
-            guard !linkCollapsed, !stocksMerged, !liquidMerged, !assetMerged, !netMerged else { return }
+            guard !linkCollapsed, !groups.stocksMerged, !groups.liquidMerged, !groups.assetMerged, !groups.netMerged else { return }
             linkLeverage = frame
         } else if bucket.kinds == [.original] || bucket.kinds == [.original, .leverage] || bucket.kinds == [.original, .leverage, .cash] || bucket.kinds == [.original, .leverage, .cash, .realEstate] || bucket.kinds == [.original, .leverage, .cash, .realEstate, .debt] {
             linkOriginal = frame
@@ -528,16 +513,16 @@ struct AssetListView: View {
     private func trackTitle(_ bucket: AssetBucket, _ frame: CGRect) {
         guard frame.width > 1, frame.height > 1 else { return }
         if bucket.kinds == [.leverage] {
-            guard !linkCollapsed, !stocksMerged, !liquidMerged, !assetMerged, !netMerged else { return }
+            guard !linkCollapsed, !groups.stocksMerged, !groups.liquidMerged, !groups.assetMerged, !groups.netMerged else { return }
             linkLeverageTitle = frame
         } else if bucket.kinds == [.cash] {
-            guard !linkCollapsed, !liquidMerged, !assetMerged, !netMerged else { return }
+            guard !linkCollapsed, !groups.liquidMerged, !groups.assetMerged, !groups.netMerged else { return }
             linkCashTitle = frame
         } else if bucket.kinds == [.realEstate] {
-            guard !linkCollapsed, !assetMerged, !netMerged else { return }
+            guard !linkCollapsed, !groups.assetMerged, !groups.netMerged else { return }
             linkRealTitle = frame
         } else if bucket.kinds == [.debt] {
-            guard !linkCollapsed, !netMerged else { return }
+            guard !linkCollapsed, !groups.netMerged else { return }
             linkDebtTitle = frame
         } else if bucket.kinds == [.original] || bucket.kinds == [.original, .leverage] || bucket.kinds == [.original, .leverage, .cash] || bucket.kinds == [.original, .leverage, .cash, .realEstate] || bucket.kinds == [.original, .leverage, .cash, .realEstate, .debt] {
             linkTitle = frame
@@ -589,14 +574,14 @@ struct AssetListView: View {
     }
 
     private var stockLine: (x: CGFloat, top: CGFloat, height: CGFloat)? {
-        guard stockPairAvailable, !stocksMerged, !liquidMerged, !assetMerged, !netMerged,
+        guard stockPairAvailable, !groups.stocksMerged, !groups.liquidMerged, !groups.assetMerged, !groups.netMerged,
               let original = linkOriginal, let leverage = linkLeverage else { return nil }
         let rows = shownBuckets.first { $0.kinds == [.leverage] }.flatMap { listedKeys(for: $0) }.flatMap(measuredBottom)
         return linkSpan(from: original, title: linkTitle, through: leverage, endTitle: linkLeverageTitle, rows: rows)
     }
 
     private var stockStub: (x: CGFloat, top: CGFloat, height: CGFloat)? {
-        guard stockPairAvailable, stocksMerged, !netMerged, !collapsingNet, let original = linkOriginal else { return nil }
+        guard stockPairAvailable, groups.stocksMerged, !groups.netMerged, !collapsingNet, let original = linkOriginal else { return nil }
         let rows = shownBuckets.first { $0.kinds == [.original, .leverage] }.flatMap { listedKeys(for: $0) }.flatMap(measuredBottom)
         if let span = linkSpan(from: original, title: linkTitle, through: nil, endTitle: linkTitle, rows: rows) {
             return span
@@ -607,7 +592,7 @@ struct AssetListView: View {
 
     /// Gray join from the group above 現金 down to 現金. Tap merges into 流動.
     private var cashLine: (x: CGFloat, top: CGFloat, height: CGFloat)? {
-        guard cashJoinAvailable, !liquidMerged, !assetMerged, !netMerged, !linkCollapsed || collapsingLiquid,
+        guard cashJoinAvailable, !groups.liquidMerged, !groups.assetMerged, !groups.netMerged, !linkCollapsed || collapsingLiquid,
               let cashTitle = linkCashTitle else { return nil }
         let top = cashAnchorMaxY + 8
         guard top > 1 else { return nil }
@@ -624,7 +609,7 @@ struct AssetListView: View {
 
     /// Bottom of 槓桿, or of 股票 once that pair is merged.
     private var cashAnchorMaxY: CGFloat {
-        if stocksMerged, let stockTitle = linkTitle {
+        if groups.stocksMerged, let stockTitle = linkTitle {
             var top = stockTitle.maxY
             if let stock = shownBuckets.first(where: { $0.kinds == [.original, .leverage] }),
                let keys = listedKeys(for: stock),
@@ -645,7 +630,7 @@ struct AssetListView: View {
 
     /// Gray join from the group above 實體 down through 實體. Tap merges them into 資產.
     private var realLine: (x: CGFloat, top: CGFloat, height: CGFloat)? {
-        guard assetJoinAvailable, !assetMerged, !netMerged, !linkCollapsed || collapsingAsset,
+        guard assetJoinAvailable, !groups.assetMerged, !groups.netMerged, !linkCollapsed || collapsingAsset,
               let realTitle = linkRealTitle else { return nil }
         let top = realAnchorMaxY + 8
         guard top > 1 else { return nil }
@@ -671,7 +656,7 @@ struct AssetListView: View {
     }
 
     private var assetLine: (x: CGFloat, top: CGFloat, height: CGFloat)? {
-        guard assetMerged, !netMerged, !collapsingNet, assetJoinAvailable, let original = linkOriginal else { return nil }
+        guard groups.assetMerged, !groups.netMerged, !collapsingNet, assetJoinAvailable, let original = linkOriginal else { return nil }
         let rows = shownBuckets.first { $0.kinds == [.original, .leverage, .cash, .realEstate] }.flatMap { listedKeys(for: $0) }.flatMap(measuredBottom)
         if let span = linkSpan(from: original, title: linkTitle, through: nil, endTitle: linkTitle, rows: rows) {
             return span
@@ -681,7 +666,7 @@ struct AssetListView: View {
     }
 
     private var liquidLine: (x: CGFloat, top: CGFloat, height: CGFloat)? {
-        guard liquidMerged, !netMerged, !collapsingNet, cashJoinAvailable, let original = linkOriginal else { return nil }
+        guard groups.liquidMerged, !groups.netMerged, !collapsingNet, cashJoinAvailable, let original = linkOriginal else { return nil }
         let rows = shownBuckets.first { $0.kinds == [.original, .leverage, .cash] }.flatMap { listedKeys(for: $0) }.flatMap(measuredBottom)
         if let span = linkSpan(from: original, title: linkTitle, through: nil, endTitle: linkTitle, rows: rows) {
             return span
@@ -692,7 +677,7 @@ struct AssetListView: View {
 
     /// Gray join from the group above 負債 down through 負債. Tap merges them into 總淨值.
     private var debtLine: (x: CGFloat, top: CGFloat, height: CGFloat)? {
-        guard netJoinAvailable, !netMerged, !linkCollapsed || collapsingNet,
+        guard netJoinAvailable, !groups.netMerged, !linkCollapsed || collapsingNet,
               let debtTitle = linkDebtTitle else { return nil }
         let top = debtAnchorMaxY + 8
         guard top > 1 else { return nil }
@@ -730,7 +715,7 @@ struct AssetListView: View {
     }
 
     private var netLine: (x: CGFloat, top: CGFloat, height: CGFloat)? {
-        guard netMerged, netJoinAvailable, let original = linkOriginal else { return nil }
+        guard groups.netMerged, netJoinAvailable, let original = linkOriginal else { return nil }
         let rows = shownBuckets.first { $0.kinds == [.original, .leverage, .cash, .realEstate, .debt] }
             .flatMap { listedKeys(for: $0) }
             .flatMap(measuredBottom)
@@ -748,18 +733,18 @@ struct AssetListView: View {
 
     private var stockLinkLayer: some View {
         ZStack(alignment: .topLeading) {
-            if netMerged, let line = netLine {
+            if groups.netMerged, let line = netLine {
                 linkMark(line, collapsed: false, color: Color.primary.opacity(0.85))
             } else if collapsingNet {
                 debtLinkMark
-            } else if assetMerged, let line = assetLine {
+            } else if groups.assetMerged, let line = assetLine {
                 linkMark(line, collapsed: false, color: Color.primary.opacity(0.85))
                 debtLinkMark
-            } else if liquidMerged, let line = liquidLine {
+            } else if groups.liquidMerged, let line = liquidLine {
                 linkMark(line, collapsed: false, color: Color.primary.opacity(0.85))
                 realLinkMark
                 debtLinkMark
-            } else if stocksMerged, let stub = stockStub {
+            } else if groups.stocksMerged, let stub = stockStub {
                 linkMark(stub, collapsed: false, color: Color.primary.opacity(0.85))
                 if let cash = cashLine {
                     linkMark(cash, collapsed: collapsingLiquid && linkCollapsed, color: .secondary)
@@ -795,28 +780,28 @@ struct AssetListView: View {
     }
 
     private func tapStockLink() {
-        if stocksMerged { splitStocks() } else { mergeStocks() }
+        if groups.stocksMerged { splitStocks() } else { mergeStocks() }
     }
 
     private func mergeStocks() {
         guard !linkCollapsed else { return }
         let joined = stockJoinBuckets()
         guard !joined.isEmpty else { return }
-        stockChildren = snapshot(joined)
+        groups.stockChildren = snapshot(joined)
         if reduceMotion {
-            stocksMerged = true
+            groups.stocksMerged = true
             linkEpoch += 1
-            syncShell(stockChildren, kinds: [.original, .leverage])
+            syncShell(groups.stockChildren, kinds: [.original, .leverage])
             return
         }
         withAnimation(.smooth(duration: 0.3)) {
             linkCollapsed = true
         } completion: {
             withAnimation(.smooth(duration: 0.45)) {
-                stocksMerged = true
+                groups.stocksMerged = true
                 linkCollapsed = false
                 linkEpoch += 1
-                syncShell(stockChildren, kinds: [.original, .leverage])
+                syncShell(groups.stockChildren, kinds: [.original, .leverage])
             }
         }
     }
@@ -835,16 +820,16 @@ struct AssetListView: View {
     }
 
     private func mergeLiquid() {
-        guard !linkCollapsed, !liquidMerged, cashJoinAvailable else { return }
+        guard !linkCollapsed, !groups.liquidMerged, cashJoinAvailable else { return }
         let joined = liquidJoinBuckets()
         guard !joined.isEmpty else { return }
-        liquidChildren = snapshot(joined)
-        liquidHeldStocks = stocksMerged
+        groups.liquidChildren = snapshot(joined)
+        groups.liquidHeldStocks = groups.stocksMerged
         if reduceMotion {
-            liquidMerged = true
-            stocksMerged = false
+            groups.liquidMerged = true
+            groups.stocksMerged = false
             linkEpoch += 1
-            syncShell(liquidChildren, kinds: [.original, .leverage, .cash])
+            syncShell(groups.liquidChildren, kinds: [.original, .leverage, .cash])
             return
         }
         withAnimation(.smooth(duration: 0.3)) {
@@ -853,18 +838,18 @@ struct AssetListView: View {
         } completion: {
             guard collapsingLiquid else { return }
             withAnimation(.smooth(duration: 0.45)) {
-                liquidMerged = true
-                stocksMerged = false
+                groups.liquidMerged = true
+                groups.stocksMerged = false
                 linkCollapsed = false
                 collapsingLiquid = false
                 linkEpoch += 1
-                syncShell(liquidChildren, kinds: [.original, .leverage, .cash])
+                syncShell(groups.liquidChildren, kinds: [.original, .leverage, .cash])
             }
         }
     }
 
     private func splitLiquid() {
-        guard !linkCollapsed, liquidMerged else { return }
+        guard !linkCollapsed, groups.liquidMerged else { return }
         if reduceMotion {
             undoLiquidMerge()
             linkEpoch += 1
@@ -877,7 +862,7 @@ struct AssetListView: View {
     }
 
     private func mergeNet() {
-        guard !linkCollapsed, !netMerged, netJoinAvailable else { return }
+        guard !linkCollapsed, !groups.netMerged, netJoinAvailable else { return }
         rememberNetChildren()
         if reduceMotion {
             finishNetMerge()
@@ -897,25 +882,25 @@ struct AssetListView: View {
     }
 
     private func finishNetMerge() {
-        netMerged = true
-        stocksMerged = false
-        liquidMerged = false
-        assetMerged = false
+        groups.netMerged = true
+        groups.stocksMerged = false
+        groups.liquidMerged = false
+        groups.assetMerged = false
         linkEpoch += 1
-        syncShell(netChildren, kinds: [.original, .leverage, .cash, .realEstate, .debt])
+        syncShell(groups.netChildren, kinds: [.original, .leverage, .cash, .realEstate, .debt])
     }
 
     private func splitNet() {
-        guard !linkCollapsed, netMerged else { return }
+        guard !linkCollapsed, groups.netMerged else { return }
         if reduceMotion {
             restoreNetChildren()
-            netMerged = false
+            groups.netMerged = false
             linkEpoch += 1
             return
         }
         withAnimation(.smooth(duration: 0.45)) {
             restoreNetChildren()
-            netMerged = false
+            groups.netMerged = false
             linkEpoch += 1
         }
     }
@@ -923,26 +908,26 @@ struct AssetListView: View {
     private func rememberNetChildren() {
         let shown = shownBuckets
         guard let range = netJoinRange(shown) else { return }
-        netHeldStocks = stocksMerged
-        netHeldLiquid = liquidMerged
-        netHeldAsset = assetMerged
-        netChildren = snapshot(Array(shown[range]))
+        groups.netHeldStocks = groups.stocksMerged
+        groups.netHeldLiquid = groups.liquidMerged
+        groups.netHeldAsset = groups.assetMerged
+        groups.netChildren = snapshot(Array(shown[range]))
     }
 
     private func restoreNetChildren() {
-        restore(netChildren)
-        stocksMerged = netHeldStocks
-        liquidMerged = netHeldLiquid
-        assetMerged = netHeldAsset
+        restore(groups.netChildren)
+        groups.stocksMerged = groups.netHeldStocks
+        groups.liquidMerged = groups.netHeldLiquid
+        groups.assetMerged = groups.netHeldAsset
     }
 
     private func mergeAssets() {
-        guard !linkCollapsed, !assetMerged, assetJoinAvailable else { return }
+        guard !linkCollapsed, !groups.assetMerged, assetJoinAvailable else { return }
         rememberAssetChildren()
         if reduceMotion {
-            assetMerged = true
-            stocksMerged = false
-            liquidMerged = false
+            groups.assetMerged = true
+            groups.stocksMerged = false
+            groups.liquidMerged = false
             linkEpoch += 1
             syncAssetOpen()
             return
@@ -953,9 +938,9 @@ struct AssetListView: View {
         } completion: {
             guard collapsingAsset else { return }
             withAnimation(.smooth(duration: 0.45)) {
-                assetMerged = true
-                stocksMerged = false
-                liquidMerged = false
+                groups.assetMerged = true
+                groups.stocksMerged = false
+                groups.liquidMerged = false
                 linkCollapsed = false
                 collapsingAsset = false
                 linkEpoch += 1
@@ -965,16 +950,16 @@ struct AssetListView: View {
     }
 
     private func splitAssets() {
-        guard !linkCollapsed, assetMerged else { return }
+        guard !linkCollapsed, groups.assetMerged else { return }
         if reduceMotion {
             restoreAssetChildren()
-            assetMerged = false
+            groups.assetMerged = false
             linkEpoch += 1
             return
         }
         withAnimation(.smooth(duration: 0.45)) {
             restoreAssetChildren()
-            assetMerged = false
+            groups.assetMerged = false
             linkEpoch += 1
         }
     }
@@ -982,9 +967,9 @@ struct AssetListView: View {
     private func rememberAssetChildren() {
         let shown = shownBuckets
         guard let range = assetJoinRange(shown) else { return }
-        assetHeldStocks = stocksMerged
-        assetHeldLiquid = liquidMerged
-        assetChildren = shown[range].map { bucket in
+        groups.assetHeldStocks = groups.stocksMerged
+        groups.assetHeldLiquid = groups.liquidMerged
+        groups.assetChildren = shown[range].map { bucket in
             AssetChild(
                 id: bucket.id,
                 title: bucket.title,
@@ -996,46 +981,24 @@ struct AssetListView: View {
     }
 
     private func restoreAssetChildren() {
-        restore(assetChildren)
-        stocksMerged = assetHeldStocks
-        liquidMerged = assetHeldLiquid
+        restore(groups.assetChildren)
+        groups.stocksMerged = groups.assetHeldStocks
+        groups.liquidMerged = groups.assetHeldLiquid
     }
 
     private func syncAssetOpen() {
-        syncShell(assetChildren, kinds: [.original, .leverage, .cash, .realEstate])
-    }
-
-    private func cancelMergeIfNeeded() {
-        if netMerged {
-            restoreNetChildren()
-            netMerged = false
-            linkEpoch += 1
-        } else if assetMerged {
-            restoreAssetChildren()
-            assetMerged = false
-            linkEpoch += 1
-        } else if liquidMerged {
-            undoLiquidMerge()
-            linkEpoch += 1
-        } else if stocksMerged {
-            undoStockMerge()
-            linkEpoch += 1
-        }
-        linkCollapsed = false
-        collapsingLiquid = false
-        collapsingAsset = false
-        collapsingNet = false
+        syncShell(groups.assetChildren, kinds: [.original, .leverage, .cash, .realEstate])
     }
 
     private func undoStockMerge() {
-        restore(stockChildren)
-        stocksMerged = false
+        restore(groups.stockChildren)
+        groups.stocksMerged = false
     }
 
     private func undoLiquidMerge() {
-        restore(liquidChildren)
-        stocksMerged = liquidHeldStocks
-        liquidMerged = false
+        restore(groups.liquidChildren)
+        groups.stocksMerged = groups.liquidHeldStocks
+        groups.liquidMerged = false
     }
 
     private func snapshot(_ buckets: [AssetBucket]) -> [AssetChild] {
@@ -1087,51 +1050,64 @@ struct AssetListView: View {
             return
         }
         for child in children { setOpen(child.storageID, child.open) }
-        AssetListMemory.netOpenGroups = openGroupIDs
+        AssetListMemory.netOpenGroups = groups.openGroupIDs
     }
 
     private func syncShell(_ children: [AssetChild], kinds: [AssetKind]) {
         guard let head = children.first else { return }
         let open = children.contains(where: \.open)
         if exposureOnly {
-            if open { expandedKinds.formUnion(kinds) } else { expandedKinds.subtract(kinds) }
+            var next = groups.expandedKinds
+            if open { next.formUnion(kinds) } else { next.subtract(kinds) }
+            groups.expandedKinds = next
             persistGroups()
             return
         }
         setOpen(head.storageID, open)
-        AssetListMemory.netOpenGroups = openGroupIDs
+        AssetListMemory.netOpenGroups = groups.openGroupIDs
     }
 
     private func setExpanded(_ kind: AssetKind, _ open: Bool) {
-        if open { expandedKinds.insert(kind) } else { expandedKinds.remove(kind) }
+        var next = groups.expandedKinds
+        if open { next.insert(kind) } else { next.remove(kind) }
+        groups.expandedKinds = next
+        AssetListMemory.exposureKinds = next
     }
 
     private func setOpen(_ id: String, _ open: Bool) {
-        if open { openGroupIDs.insert(id) } else { openGroupIDs.remove(id) }
+        var ids = groups.openGroupIDs
+        if open { ids.insert(id) } else { ids.remove(id) }
+        groups.openGroupIDs = ids
+        AssetListMemory.netOpenGroups = ids
     }
 
     private func toggle(_ bucket: AssetBucket) {
         let id = bucket.id
+        var ids = groups.openGroupIDs
         withAnimation {
-            if openGroupIDs.contains(id) {
-                openGroupIDs.remove(id)
-            } else {
-                openGroupIDs.insert(id)
-            }
+            if ids.contains(id) { ids.remove(id) } else { ids.insert(id) }
+            groups.openGroupIDs = ids
+            AssetListMemory.netOpenGroups = ids
         }
-        AssetListMemory.netOpenGroups = openGroupIDs
     }
 
     private func saveItem(_ item: AssetItem) {
         portfolio.upsert(item)
         if exposureOnly {
-            withAnimation { _ = expandedKinds.insert(item.kind) }
+            withAnimation {
+                var next = groups.expandedKinds
+                next.insert(item.kind)
+                groups.expandedKinds = next
+            }
             persistGroups()
             return
         }
         guard let bucket = shownBuckets.first(where: { $0.kinds.contains(item.kind) }) else { return }
-        withAnimation { _ = openGroupIDs.insert(bucket.id) }
-        AssetListMemory.netOpenGroups = openGroupIDs
+        withAnimation {
+            var ids = groups.openGroupIDs
+            ids.insert(bucket.id)
+            groups.openGroupIDs = ids
+        }
     }
 
     private func refreshQuotes() async {
