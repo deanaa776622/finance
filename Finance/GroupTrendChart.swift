@@ -182,7 +182,8 @@ struct GroupTrendChart: View, Equatable {
             }
         } else if let point = line.points.first {
             PointMark(x: .value("月", point.month), y: .value("位置", point.unit))
-                .foregroundStyle(line.color)
+                .foregroundStyle(.clear)
+                .annotation(position: .overlay) { lineSwatch(line.color) }
         }
     }
 
@@ -248,9 +249,13 @@ struct GroupTrendChart: View, Equatable {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private func lineSwatch(_ color: Color) -> some View {
+        Capsule().fill(color).frame(width: 16, height: 2)
+    }
+
     private func legendRow(_ line: TrendLine) -> some View {
         HStack(spacing: 6) {
-            Capsule().fill(line.color).frame(width: 16, height: 2)
+            lineSwatch(line.color)
             Text(line.title).lineLimit(1)
             Spacer(minLength: 4)
             Text(amountText(line))
