@@ -15,6 +15,7 @@ struct HomeView: View {
     @Environment(Palette.self) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("hideAmounts") private var hideAmounts = false
+    @AppStorage(ProPreview.key) private var isPro = true
     /// -1 assets, 0 home, 1 savings
     @State private var panel: CGFloat = 0
     @State private var drag: CGFloat = 0
@@ -311,6 +312,13 @@ struct HomeView: View {
 
     private func heroLabel(_ position: CGFloat) -> String {
         if position > 0.5 {
+            if !isPro {
+                guard let line = ProPreview.coverageLine(portfolio: portfolio) else {
+                    return "儲蓄目標尚未設定"
+                }
+                let amount = hideAmounts ? "金額已隱藏" : MoneyFormat.string(line.amount)
+                return "距離目標 \(amount)，\(line.detail)"
+            }
             guard let outlook = portfolio.outlook else { return "儲蓄目標尚未設定" }
             return "距離目標 \(outlook.yearsText) 年，\(outlook.detailText)"
         }

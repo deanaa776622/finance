@@ -33,6 +33,7 @@
 		C8E5A13D6F2B40C9A7D38E14 /* GroupTrendChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9F6B24E7A3C41D0B8E49F25 /* GroupTrendChart.swift */; };
 		A2B7C4D85E1F49A0B6C38D11 /* ChartSpanPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C8D5E96F2A40B1C7D49E22 /* ChartSpanPicker.swift */; };
 		E3A91C07B4D64F28A5C01E66 /* AssetHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B02D18C5E74A39B6D12F77 /* AssetHistory.swift */; };
+		E2B3C4D55E6F47A8B9C01D22 /* ProPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C44D5E46F7A8B90C11 /* ProPreview.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -51,6 +52,7 @@
 		D9F6B24E7A3C41D0B8E49F25 /* GroupTrendChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupTrendChart.swift; sourceTree = "<group>"; };
 		B3C8D5E96F2A40B1C7D49E22 /* ChartSpanPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartSpanPicker.swift; sourceTree = "<group>"; };
 		F4B02D18C5E74A39B6D12F77 /* AssetHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetHistory.swift; sourceTree = "<group>"; };
+		F1A2B3C44D5E46F7A8B90C11 /* ProPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProPreview.swift; sourceTree = "<group>"; };
 		473D2B4067D142F2A2C45A33 /* Portfolio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Portfolio.swift; sourceTree = "<group>"; };
 		73726A8D522F4F929C007C02 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		A9E3C14B7F2D4E6A91B0C8D5 /* HomeHero.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeHero.swift; sourceTree = "<group>"; };
@@ -102,6 +104,7 @@
 				C99AAE8E3DC34E89A9404102 /* SavingsMath.swift */,
 				F4B02D18C5E74A39B6D12F77 /* AssetHistory.swift */,
 				E41CEA44175B4D908817A5A0 /* SavingsTunerView.swift */,
+				F1A2B3C44D5E46F7A8B90C11 /* ProPreview.swift */,
 				285FDE10B2E64BF885533CE6 /* Editors.swift */,
 				0ACEF765DE7D48D9943D7D84 /* Assets.xcassets */,
 				F7A1C3E85B2D49A6C0E14F28 /* PrivacyInfo.xcprivacy */,
@@ -214,6 +217,7 @@
 				D2B3F65064B840CEA5F455D6 /* SavingsMath.swift in Sources */,
 				E3A91C07B4D64F28A5C01E66 /* AssetHistory.swift in Sources */,
 				E14C5B0C803D4BB4B2DDBDA6 /* SavingsTunerView.swift in Sources */,
+				E2B3C4D55E6F47A8B9C01D22 /* ProPreview.swift in Sources */,
 				C570C3D396394F26AC8DDE7D /* Editors.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

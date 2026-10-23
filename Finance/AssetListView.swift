@@ -11,6 +11,7 @@ struct AssetListView: View {
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
+    @AppStorage(ProPreview.key) private var isPro = true
     @State private var editing: AssetItem?
     @State private var showAdd = false
     @State private var addKind: AssetKind = .original
@@ -365,6 +366,7 @@ struct AssetListView: View {
             .accessibilityLabel(isRefreshing ? "更新中" : refreshConfirmed ? "已更新" : "更新現值")
             .frame(width: 44, height: 44)
             Menu {
+                Button(isPro ? "改看免費版" : "改看付費版") { isPro.toggle() }
                 Button("顏色設定") { showColors = true }
             } label: {
                 Image(systemName: "gearshape")

@@ -25,7 +25,7 @@ struct HomeHero: View {
             ZStack {
                 statusCopy.opacity(1 - settledReveal)
                 lensPager.opacity(toAssets)
-                yearsCopy.opacity(toSavings)
+                GoalDistanceCopy(portfolio: portfolio).opacity(toSavings)
             }
             VStack {
                 Image(systemName: "chevron.compact.down")
@@ -117,32 +117,4 @@ struct HomeHero: View {
         }
     }
 
-    private var yearsCopy: some View {
-        VStack(spacing: 6) {
-            Text("距離目標")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .tracking(2)
-            if let outlook = portfolio.outlook {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(outlook.yearsText)
-                        .font(.largeTitle.weight(.bold))
-                        .fontDesign(.rounded)
-                        .monospacedDigit()
-                    Text("年")
-                        .font(.title3.weight(.medium))
-                        .foregroundStyle(.secondary)
-                }
-                Text(outlook.detailText)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-            } else {
-                Text("尚未設定")
-                    .font(.title3.weight(.medium))
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
 }

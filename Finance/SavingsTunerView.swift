@@ -4,6 +4,7 @@ struct SavingsTunerView: View {
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
+    @AppStorage(ProPreview.key) private var isPro = true
     @FocusState private var field: Field?
     @State private var costText = ""
     @State private var withdrawText = ""
@@ -35,27 +36,31 @@ struct SavingsTunerView: View {
             }
             .foregroundStyle(palette.ink)
 
-            Section {
-                GroupTitle(title: "計畫", value: planTimeText, open: planOpen, valueMuted: true) {
-                    withAnimation { planOpen.toggle() }
-                }
-                .groupHeaderChrome()
-                if planOpen {
-                    percentRow("年報酬率", text: $rateText, focus: .rate)
-                        .groupCardRow(isFirst: true, isLast: false)
-                    moneyRow("月投資額", text: $pmtText, field: .pmt, keepSign: true)
-                        .groupCardRow(isFirst: false, isLast: false)
-                    yearsRow
-                        .groupCardRow(isFirst: false, isLast: horizonNote == nil)
-                    if let note = horizonNote {
-                        Text(note)
-                            .font(.footnote)
-                            .foregroundStyle(palette.quietInk)
-                            .groupCardRow(isFirst: false, isLast: true)
+            if isPro {
+                Section {
+                    GroupTitle(title: "計畫", value: planTimeText, open: planOpen, valueMuted: true) {
+                        withAnimation { planOpen.toggle() }
+                    }
+                    .groupHeaderChrome()
+                    if planOpen {
+                        percentRow("年報酬率", text: $rateText, focus: .rate)
+                            .groupCardRow(isFirst: true, isLast: false)
+                        moneyRow("月投資額", text: $pmtText, field: .pmt, keepSign: true)
+                            .groupCardRow(isFirst: false, isLast: false)
+                        yearsRow
+                            .groupCardRow(isFirst: false, isLast: horizonNote == nil)
+                        if let note = horizonNote {
+                            Text(note)
+                                .font(.footnote)
+                                .foregroundStyle(palette.quietInk)
+                                .groupCardRow(isFirst: false, isLast: true)
+                        }
                     }
                 }
+                .foregroundStyle(palette.ink)
+            } else {
+                SavingsPlanLocked()
             }
-            .foregroundStyle(palette.ink)
 
             Section {
                 GroupTitle(title: "現狀", value: currentAssetsText, open: statusOpen, valueMuted: true) {
@@ -77,7 +82,7 @@ struct SavingsTunerView: View {
             }
             .foregroundStyle(palette.ink)
 
-            if let outlook = draftOutlook {
+            if isPro, let outlook = draftOutlook {
                 Section {
                     SavingsCurve(outlook: outlook)
                         .groupPlainRow()
