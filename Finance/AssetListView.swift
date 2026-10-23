@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct AssetListView: View {
-    static let restingTopInset: CGFloat = 44
+    /// Pulls the chart up into the lower edge of the 40pt top fade.
+    static let restingTopInset: CGFloat = 32
     var showsChrome = true
     var topInset = restingTopInset
     /// Exposure lens keeps 原／槓／現. Net worth lists every kind.
@@ -61,7 +62,7 @@ struct AssetListView: View {
             if showsTrend {
                 GroupTrendChart(buckets: shownBuckets)
                     .equatable()
-                    .listRowInsets(EdgeInsets(top: 4, leading: 32, bottom: 8, trailing: 32))
+                    .listRowInsets(EdgeInsets(top: 0, leading: 32, bottom: 8, trailing: 32))
                     .listRowSeparator(.hidden)
                     .listRowBackground(palette.ground)
             }
