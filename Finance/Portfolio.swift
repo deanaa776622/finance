@@ -191,7 +191,7 @@ final class Portfolio {
     var allocationStatus: String {
         if allocableTotal <= 0 { return "新增資產後，會顯示與目標配置的差距" }
         if isBalanced { return "配置大致平衡" }
-        return String(format: "與目標最多偏離約 %.0f%%，有空再平衡即可", maxAllocationDrift)
+        return String(format: "與目標最多偏離約 %.0f%%", maxAllocationDrift)
     }
 
     func upsert(_ item: AssetItem) {
