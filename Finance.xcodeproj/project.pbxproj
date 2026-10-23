@@ -7,63 +7,63 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		66B7520819D5483B958D0856 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73726A8D522F4F929C007C02 /* Models.swift */; };
-		A1C4E7B25D0F4E19C3B8D204 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7D35F1908A24C62A91E3D75 /* HomeView.swift */; };
-		B8D2F03A6E1C4D59807A9B4C /* HomeHero.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E3C14B7F2D4E6A91B0C8D5 /* HomeHero.swift */; };
-		C2E6A94371B84D3E8F71A5C6 /* GlowBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = D48F02C6AE514B75B60C287A /* GlowBackground.swift */; };
-		B5D9F2C18E304AB7C4F6D921 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4C8E1B07D2F49A6B3E5C810 /* Palette.swift */; };
-		D7F1B4E30A526CD9E618FB43 /* ColorSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6E0A3D29F415BC8D507EA32 /* ColorSettingsView.swift */; };
-		F9B3D5E26C7048B1A2D4E3F5 /* ColorDraftPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8A2C4D15B6F47A091C3D2E4 /* ColorDraftPicker.swift */; };
-		C570C3D396394F26AC8DDE7D /* Editors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 285FDE10B2E64BF885533CE6 /* Editors.swift */; };
-		CF93E2B4331F4B008B545BE9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0ACEF765DE7D48D9943D7D84 /* Assets.xcassets */; };
-		E6B2D4F96C3E40B7D1F25A39 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F7A1C3E85B2D49A6C0E14F28 /* PrivacyInfo.xcprivacy */; };
-		E0571D47B35541BCBAEFC46B /* FinanceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF766442653C438293CC0C5D /* FinanceApp.swift */; };
-		E14C5B0C803D4BB4B2DDBDA6 /* SavingsTunerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41CEA44175B4D908817A5A0 /* SavingsTunerView.swift */; };
-		F2C5492553DF4B92AA92D16C /* Portfolio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473D2B4067D142F2A2C45A33 /* Portfolio.swift */; };
-		F449C90D5036484FB22DD932 /* AssetListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D4C730906A644DC837867DB /* AssetListView.swift */; };
-		D2B3F65064B840CEA5F455D6 /* SavingsMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AAE8E3DC34E89A9404102 /* SavingsMath.swift */; };
 		4E8A1B2C4D5E4F6A8B9C0D1E /* QuoteClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8A1B2C4D5E4F6A8B9C0D1E /* QuoteClient.swift */; };
+		66B7520819D5483B958D0856 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73726A8D522F4F929C007C02 /* Models.swift */; };
 		6E8A1B2C4D5E4F6A8B9C0D1E /* AssetEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8A1B2C4D5E4F6A8B9C0D1E /* AssetEditor.swift */; };
 		7E8A1B2C4D5E4F6A8B9C0D1E /* ScrollEdgeFade.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E8A1B2C4D5E4F6A8B9C0D1E /* ScrollEdgeFade.swift */; };
-		A7C3E91B4D2F48E6B1A05C73 /* AssetListMemory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8D4F02C5E3A49F7C2B16D84 /* AssetListMemory.swift */; };
-		D4B02F8C5A3E49B1C7F26D95 /* AssetGrouping.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A91E7B4F2D48A0B6E15C84 /* AssetGrouping.swift */; };
-		E7C41A09B2D64F58A1C03E77 /* StockLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8D52B10C3E74A69B2D14F88 /* StockLink.swift */; };
-		A9C4E2B17D3F48A6B5C01D22 /* GroupCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0D5F3C28E4A49B7C6D12E33 /* GroupCard.swift */; };
-		C1D6E4F39A5B47C8D2E03F44 /* SavingsCurve.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E7F5A40B6C48D9E3F14A55 /* SavingsCurve.swift */; };
-		C8E5A13D6F2B40C9A7D38E14 /* GroupTrendChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9F6B24E7A3C41D0B8E49F25 /* GroupTrendChart.swift */; };
+		A1C4E7B25D0F4E19C3B8D204 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7D35F1908A24C62A91E3D75 /* HomeView.swift */; };
 		A2B7C4D85E1F49A0B6C38D11 /* ChartSpanPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C8D5E96F2A40B1C7D49E22 /* ChartSpanPicker.swift */; };
-		E3A91C07B4D64F28A5C01E66 /* AssetHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B02D18C5E74A39B6D12F77 /* AssetHistory.swift */; };
+		A7C3E91B4D2F48E6B1A05C73 /* AssetListMemory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8D4F02C5E3A49F7C2B16D84 /* AssetListMemory.swift */; };
+		A9C4E2B17D3F48A6B5C01D22 /* GroupCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0D5F3C28E4A49B7C6D12E33 /* GroupCard.swift */; };
+		B5D9F2C18E304AB7C4F6D921 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4C8E1B07D2F49A6B3E5C810 /* Palette.swift */; };
+		B8D2F03A6E1C4D59807A9B4C /* HomeHero.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E3C14B7F2D4E6A91B0C8D5 /* HomeHero.swift */; };
+		C1D6E4F39A5B47C8D2E03F44 /* SavingsCurve.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E7F5A40B6C48D9E3F14A55 /* SavingsCurve.swift */; };
+		C2E6A94371B84D3E8F71A5C6 /* GlowBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = D48F02C6AE514B75B60C287A /* GlowBackground.swift */; };
+		C570C3D396394F26AC8DDE7D /* Editors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 285FDE10B2E64BF885533CE6 /* Editors.swift */; };
+		C8E5A13D6F2B40C9A7D38E14 /* GroupTrendChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9F6B24E7A3C41D0B8E49F25 /* GroupTrendChart.swift */; };
+		CF93E2B4331F4B008B545BE9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0ACEF765DE7D48D9943D7D84 /* Assets.xcassets */; };
+		D2B3F65064B840CEA5F455D6 /* SavingsMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AAE8E3DC34E89A9404102 /* SavingsMath.swift */; };
+		D4B02F8C5A3E49B1C7F26D95 /* AssetGrouping.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A91E7B4F2D48A0B6E15C84 /* AssetGrouping.swift */; };
+		D7F1B4E30A526CD9E618FB43 /* ColorSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6E0A3D29F415BC8D507EA32 /* ColorSettingsView.swift */; };
+		E0571D47B35541BCBAEFC46B /* FinanceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF766442653C438293CC0C5D /* FinanceApp.swift */; };
+		E14C5B0C803D4BB4B2DDBDA6 /* SavingsTunerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41CEA44175B4D908817A5A0 /* SavingsTunerView.swift */; };
 		E2B3C4D55E6F47A8B9C01D22 /* ProPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C44D5E46F7A8B90C11 /* ProPreview.swift */; };
+		E3A91C07B4D64F28A5C01E66 /* AssetHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B02D18C5E74A39B6D12F77 /* AssetHistory.swift */; };
+		E6B2D4F96C3E40B7D1F25A39 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F7A1C3E85B2D49A6C0E14F28 /* PrivacyInfo.xcprivacy */; };
+		E7C41A09B2D64F58A1C03E77 /* StockLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8D52B10C3E74A69B2D14F88 /* StockLink.swift */; };
+		F2C5492553DF4B92AA92D16C /* Portfolio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473D2B4067D142F2A2C45A33 /* Portfolio.swift */; };
+		F449C90D5036484FB22DD932 /* AssetListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D4C730906A644DC837867DB /* AssetListView.swift */; };
+		F9B3D5E26C7048B1A2D4E3F5 /* ColorDraftPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8A2C4D15B6F47A091C3D2E4 /* ColorDraftPicker.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0ACEF765DE7D48D9943D7D84 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		F7A1C3E85B2D49A6C0E14F28 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		285FDE10B2E64BF885533CE6 /* Editors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Editors.swift; sourceTree = "<group>"; };
 		2D4C730906A644DC837867DB /* AssetListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetListView.swift; sourceTree = "<group>"; };
 		3E8A1B2C4D5E4F6A8B9C0D1E /* QuoteClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteClient.swift; sourceTree = "<group>"; };
+		473D2B4067D142F2A2C45A33 /* Portfolio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Portfolio.swift; sourceTree = "<group>"; };
 		5E8A1B2C4D5E4F6A8B9C0D1E /* AssetEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetEditor.swift; sourceTree = "<group>"; };
+		73726A8D522F4F929C007C02 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		8E8A1B2C4D5E4F6A8B9C0D1E /* ScrollEdgeFade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollEdgeFade.swift; sourceTree = "<group>"; };
+		A4C8E1B07D2F49A6B3E5C810 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
+		A9E3C14B7F2D4E6A91B0C8D5 /* HomeHero.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeHero.swift; sourceTree = "<group>"; };
+		B0D5F3C28E4A49B7C6D12E33 /* GroupCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupCard.swift; sourceTree = "<group>"; };
+		B3C8D5E96F2A40B1C7D49E22 /* ChartSpanPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartSpanPicker.swift; sourceTree = "<group>"; };
+		B7D35F1908A24C62A91E3D75 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		B8D4F02C5E3A49F7C2B16D84 /* AssetListMemory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetListMemory.swift; sourceTree = "<group>"; };
 		C3A91E7B4F2D48A0B6E15C84 /* AssetGrouping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetGrouping.swift; sourceTree = "<group>"; };
-		F8D52B10C3E74A69B2D14F88 /* StockLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockLink.swift; sourceTree = "<group>"; };
-		B0D5F3C28E4A49B7C6D12E33 /* GroupCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupCard.swift; sourceTree = "<group>"; };
-		D2E7F5A40B6C48D9E3F14A55 /* SavingsCurve.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsCurve.swift; sourceTree = "<group>"; };
-		D9F6B24E7A3C41D0B8E49F25 /* GroupTrendChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupTrendChart.swift; sourceTree = "<group>"; };
-		B3C8D5E96F2A40B1C7D49E22 /* ChartSpanPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartSpanPicker.swift; sourceTree = "<group>"; };
-		F4B02D18C5E74A39B6D12F77 /* AssetHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetHistory.swift; sourceTree = "<group>"; };
-		F1A2B3C44D5E46F7A8B90C11 /* ProPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProPreview.swift; sourceTree = "<group>"; };
-		473D2B4067D142F2A2C45A33 /* Portfolio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Portfolio.swift; sourceTree = "<group>"; };
-		73726A8D522F4F929C007C02 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		A9E3C14B7F2D4E6A91B0C8D5 /* HomeHero.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeHero.swift; sourceTree = "<group>"; };
-		B7D35F1908A24C62A91E3D75 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		C99AAE8E3DC34E89A9404102 /* SavingsMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsMath.swift; sourceTree = "<group>"; };
-		D48F02C6AE514B75B60C287A /* GlowBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlowBackground.swift; sourceTree = "<group>"; };
-		A4C8E1B07D2F49A6B3E5C810 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
 		C6E0A3D29F415BC8D507EA32 /* ColorSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorSettingsView.swift; sourceTree = "<group>"; };
-		E8A2C4D15B6F47A091C3D2E4 /* ColorDraftPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorDraftPicker.swift; sourceTree = "<group>"; };
+		C99AAE8E3DC34E89A9404102 /* SavingsMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsMath.swift; sourceTree = "<group>"; };
+		D2E7F5A40B6C48D9E3F14A55 /* SavingsCurve.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsCurve.swift; sourceTree = "<group>"; };
+		D48F02C6AE514B75B60C287A /* GlowBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlowBackground.swift; sourceTree = "<group>"; };
+		D9F6B24E7A3C41D0B8E49F25 /* GroupTrendChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupTrendChart.swift; sourceTree = "<group>"; };
 		E41CEA44175B4D908817A5A0 /* SavingsTunerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsTunerView.swift; sourceTree = "<group>"; };
+		E8A2C4D15B6F47A091C3D2E4 /* ColorDraftPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorDraftPicker.swift; sourceTree = "<group>"; };
 		EF766442653C438293CC0C5D /* FinanceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceApp.swift; sourceTree = "<group>"; };
+		F1A2B3C44D5E46F7A8B90C11 /* ProPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProPreview.swift; sourceTree = "<group>"; };
+		F4B02D18C5E74A39B6D12F77 /* AssetHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetHistory.swift; sourceTree = "<group>"; };
+		F7A1C3E85B2D49A6C0E14F28 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		F8D52B10C3E74A69B2D14F88 /* StockLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockLink.swift; sourceTree = "<group>"; };
 		FDFCB427774A44B9832BED06 /* Finance.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Finance.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -156,7 +156,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
-				LastUpgradeCheck = 2700;
+				LastUpgradeCheck = 2710;
 			};
 			buildConfigurationList = C5C6B7878ECE4B7189961407 /* Build configuration list for PBXProject "Finance" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -251,6 +251,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 596RB34FQK;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -279,7 +280,6 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 596RB34FQK;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Plumb;
@@ -327,6 +327,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 596RB34FQK;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -352,7 +353,6 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 596RB34FQK;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Plumb;
