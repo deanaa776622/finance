@@ -258,7 +258,7 @@ struct AssetListView: View {
     private func amount(of kinds: [AssetKind]) -> Decimal {
         kinds.reduce(0) { partial, kind in
             let value = portfolio.amount(for: kind)
-            if kind == .debt, kinds.count > 1 { return partial - value }
+            if kind == .debt { return partial - value }
             return partial + value
         }
     }
@@ -1188,7 +1188,7 @@ private struct AssetRow: View {
                     }
                 }
                 Spacer()
-                Text(MoneyFormat.string(item.twdValue, hidden: hideAmounts))
+                Text(MoneyFormat.string(item.kind == .debt ? -item.twdValue : item.twdValue, hidden: hideAmounts))
                     .monospacedDigit()
                     .foregroundStyle(item.kind == .debt ? palette.quietInk : palette.ink)
             }
