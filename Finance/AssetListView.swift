@@ -358,9 +358,13 @@ struct AssetListView: View {
             .disabled(isRefreshing || refreshConfirmed)
             .accessibilityLabel(isRefreshing ? "更新中" : refreshConfirmed ? "已更新" : "更新現值")
             .frame(width: 44, height: 44)
-            Button("設定") { showColors = true }
-                .padding(.horizontal, 4)
-                .foregroundStyle(palette.ink)
+            Menu {
+                Button("顏色設定") { showColors = true }
+            } label: {
+                Image(systemName: "gearshape")
+            }
+            .accessibilityLabel("設定")
+            .frame(width: 44, height: 44)
             Button {
                 addKind = .original
                 showAdd = true
