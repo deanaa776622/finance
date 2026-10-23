@@ -14,7 +14,6 @@ struct AssetListView: View {
     @State private var editing: AssetItem?
     @State private var showAdd = false
     @State private var addKind: AssetKind = .original
-    @State private var showTargets = false
     @State private var showColors = false
     @State private var isRefreshing = false
     @State private var refreshConfirmed = false
@@ -59,7 +58,13 @@ struct AssetListView: View {
 
     var body: some View {
         List {
-            if showsTrend {
+            if exposureOnly {
+                TargetEditor()
+                    .frame(height: GroupTrendChart.bandHeight, alignment: .top)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 32, bottom: 8, trailing: 32))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(palette.ground)
+            } else if showsTrend {
                 GroupTrendChart(buckets: shownBuckets)
                     .equatable()
                     .listRowInsets(EdgeInsets(top: 0, leading: 32, bottom: 8, trailing: 32))
@@ -108,9 +113,6 @@ struct AssetListView: View {
             AssetEditor(item: item, onSave: saveItem, onDelete: {
                 portfolio.delete(ids: [item.id])
             })
-        }
-        .sheet(isPresented: $showTargets) {
-            TargetEditor()
         }
         .sheet(isPresented: $showColors) {
             ColorSettingsView()
@@ -356,9 +358,6 @@ struct AssetListView: View {
             .disabled(isRefreshing || refreshConfirmed)
             .accessibilityLabel(isRefreshing ? "更新中" : refreshConfirmed ? "已更新" : "更新現值")
             .frame(width: 44, height: 44)
-            Button("目標配置") { showTargets = true }
-                .padding(.horizontal, 4)
-                .foregroundStyle(palette.ink)
             Button("設定") { showColors = true }
                 .padding(.horizontal, 4)
                 .foregroundStyle(palette.ink)

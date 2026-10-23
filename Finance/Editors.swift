@@ -3,7 +3,6 @@ import SwiftUI
 struct TargetEditor: View {
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
-    @Environment(\.dismiss) private var dismiss
     @AppStorage("hideAmounts") private var hideAmounts = false
 
     @State private var originalText = ""
@@ -11,71 +10,45 @@ struct TargetEditor: View {
     @State private var cashText = ""
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    VStack(alignment: .leading, spacing: 14) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack(spacing: 16) {
-                                percentField("原型", text: originalText, kind: .original)
-                                percentField("槓桿", text: leverageText, kind: .leverage)
-                                percentField("現金", text: cashText, kind: .cash)
-                            }
-                            centeredTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios, title: "目標")
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 16) {
+                    percentField("原型", text: originalText, kind: .original)
+                    percentField("槓桿", text: leverageText, kind: .leverage)
+                    percentField("現金", text: cashText, kind: .cash)
+                }
+                centeredTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios, title: "目標")
+            }
+            if portfolio.allocableTotal > 0 {
+                VStack(alignment: .leading, spacing: 6) {
+                    centeredTrack(
+                        original: portfolio.actualPercent(for: .original),
+                        leverage: portfolio.actualPercent(for: .leverage),
+                        tracksDrift: true,
+                        label: "目前比例",
+                        title: "目前"
+                    )
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 16) {
+                            percentReadout("原型", percent: portfolio.actualPercent(for: .original), kind: .original)
+                            percentReadout("槓桿", percent: portfolio.actualPercent(for: .leverage), kind: .leverage)
+                            percentReadout("現金", percent: portfolio.actualPercent(for: .cash), kind: .cash)
                         }
-                        if portfolio.allocableTotal > 0 {
-                            VStack(alignment: .leading, spacing: 6) {
-                                centeredTrack(
-                                    original: portfolio.actualPercent(for: .original),
-                                    leverage: portfolio.actualPercent(for: .leverage),
-                                    tracksDrift: true,
-                                    label: "目前比例",
-                                    title: "目前"
-                                )
-                                VStack(alignment: .leading, spacing: 2) {
-                                    HStack(spacing: 16) {
-                                        percentReadout("原型", percent: portfolio.actualPercent(for: .original), kind: .original)
-                                        percentReadout("槓桿", percent: portfolio.actualPercent(for: .leverage), kind: .leverage)
-                                        percentReadout("現金", percent: portfolio.actualPercent(for: .cash), kind: .cash)
-                                    }
-                                    HStack(spacing: 16) {
-                                        gapReadout("原型", kind: .original, percent: originalPercent)
-                                        gapReadout("槓桿", kind: .leverage, percent: leveragePercent)
-                                        gapReadout("現金", kind: .cash, percent: cashPercent)
-                                    }
-                                }
-                            }
+                        HStack(spacing: 16) {
+                            gapReadout("原型", kind: .original, percent: originalPercent)
+                            gapReadout("槓桿", kind: .leverage, percent: leveragePercent)
+                            gapReadout("現金", kind: .cash, percent: cashPercent)
                         }
                     }
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    if portfolio.allocableTotal <= 0 {
-                        Text("新增資產後，會顯示再平衡差額")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity)
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                    }
                 }
+            } else {
+                Text("新增資產後，會顯示再平衡差額")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
             }
-            .palettePanel(palette)
-            .scrollEdgeFade()
-            .navigationTitle("目標配置")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("儲存") { commit(); dismiss() }
-                }
-            }
-            .onAppear(perform: load)
         }
-        .presentationBackground(palette.panel)
-        .presentationDetents([.height(portfolio.allocableTotal > 0 ? 440 : 300)])
-        .presentationDragIndicator(.visible)
+        .onAppear(perform: load)
     }
 
     private func centeredTrack(
@@ -128,7 +101,7 @@ struct TargetEditor: View {
             .font(.title3.weight(.semibold))
             .foregroundStyle(
                 palette.glow(for: kind, factor: 0)
-                    .readable(on: palette.panel, scheme: palette.colorScheme)
+                    .readable(on: palette.ground, scheme: palette.colorScheme)
             )
         }
         .frame(maxWidth: .infinity)
@@ -163,7 +136,7 @@ struct TargetEditor: View {
         .font(.title3.weight(.semibold))
         .foregroundStyle(
             palette.glow(for: kind, factor: portfolio.driftFactor(for: kind))
-                .readable(on: palette.panel, scheme: palette.colorScheme)
+                .readable(on: palette.ground, scheme: palette.colorScheme)
         )
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
@@ -188,6 +161,7 @@ struct TargetEditor: View {
         originalText = NumberParse.displayPercent(orig)
         leverageText = NumberParse.displayPercent(lev)
         cashText = NumberParse.displayPercent(100 - orig - lev)
+        commit()
     }
 
     private func load() {

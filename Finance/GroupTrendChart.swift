@@ -3,6 +3,8 @@ import SwiftUI
 
 /// Monthly lines for the groups on screen. Press to read a month.
 struct GroupTrendChart: View, Equatable {
+    /// Plot, the room above it, the gap, and three legend rows. The exposure page's target editor uses this band.
+    static let bandHeight: CGFloat = 112 + 36 + 8 + 60
     var buckets: [AssetBucket]
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
@@ -31,7 +33,9 @@ struct GroupTrendChart: View, Equatable {
                 rangeBand
             }
             legend
+                .frame(height: 60, alignment: .top)
         }
+        .frame(height: Self.bandHeight, alignment: .top)
         .onChange(of: plotKey, initial: true) { _, _ in
             let placed = layout()
             morph(to: placed.lines, zero: placed.zero)
