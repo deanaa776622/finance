@@ -11,7 +11,7 @@ enum ProPreview {
         let future = NSDecimalNumber(decimal: target).doubleValue
         guard future > 0 else { return nil }
         let percent = Int((min(1, present / future) * 100).rounded())
-        let detail = percent >= 100 ? "已達成目標" : "已覆蓋 \(percent)%"
+        let detail = percent >= 100 ? "已達成目標" : "已達成 \(percent)%"
         return (target, detail)
     }
 }
