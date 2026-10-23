@@ -93,7 +93,8 @@ struct TargetEditor: View {
             HStack(alignment: .firstTextBaseline, spacing: 1) {
                 Text(text)
                     .monospacedDigit()
-                    .frame(width: 36, alignment: .trailing)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(minWidth: 42, alignment: .trailing)
                 Text("%")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -124,11 +125,10 @@ struct TargetEditor: View {
     private func percentReadout(_ title: String, percent: Double, kind: AssetKind) -> some View {
         let shown = NumberParse.displayPercent(percent.rounded())
         return HStack(alignment: .firstTextBaseline, spacing: 1) {
-            TextField("0", text: .constant(shown))
-                .multilineTextAlignment(.trailing)
+            Text(shown)
                 .monospacedDigit()
-                .allowsHitTesting(false)
-                .frame(width: 36)
+                .fixedSize(horizontal: true, vertical: false)
+                .frame(minWidth: 42, alignment: .trailing)
             Text("%")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
