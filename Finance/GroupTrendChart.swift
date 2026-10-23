@@ -25,7 +25,7 @@ struct GroupTrendChart: View, Equatable {
             ZStack(alignment: .top) {
                 chart
                     .frame(height: 112)
-                    .padding(.top, 32)
+                    .padding(.top, 36)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(accessibilityText)
                 rangeBand
@@ -49,7 +49,6 @@ struct GroupTrendChart: View, Equatable {
                 .allowsHitTesting(selected == nil)
             monthLabel
         }
-        .frame(height: 32)
     }
 
     private var chart: some View {
