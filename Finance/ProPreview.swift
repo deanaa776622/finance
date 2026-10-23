@@ -3,6 +3,11 @@ import SwiftUI
 /// Simulator switch for the paid savings answer. Replace with StoreKit when charging is real.
 enum ProPreview {
     static let key = "previewPro"
+    static let freeAssetLimit = 10
+
+    static func canAddAsset(count: Int, isPro: Bool) -> Bool {
+        isPro || count < freeAssetLimit
+    }
 
     /// Target pile and how much of it is already held. Does not need a contribution plan.
     static func coverageLine(portfolio: Portfolio) -> (amount: Decimal, detail: String)? {

@@ -14,6 +14,7 @@ struct AssetListView: View {
     @AppStorage(ProPreview.key) private var isPro = true
     @State private var editing: AssetItem?
     @State private var showAdd = false
+    @State private var showAssetLimit = false
     @State private var addKind: AssetKind = .original
     @State private var showColors = false
     @State private var isRefreshing = false
@@ -132,6 +133,11 @@ struct AssetListView: View {
             Button("好", role: .cancel) {}
         } message: {
             Text("報價暫時取不到，請稍後再試。")
+        }
+        .alert("已記滿 \(ProPreview.freeAssetLimit) 筆", isPresented: $showAssetLimit) {
+            Button("好", role: .cancel) {}
+        } message: {
+            Text("免費版最多記 \(ProPreview.freeAssetLimit) 筆。")
         }
         .onDisappear(perform: persistGroups)
     }
@@ -374,8 +380,12 @@ struct AssetListView: View {
             .accessibilityLabel("設定")
             .frame(width: 44, height: 44)
             Button {
-                addKind = .original
-                showAdd = true
+                if ProPreview.canAddAsset(count: portfolio.items.count, isPro: isPro) {
+                    addKind = .original
+                    showAdd = true
+                } else {
+                    showAssetLimit = true
+                }
             } label: {
                 Image(systemName: "plus")
             }
@@ -1104,6 +1114,8 @@ struct AssetListView: View {
     }
 
     private func saveItem(_ item: AssetItem) {
+        let isNew = !portfolio.items.contains { $0.id == item.id }
+        if isNew, !ProPreview.canAddAsset(count: portfolio.items.count, isPro: isPro) { return }
         portfolio.upsert(item)
         if exposureOnly {
             withAnimation {
