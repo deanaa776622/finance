@@ -142,14 +142,19 @@ private final class TouchClaim: UIGestureRecognizer {
 struct ChartSpanEditor: View {
     @Binding var start: Date
     @Binding var end: Date
+    @Environment(Palette.self) private var palette
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             Form {
                 DatePicker("開始", selection: $start, displayedComponents: .date)
+                    .listRowBackground(palette.panel)
                 DatePicker("結束", selection: $end, displayedComponents: .date)
+                    .listRowBackground(palette.panel)
             }
+            .palettePanel(palette)
+            .scrollEdgeFade()
             .navigationTitle("自訂")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -158,6 +163,8 @@ struct ChartSpanEditor: View {
                 }
             }
         }
+        .presentationBackground(palette.panel)
         .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
     }
 }
