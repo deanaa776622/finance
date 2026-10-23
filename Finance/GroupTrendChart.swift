@@ -277,13 +277,21 @@ struct GroupTrendChart: View, Equatable {
             lineSwatch(line.color)
             Text(line.title).lineLimit(1)
             Spacer(minLength: 4)
-            Text(amountText(line))
+            Text(selected == nil ? changeText(line) : amountText(line))
                 .monospacedDigit()
                 .foregroundStyle(line.color)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-                .opacity(selected == nil ? 0 : 1)
         }
+    }
+
+    /// Change across the months on screen: last value against the first.
+    private func changeText(_ line: TrendLine) -> String {
+        guard let first = line.points.first, let last = line.points.last, first.month != last.month else { return "—" }
+        let start = first.plot
+        guard start != 0 else { return "—" }
+        let change = (last.plot - start) / abs(start) * 100
+        return String(format: "%+.0f%%", change)
     }
 
     private func amountText(_ line: TrendLine) -> String {
@@ -378,6 +386,7 @@ struct GroupTrendChart: View, Equatable {
     private var accessibilityText: String {
         let month = selected ?? months.last
         let bits = series.map { line -> String in
+            if selected == nil { return "\(line.title) \(changeText(line))" }
             let amount = line.points.first { $0.month == month }?.amount ?? 0
             return "\(line.title) \(MoneyFormat.string(amount, hidden: hideAmounts))"
         }
