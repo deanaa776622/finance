@@ -157,9 +157,9 @@ struct AssetItem: Identifiable, Codable, Hashable {
 }
 
 struct TargetWeights: Codable, Equatable {
-    var original: Double = 50
-    var leverage: Double = 30
-    var cash: Double = 20
+    var original: Double
+    var leverage: Double
+    var cash: Double
 
     func percent(for kind: AssetKind) -> Double {
         switch kind {
@@ -182,7 +182,7 @@ struct TargetWeights: Codable, Equatable {
 
 struct Snapshot: Codable, Equatable {
     var items: [AssetItem]
-    var targets: TargetWeights
+    var targets: TargetWeights?
     /// Long-term total to grow toward; nil means size orbs against current holdings.
     var targetTotal: Decimal?
     var savings: SavingsPlan?
@@ -192,12 +192,12 @@ struct Snapshot: Codable, Equatable {
     var rateMonths: [RateMonth] = []
 
     enum CodingKeys: String, CodingKey {
-        case items, targets, targetTotal, savings, marks, rateMonths
+        case items, targets, targetsChosen, targetTotal, savings, marks, rateMonths
     }
 
     init(
         items: [AssetItem],
-        targets: TargetWeights,
+        targets: TargetWeights?,
         targetTotal: Decimal?,
         savings: SavingsPlan?,
         marks: [AssetMarks] = [],
@@ -214,7 +214,14 @@ struct Snapshot: Codable, Equatable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         items = try c.decode([AssetItem].self, forKey: .items)
-        targets = try c.decodeIfPresent(TargetWeights.self, forKey: .targets) ?? TargetWeights()
+        let stored = try c.decodeIfPresent(TargetWeights.self, forKey: .targets)
+        if let chosen = try c.decodeIfPresent(Bool.self, forKey: .targetsChosen) {
+            targets = chosen ? stored : nil
+        } else if let stored, stored != Self.retiredDefault {
+            targets = stored
+        } else {
+            targets = nil
+        }
         targetTotal = try c.decodeIfPresent(Decimal.self, forKey: .targetTotal)
         savings = try c.decodeIfPresent(SavingsPlan.self, forKey: .savings)
         marks = try c.decodeIfPresent([AssetMarks].self, forKey: .marks) ?? []
@@ -224,12 +231,16 @@ struct Snapshot: Codable, Equatable {
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(items, forKey: .items)
-        try c.encode(targets, forKey: .targets)
+        try c.encode(targets != nil, forKey: .targetsChosen)
+        try c.encodeIfPresent(targets, forKey: .targets)
         try c.encodeIfPresent(targetTotal, forKey: .targetTotal)
         try c.encodeIfPresent(savings, forKey: .savings)
         try c.encode(marks, forKey: .marks)
         try c.encode(rateMonths, forKey: .rateMonths)
     }
+
+    /// Written automatically before a mix could be chosen. A later explicit 50 / 30 / 20 is kept.
+    private static let retiredDefault = TargetWeights(original: 50, leverage: 30, cash: 20)
 }
 
 enum MoneyFormat {

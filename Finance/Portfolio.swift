@@ -4,7 +4,7 @@ import Observation
 @Observable
 final class Portfolio {
     var items: [AssetItem]
-    var targets: TargetWeights
+    var targets: TargetWeights?
     /// Nil or ≤0 → orb sizing falls back to current allocable total (same as web).
     var targetTotal: Decimal?
     var savings: SavingsPlan?
@@ -21,7 +21,7 @@ final class Portfolio {
 
     init(
         items: [AssetItem] = [],
-        targets: TargetWeights = TargetWeights(),
+        targets: TargetWeights? = nil,
         targetTotal: Decimal? = nil,
         savings: SavingsPlan? = nil,
         histories: [UUID: [AssetMonthMark]] = [:],
@@ -107,6 +107,16 @@ final class Portfolio {
         items.filter(\.kind.countsTowardAllocation).reduce(0) { $0 + $1.twdValue }
     }
 
+    /// Current mix, used as the target until the user moves the bar.
+    var impliedTargets: TargetWeights? {
+        guard allocableTotal > 0 else { return nil }
+        return TargetWeights(
+            original: actualPercent(for: .original),
+            leverage: actualPercent(for: .leverage),
+            cash: actualPercent(for: .cash)
+        )
+    }
+
     /// Baseline for per-bucket target amounts (年花費 ÷ 提領率).
     var targetFromSavings: Decimal? {
         guard let savings else { return nil }
@@ -153,7 +163,8 @@ final class Portfolio {
     /// 0…1 how far this bucket is toward its slice of the long-term total.
     func achievement(for kind: AssetKind) -> Double {
         guard kind.countsTowardAllocation else { return 0 }
-        let slice = effectiveTargetTotal * Decimal(targets.percent(for: kind) / 100)
+        let percent = targets?.percent(for: kind) ?? actualPercent(for: kind)
+        let slice = effectiveTargetTotal * Decimal(percent / 100)
         let actual = amount(for: kind)
         if slice > 0 {
             return min(
@@ -166,7 +177,8 @@ final class Portfolio {
     }
 
     func drift(for kind: AssetKind) -> Double {
-        abs(actualPercent(for: kind) - targets.percent(for: kind))
+        guard let targets else { return 0 }
+        return abs(actualPercent(for: kind) - targets.percent(for: kind))
     }
 
     /// 0 at no drift, 1 at 10% and beyond.
@@ -236,7 +248,7 @@ final class Portfolio {
     func beginFirstUse() {
         discardsSaves = true
         items = []
-        targets = TargetWeights()
+        targets = nil
         targetTotal = nil
         savings = nil
         histories = [:]

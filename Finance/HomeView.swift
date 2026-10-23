@@ -380,6 +380,6 @@ struct YearsProgressBar: View {
     HomeView()
         .environment(Portfolio(items: [
             AssetItem(name: "活存", kind: .cash, amount: 2_000_000),
-        ]))
+        ], targets: TargetWeights(original: 50, leverage: 30, cash: 20)))
         .environment(Palette())
 }

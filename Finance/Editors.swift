@@ -17,7 +17,13 @@ struct TargetEditor: View {
                     percentField("槓桿", text: leverageText, kind: .leverage)
                     percentField("現金", text: cashText, kind: .cash)
                 }
-                centeredTrack(original: originalPercent, leverage: leveragePercent, onChange: setRatios, title: "目標")
+                centeredTrack(
+                    original: originalPercent,
+                    leverage: leveragePercent,
+                    onChange: targetIsBlank ? nil : setRatios,
+                    unset: targetIsBlank,
+                    title: "目標"
+                )
             }
             if portfolio.allocableTotal > 0 {
                 VStack(alignment: .leading, spacing: 6) {
@@ -35,9 +41,9 @@ struct TargetEditor: View {
                             percentReadout("現金", percent: portfolio.actualPercent(for: .cash), kind: .cash)
                         }
                         HStack(spacing: 16) {
-                            gapReadout("原型", kind: .original, percent: originalPercent)
-                            gapReadout("槓桿", kind: .leverage, percent: leveragePercent)
-                            gapReadout("現金", kind: .cash, percent: cashPercent)
+                            gapReadout("原型", kind: .original, percent: gapPercent(.original, shown: originalPercent))
+                            gapReadout("槓桿", kind: .leverage, percent: gapPercent(.leverage, shown: leveragePercent))
+                            gapReadout("現金", kind: .cash, percent: gapPercent(.cash, shown: cashPercent))
                         }
                     }
                 }
@@ -49,12 +55,16 @@ struct TargetEditor: View {
             }
         }
         .onAppear(perform: load)
+        .onChange(of: portfolio.impliedTargets) { _, _ in
+            if portfolio.targets == nil { load() }
+        }
     }
 
     private func centeredTrack(
         original: Double,
         leverage: Double,
         onChange: ((Double, Double) -> Void)? = nil,
+        unset: Bool = false,
         tracksDrift: Bool = false,
         label: String = "目標比例",
         title: String = "目標"
@@ -65,6 +75,7 @@ struct TargetEditor: View {
                 original: original,
                 leverage: leverage,
                 onChange: onChange,
+                unset: unset,
                 tracksDrift: tracksDrift,
                 label: label
             )
@@ -90,24 +101,30 @@ struct TargetEditor: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
-            HStack(alignment: .firstTextBaseline, spacing: 1) {
-                Text(text)
-                    .monospacedDigit()
-                    .fixedSize(horizontal: true, vertical: false)
-                    .frame(minWidth: 42, alignment: .trailing)
-                Text("%")
-                    .font(.subheadline)
+            if text.isEmpty {
+                Text("—")
+                    .font(.title3.weight(.semibold))
                     .foregroundStyle(.secondary)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 1) {
+                    Text(text)
+                        .monospacedDigit()
+                        .fixedSize(horizontal: true, vertical: false)
+                        .frame(minWidth: 42, alignment: .trailing)
+                    Text("%")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(
+                    palette.glow(for: kind, factor: 0)
+                        .readable(on: palette.ground, scheme: palette.colorScheme)
+                )
             }
-            .font(.title3.weight(.semibold))
-            .foregroundStyle(
-                palette.glow(for: kind, factor: 0)
-                    .readable(on: palette.ground, scheme: palette.colorScheme)
-            )
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(title)，\(text)%")
+        .accessibilityLabel(text.isEmpty ? "\(title)，尚未設定" : "\(title)，\(text)%")
     }
 
     private func gapReadout(_ title: String, kind: AssetKind, percent: Double) -> some View {
@@ -164,16 +181,39 @@ struct TargetEditor: View {
         commit()
     }
 
+    private var targetIsBlank: Bool {
+        portfolio.targets == nil && portfolio.allocableTotal <= 0
+    }
+
+    private func gapPercent(_ kind: AssetKind, shown: Double) -> Double {
+        portfolio.targets == nil ? portfolio.actualPercent(for: kind) : shown
+    }
+
     private func load() {
-        originalText = NumberParse.displayPercent(portfolio.targets.original)
-        leverageText = NumberParse.displayPercent(portfolio.targets.leverage)
-        cashText = NumberParse.displayPercent(portfolio.targets.cash)
+        guard let weights = portfolio.targets ?? portfolio.impliedTargets else {
+            originalText = ""
+            leverageText = ""
+            cashText = ""
+            return
+        }
+        if portfolio.targets == nil {
+            let orig = weights.original.rounded()
+            let lev = min(100 - orig, max(0, weights.leverage.rounded()))
+            originalText = NumberParse.displayPercent(orig)
+            leverageText = NumberParse.displayPercent(lev)
+            cashText = NumberParse.displayPercent(100 - orig - lev)
+            return
+        }
+        originalText = NumberParse.displayPercent(weights.original)
+        leverageText = NumberParse.displayPercent(weights.leverage)
+        cashText = NumberParse.displayPercent(weights.cash)
     }
 
     private func commit() {
-        if let v = NumberParse.double(originalText) { portfolio.targets.original = v }
-        if let v = NumberParse.double(leverageText) { portfolio.targets.leverage = v }
-        if let v = NumberParse.double(cashText) { portfolio.targets.cash = v }
+        guard let original = NumberParse.double(originalText),
+              let leverage = NumberParse.double(leverageText),
+              let cash = NumberParse.double(cashText) else { return }
+        portfolio.targets = TargetWeights(original: original, leverage: leverage, cash: cash)
         portfolio.save()
     }
 }
@@ -184,6 +224,7 @@ private struct AllocationGlowTrack: View {
     var original: Double
     var leverage: Double
     var onChange: ((Double, Double) -> Void)? = nil
+    var unset = false
     var tracksDrift = false
     var label: String = "目標比例"
     @State private var boundary = 0
@@ -199,14 +240,7 @@ private struct AllocationGlowTrack: View {
         let cashColor = palette.glow(for: .cash, factor: drift(.cash))
         GeometryReader { geo in
             let bar = Capsule()
-                .fill(LinearGradient(stops: [
-                    .init(color: originalColor, location: 0),
-                    .init(color: originalColor, location: p1),
-                    .init(color: leverageColor, location: p1),
-                    .init(color: leverageColor, location: p2),
-                    .init(color: cashColor, location: p2),
-                    .init(color: cashColor, location: 1),
-                ], startPoint: .leading, endPoint: .trailing))
+                .fill(barFill(originalColor: originalColor, leverageColor: leverageColor, cashColor: cashColor, p1: p1, p2: p2))
                 .overlay(alignment: .leading) {
                     ZStack(alignment: .leading) {
                         if orig > 0, lev > 0, colorsMatch(originalColor, leverageColor) {
@@ -227,7 +261,19 @@ private struct AllocationGlowTrack: View {
         .sensoryFeedback(.selection, trigger: hapticTick)
         .accessibilityElement()
         .accessibilityLabel(label)
-        .accessibilityValue("原型 \(Int(orig.rounded()))%，槓桿 \(Int(lev.rounded()))%，現金 \(Int((100 - orig - lev).rounded()))%")
+        .accessibilityValue(unset ? "尚未設定" : "原型 \(Int(orig.rounded()))%，槓桿 \(Int(lev.rounded()))%，現金 \(Int((100 - orig - lev).rounded()))%")
+    }
+
+    private func barFill(originalColor: Color, leverageColor: Color, cashColor: Color, p1: Double, p2: Double) -> AnyShapeStyle {
+        if unset { return AnyShapeStyle(palette.quietInk.opacity(0.35)) }
+        return AnyShapeStyle(LinearGradient(stops: [
+            .init(color: originalColor, location: 0),
+            .init(color: originalColor, location: p1),
+            .init(color: leverageColor, location: p1),
+            .init(color: leverageColor, location: p2),
+            .init(color: cashColor, location: p2),
+            .init(color: cashColor, location: 1),
+        ], startPoint: .leading, endPoint: .trailing))
     }
 
     private func drift(_ kind: AssetKind) -> Double {
@@ -257,7 +303,18 @@ private struct AllocationGlowTrack: View {
                 var lev = min(100 - orig, max(0, leverage))
                 let before = Int(orig.rounded()) * 100 + Int(lev.rounded())
                 if boundary == 0 {
-                    boundary = abs(percent - orig) <= abs(percent - (orig + lev)) ? 1 : 2
+                    if lev == 0 {
+                        // Both seams sit on one point. Wait until the finger leaves it, then pull the seam that can follow.
+                        if percent < orig - 0.5 {
+                            boundary = 1
+                        } else if percent > orig + 0.5 {
+                            boundary = 2
+                        } else {
+                            return
+                        }
+                    } else {
+                        boundary = abs(percent - orig) <= abs(percent - (orig + lev)) ? 1 : 2
+                    }
                 }
                 let snapped = (percent / 5).rounded() * 5
                 if boundary == 1 {
