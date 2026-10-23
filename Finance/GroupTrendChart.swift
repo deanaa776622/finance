@@ -319,7 +319,7 @@ struct GroupTrendChart: View, Equatable {
         }
     }
 
-    /// 月 is the latest month, 年 the twelve months ending there, 今年 this calendar year.
+    /// 月 is the latest month, 年 the twelve months ending there, 今年 this calendar year, 全部 every recorded month.
     private func shows(_ month: String, anchor: String?) -> Bool {
         switch span {
         case .month:
@@ -330,6 +330,8 @@ struct GroupTrendChart: View, Equatable {
         case .thisYear:
             let year = Calendar.current.component(.year, from: Date())
             return month.hasPrefix(String(format: "%04d", year))
+        case .all:
+            return true
         case .custom:
             let start = monthKey(customStart)
             let end = monthKey(customEnd)

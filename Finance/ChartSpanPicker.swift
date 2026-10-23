@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum ChartSpan: String, CaseIterable, Identifiable {
-    case month, year, thisYear, custom
+    case month, year, thisYear, all, custom
 
     var id: String { rawValue }
 
@@ -10,6 +10,7 @@ enum ChartSpan: String, CaseIterable, Identifiable {
         case .month: "月"
         case .year: "年"
         case .thisYear: "今年"
+        case .all: "全部"
         case .custom: "自訂"
         }
     }
