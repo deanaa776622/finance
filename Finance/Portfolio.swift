@@ -11,6 +11,9 @@ final class Portfolio {
     var histories: [UUID: [AssetMonthMark]]
     var rateMonths: [String: [String: Decimal]]
 
+    /// First-use preview keeps edits in memory. The file on disk stays as it was.
+    var discardsSaves = false
+
     private static var fileURL: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("portfolio.json")
@@ -56,6 +59,7 @@ final class Portfolio {
     }
 
     func save() {
+        if discardsSaves { return }
         _ = AssetHistory.stamp(
             items: items,
             histories: &histories,
@@ -226,5 +230,28 @@ final class Portfolio {
             changed = true
         }
         if changed { save() }
+    }
+
+    /// Empty portfolio for the first-use preview. Nothing here is written.
+    func beginFirstUse() {
+        discardsSaves = true
+        items = []
+        targets = TargetWeights()
+        targetTotal = nil
+        savings = nil
+        histories = [:]
+        rateMonths = [:]
+    }
+
+    /// Drop the preview and show the portfolio that was already on disk.
+    func endFirstUse() {
+        let stored = Portfolio.load()
+        items = stored.items
+        targets = stored.targets
+        targetTotal = stored.targetTotal
+        savings = stored.savings
+        histories = stored.histories
+        rateMonths = stored.rateMonths
+        discardsSaves = false
     }
 }

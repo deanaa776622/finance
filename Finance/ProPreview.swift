@@ -3,6 +3,7 @@ import SwiftUI
 /// Simulator switch for the paid savings answer. Replace with StoreKit when charging is real.
 enum ProPreview {
     static let key = "previewPro"
+    static let freshKey = "previewFresh"
     static let freeAssetLimit = 10
 
     static func canAddAsset(count: Int, isPro: Bool) -> Bool {

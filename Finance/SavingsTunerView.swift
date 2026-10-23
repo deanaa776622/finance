@@ -5,6 +5,7 @@ struct SavingsTunerView: View {
     @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
     @AppStorage(ProPreview.key) private var isPro = true
+    @AppStorage(ProPreview.freshKey) private var isFresh = false
     @FocusState private var field: Field?
     @State private var costText = ""
     @State private var withdrawText = ""
@@ -109,6 +110,7 @@ struct SavingsTunerView: View {
             }
         }
         .onAppear(perform: load)
+        .onChange(of: isFresh) { _, _ in load() }
         .onChange(of: costText) { _, _ in followInputs() }
         .onChange(of: withdrawText) { _, _ in followInputs() }
         .onChange(of: rateText) { _, _ in followInputs() }
@@ -279,6 +281,12 @@ struct SavingsTunerView: View {
 
     private func load() {
         guard let plan = portfolio.savings else {
+            horizon = nil
+            costText = ""
+            withdrawText = ""
+            rateText = ""
+            pmtText = ""
+            yearsText = ""
             baseline = nil
             return
         }
