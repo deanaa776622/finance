@@ -312,15 +312,14 @@ struct HomeView: View {
 
     private func heroLabel(_ position: CGFloat) -> String {
         if position > 0.5 {
-            if !isPro {
-                guard let line = ProPreview.coverageLine(portfolio: portfolio) else {
-                    return "儲蓄目標尚未設定"
-                }
-                let amount = hideAmounts ? "金額已隱藏" : MoneyFormat.string(line.amount)
-                return "距離目標 \(amount)，\(line.detail)"
+            if isPro, let outlook = portfolio.outlook {
+                return "距離目標 \(outlook.yearsText) 年，\(outlook.detailText)"
             }
-            guard let outlook = portfolio.outlook else { return "儲蓄目標尚未設定" }
-            return "距離目標 \(outlook.yearsText) 年，\(outlook.detailText)"
+            guard let line = ProPreview.coverageLine(portfolio: portfolio) else {
+                return "儲蓄目標尚未設定"
+            }
+            let amount = hideAmounts ? "金額已隱藏" : MoneyFormat.string(line.amount)
+            return "距離目標 \(amount)，\(line.detail)"
         }
         if position < -0.5 {
             if hideAmounts { return exposureList ? "總曝險已隱藏" : "總淨值已隱藏" }

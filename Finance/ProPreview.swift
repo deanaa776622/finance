@@ -12,7 +12,7 @@ enum ProPreview {
 
     /// Target pile and how much of it is already held. Does not need a contribution plan.
     static func coverageLine(portfolio: Portfolio) -> (amount: Decimal, detail: String)? {
-        guard let target = portfolio.targetFromSavings, target > 0 else { return nil }
+        guard let target = portfolio.goalAmount, target > 0 else { return nil }
         let present = NSDecimalNumber(decimal: portfolio.allocableTotal).doubleValue
         let future = NSDecimalNumber(decimal: target).doubleValue
         guard future > 0 else { return nil }
@@ -33,16 +33,18 @@ struct GoalDistanceCopy: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .tracking(2)
-            if isPro {
-                paid
+            if isPro, let outlook = portfolio.outlook {
+                years(outlook)
+            } else if let line = ProPreview.coverageLine(portfolio: portfolio) {
+                amount(line)
             } else {
-                free
+                unset
             }
         }
     }
 
-    @ViewBuilder private var paid: some View {
-        if let outlook = portfolio.outlook {
+    private func years(_ outlook: SavingsOutlook) -> some View {
+        VStack(spacing: 6) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(outlook.yearsText)
                     .font(.largeTitle.weight(.bold))
@@ -57,13 +59,11 @@ struct GoalDistanceCopy: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
-        } else {
-            unset
         }
     }
 
-    @ViewBuilder private var free: some View {
-        if let line = ProPreview.coverageLine(portfolio: portfolio) {
+    private func amount(_ line: (amount: Decimal, detail: String)) -> some View {
+        VStack(spacing: 6) {
             Text(MoneyFormat.string(line.amount, hidden: hideAmounts))
                 .font(.title.weight(.bold))
                 .fontDesign(.rounded)
@@ -74,8 +74,6 @@ struct GoalDistanceCopy: View {
             Text(line.detail)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
-        } else {
-            unset
         }
     }
 

@@ -288,6 +288,7 @@ struct SavingsTunerView: View {
             pmtText = ""
             yearsText = ""
             baseline = nil
+            portfolio.noteGoal(cost: nil, withdrawalRatePercent: nil)
             return
         }
         horizon = plan.retirementYears
@@ -329,7 +330,20 @@ struct SavingsTunerView: View {
 
     /// Cost and rate keep whichever question was asked last.
     private func followInputs() {
+        publishGoal()
         if horizon != nil { applyHorizon() } else { persist(); syncYears() }
+    }
+
+    /// The docked card reads the portfolio, not these fields. A goal alone is enough to leave 尚未設定.
+    private func publishGoal() {
+        guard portfolio.savings == nil else { return }
+        if costText.isEmpty || withdrawText.isEmpty {
+            portfolio.noteGoal(cost: nil, withdrawalRatePercent: nil)
+            return
+        }
+        guard let cost = NumberParse.decimal(costText),
+              let withdrawal = NumberParse.double(withdrawText) else { return }
+        portfolio.noteGoal(cost: cost, withdrawalRatePercent: withdrawal)
     }
 
     private func solvedPayment() -> Decimal? {

@@ -123,6 +123,27 @@ final class Portfolio {
         return SavingsMath.targetAmount(cost: savings.annualCost, withdrawalRatePercent: savings.withdrawalRatePercent)
     }
 
+    /// Nest egg to show before a contribution plan exists. First use types the goal first.
+    var goalAmount: Decimal? {
+        if let targetFromSavings, targetFromSavings > 0 { return targetFromSavings }
+        if savings == nil, let targetTotal, targetTotal > 0 { return targetTotal }
+        return nil
+    }
+
+    /// Keep the docked distance copy in step with the goal, before rate and contribution are filled in.
+    func noteGoal(cost: Decimal?, withdrawalRatePercent: Double?) {
+        guard savings == nil else { return }
+        guard let cost, cost >= 0,
+              let withdrawalRatePercent, withdrawalRatePercent > 0, withdrawalRatePercent <= 100,
+              let amount = SavingsMath.targetAmount(cost: cost, withdrawalRatePercent: withdrawalRatePercent),
+              amount > 0
+        else {
+            targetTotal = nil
+            return
+        }
+        targetTotal = amount
+    }
+
     var effectiveTargetTotal: Decimal {
         if let targetFromSavings, targetFromSavings > 0 { return targetFromSavings }
         if let targetTotal, targetTotal > 0 { return targetTotal }
