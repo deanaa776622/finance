@@ -15,6 +15,7 @@ struct AssetListView: View {
     @State private var editing: AssetItem?
     @State private var showAdd = false
     @State private var showAssetLimit = false
+    @State private var showQuoteLocked = false
     @State private var addKind: AssetKind = .original
     @State private var showColors = false
     @State private var isRefreshing = false
@@ -138,6 +139,11 @@ struct AssetListView: View {
             Button("好", role: .cancel) {}
         } message: {
             Text("免費版最多記 \(ProPreview.freeAssetLimit) 筆。")
+        }
+        .alert("不支援股價自動更新", isPresented: $showQuoteLocked) {
+            Button("好", role: .cancel) {}
+        } message: {
+            Text("免費版請手動填價格。")
         }
         .onDisappear(perform: persistGroups)
     }
@@ -362,14 +368,19 @@ struct AssetListView: View {
         HStack(spacing: 0) {
             sortMenu
             Button {
+                guard isPro else {
+                    showQuoteLocked = true
+                    return
+                }
                 Task { await refreshQuotes() }
             } label: {
                 Image(systemName: isRefreshing || !refreshConfirmed ? "arrow.clockwise" : "checkmark")
+                    .foregroundStyle(isPro ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
                     .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
                     .symbolEffect(.rotate, options: .repeating, isActive: isRefreshing && !reduceMotion)
             }
-            .disabled(isRefreshing || refreshConfirmed)
-            .accessibilityLabel(isRefreshing ? "更新中" : refreshConfirmed ? "已更新" : "更新現值")
+            .disabled(isPro && (isRefreshing || refreshConfirmed))
+            .accessibilityLabel(isPro ? (isRefreshing ? "更新中" : refreshConfirmed ? "已更新" : "更新現值") : "不支援股價自動更新")
             .frame(width: 44, height: 44)
             Menu {
                 Button(isPro ? "改看免費版" : "改看付費版") { isPro.toggle() }
@@ -380,7 +391,7 @@ struct AssetListView: View {
             .accessibilityLabel("設定")
             .frame(width: 44, height: 44)
             Button {
-                if ProPreview.canAddAsset(count: portfolio.items.count, isPro: isPro) {
+                if canAddAsset {
                     addKind = .original
                     showAdd = true
                 } else {
@@ -388,8 +399,9 @@ struct AssetListView: View {
                 }
             } label: {
                 Image(systemName: "plus")
+                    .foregroundStyle(canAddAsset ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
             }
-            .accessibilityLabel("新增資產與負債")
+            .accessibilityLabel(canAddAsset ? "新增資產與負債" : "已記滿 \(ProPreview.freeAssetLimit) 筆")
             .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
@@ -1113,9 +1125,13 @@ struct AssetListView: View {
         }
     }
 
+    private var canAddAsset: Bool {
+        ProPreview.canAddAsset(count: portfolio.items.count, isPro: isPro)
+    }
+
     private func saveItem(_ item: AssetItem) {
         let isNew = !portfolio.items.contains { $0.id == item.id }
-        if isNew, !ProPreview.canAddAsset(count: portfolio.items.count, isPro: isPro) { return }
+        if isNew, !canAddAsset { return }
         portfolio.upsert(item)
         if exposureOnly {
             withAnimation {
@@ -1135,6 +1151,7 @@ struct AssetListView: View {
     }
 
     private func refreshQuotes() async {
+        guard isPro else { return }
         let targets = portfolio.items.filter(\.canRefreshQuote)
         let hasUsd = portfolio.items.contains { $0.currency == .usd }
         guard !targets.isEmpty || hasUsd else { return }

@@ -26,6 +26,7 @@ struct AssetEditor: View {
     @State private var confirmDelete = false
     /// "medium" or "large". Missing key stays full height.
     @AppStorage("assetSheetDetent") private var detentID = "large"
+    @AppStorage(ProPreview.key) private var isPro = true
     private let existingID: UUID?
     var onSave: (AssetItem) -> Void
     var onDelete: (() -> Void)?
@@ -362,9 +363,9 @@ struct AssetEditor: View {
         if valueFollowsShares {
             guard NumberParse.decimal(sharesText) != nil else { return false }
             if NumberParse.decimal(priceText) != nil { return true }
-            return !symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            return isPro && !symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
-        if isPledge, !symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return true }
+        if isPledge, isPro, !symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return true }
         return NumberParse.decimal(amountText) != nil
     }
 
@@ -372,7 +373,7 @@ struct AssetEditor: View {
         guard !isRefreshingTotal else { return }
         isRefreshingTotal = true
         defer { isRefreshingTotal = false }
-        if usesSharePrice {
+        if isPro, usesSharePrice {
             let ticker = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
             if !ticker.isEmpty { await lookup(force: true) }
         }
@@ -438,7 +439,7 @@ struct AssetEditor: View {
     }
 
     private var canQuote: Bool {
-        usesSharePrice && quoteState == .idle && !symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        isPro && usesSharePrice && quoteState == .idle && !symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private func lookup(force: Bool = false) async {
