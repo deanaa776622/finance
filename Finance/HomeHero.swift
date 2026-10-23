@@ -8,6 +8,8 @@ struct HomeHero: View {
     var lens: CGFloat
     var showsDots: Bool
     var screen: CGSize
+    var safeTop: CGFloat
+    var safeBottom: CGFloat
     @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
 
@@ -30,16 +32,14 @@ struct HomeHero: View {
                     .font(.title)
                     .foregroundStyle(.tertiary)
                     .opacity(1 - reveal)
-                    .padding(.top, 8)
-                    .safeAreaPadding(.top)
+                    .padding(.top, safeTop + 8)
                     .accessibilityHidden(true)
                 Spacer()
                 Image(systemName: "chevron.compact.up")
                     .font(.title)
                     .foregroundStyle(.tertiary)
                     .opacity(1 - reveal)
-                    .padding(.bottom, 8)
-                    .safeAreaPadding(.bottom)
+                    .padding(.bottom, safeBottom + 8)
                     .accessibilityHidden(true)
             }
             .allowsHitTesting(false)
