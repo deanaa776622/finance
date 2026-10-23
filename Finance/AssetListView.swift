@@ -69,9 +69,8 @@ struct AssetListView: View {
                     .listRowInsets(EdgeInsets(top: 0, leading: 32, bottom: 8, trailing: 32))
                     .listRowSeparator(.hidden)
                     .listRowBackground(palette.ground)
-            } else if showsTrend {
+            } else {
                 GroupTrendChart(buckets: shownBuckets)
-                    .equatable()
                     .listRowInsets(EdgeInsets(top: 0, leading: 32, bottom: 8, trailing: 32))
                     .listRowSeparator(.hidden)
                     .listRowBackground(palette.ground)
@@ -167,14 +166,6 @@ struct AssetListView: View {
     private var baseBuckets: [AssetBucket] {
         let kinds: [AssetKind] = exposureOnly ? [.original, .leverage, .cash] : AssetKind.allCases
         return kinds.map { AssetBucket(id: $0.rawValue, title: $0.compactTitle, kinds: [$0]) }
-    }
-
-    private var showsTrend: Bool {
-        shownBuckets.contains { bucket in
-            portfolio.items.contains {
-                bucket.kinds.contains($0.kind) && portfolio.histories[$0.id]?.isEmpty == false
-            }
-        }
     }
 
     private var shownBuckets: [AssetBucket] {

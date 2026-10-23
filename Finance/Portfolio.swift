@@ -59,13 +59,13 @@ final class Portfolio {
     }
 
     func save() {
-        if discardsSaves { return }
         _ = AssetHistory.stamp(
             items: items,
             histories: &histories,
             rateMonths: &rateMonths,
             book: RateBook.rates()
         )
+        if discardsSaves { return }
         let snap = Snapshot(
             items: items,
             targets: targets,

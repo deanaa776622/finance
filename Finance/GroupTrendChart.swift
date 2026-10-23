@@ -64,8 +64,10 @@ struct GroupTrendChart: View, Equatable {
                 RuleMark(x: .value("月", selected))
                     .foregroundStyle(palette.quietInk.opacity(0.7))
             }
-            RuleMark(y: .value("金額", visibleZero))
-                .foregroundStyle(palette.quietInk.opacity(0.35))
+            if months.isEmpty == false {
+                RuleMark(y: .value("金額", visibleZero))
+                    .foregroundStyle(palette.quietInk.opacity(0.35))
+            }
         }
         .chartYScale(domain: 0...1)
         .chartXAxis(.hidden)
