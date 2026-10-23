@@ -382,14 +382,6 @@ struct AssetListView: View {
             .disabled(isPro && (isRefreshing || refreshConfirmed))
             .accessibilityLabel(isPro ? (isRefreshing ? "更新中" : refreshConfirmed ? "已更新" : "更新現值") : "不支援股價自動更新")
             .frame(width: 44, height: 44)
-            Menu {
-                Button(isPro ? "改看免費版" : "改看付費版") { isPro.toggle() }
-                Button("顏色設定") { showColors = true }
-            } label: {
-                Image(systemName: "gearshape")
-            }
-            .accessibilityLabel("設定")
-            .frame(width: 44, height: 44)
             Button {
                 if canAddAsset {
                     addKind = .original
@@ -402,6 +394,14 @@ struct AssetListView: View {
                     .foregroundStyle(canAddAsset ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
             }
             .accessibilityLabel(canAddAsset ? "新增資產與負債" : "已記滿 \(ProPreview.freeAssetLimit) 筆")
+            .frame(width: 44, height: 44)
+            Menu {
+                Button(isPro ? "改看免費版" : "改看付費版") { isPro.toggle() }
+                Button("顏色設定") { showColors = true }
+            } label: {
+                Image(systemName: "gearshape")
+            }
+            .accessibilityLabel("設定")
             .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
