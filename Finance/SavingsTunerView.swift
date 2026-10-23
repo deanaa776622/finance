@@ -68,7 +68,7 @@ struct SavingsTunerView: View {
                 }
                 .groupHeaderChrome()
                 if statusOpen {
-                    LabeledContent("目前資產") {
+                    LabeledContent("目前流動資產") {
                         Text(currentAssetsText)
                             .foregroundStyle(palette.quietInk)
                     }
