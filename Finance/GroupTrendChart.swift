@@ -15,21 +15,41 @@ struct GroupTrendChart: View, Equatable {
     @State private var drawn: [DrawnLine] = []
     @State private var zeroUnit: Double = 0
     @State private var morphToken = UUID()
+    @State private var span: ChartSpan = .year
+    @State private var showCustom = false
+    @State private var customStart = Calendar.current.date(byAdding: .year, value: -1, to: Date()) ?? Date()
+    @State private var customEnd = Date()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            chart
-                .frame(height: 112)
-                .padding(.top, 20)
-                .overlay(alignment: .top) { monthLabel }
+            ZStack(alignment: .top) {
+                chart
+                    .frame(height: 112)
+                    .padding(.top, 32)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(accessibilityText)
+                rangeBand
+            }
             legend
         }
         .onChange(of: plotKey, initial: true) { _, _ in
             let placed = layout()
             morph(to: placed.lines, zero: placed.zero)
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityText)
+        .sheet(isPresented: $showCustom) {
+            ChartSpanEditor(start: $customStart, end: $customEnd)
+        }
+    }
+
+    /// The month row. Scrubbing hides the ranges and shows the month under the finger.
+    private var rangeBand: some View {
+        ZStack {
+            ChartSpanPicker(span: $span) { showCustom = true }
+                .opacity(selected == nil ? 1 : 0)
+                .allowsHitTesting(selected == nil)
+            monthLabel
+        }
+        .frame(height: 32)
     }
 
     private var chart: some View {
@@ -205,7 +225,7 @@ struct GroupTrendChart: View, Equatable {
                 .position(x: placedMonthX(in: row.size.width), y: row.size.height / 2)
                 .opacity(selected == nil ? 0 : 1)
         }
-        .frame(height: 20)
+        .frame(height: 32)
         .allowsHitTesting(false)
     }
 
@@ -273,7 +293,7 @@ struct GroupTrendChart: View, Equatable {
         return MoneyFormat.string(amount, hidden: hideAmounts)
     }
 
-    private var series: [TrendLine] {
+    private var fullSeries: [TrendLine] {
         buckets.map { bucket in
             TrendLine(
                 id: bucket.id,
@@ -287,6 +307,51 @@ struct GroupTrendChart: View, Equatable {
                 )
             )
         }
+    }
+
+    private var series: [TrendLine] {
+        let rows = fullSeries
+        let anchor = rows.flatMap { $0.points.map(\.month) }.max()
+        return rows.map { line in
+            var copy = line
+            copy.points = line.points.filter { shows($0.month, anchor: anchor) }
+            return copy
+        }
+    }
+
+    /// 月 is the latest month, 年 the twelve months ending there, 今年 this calendar year.
+    private func shows(_ month: String, anchor: String?) -> Bool {
+        switch span {
+        case .month:
+            return month == anchor
+        case .year:
+            guard let anchor, let start = self.month(byAdding: -11, to: anchor) else { return false }
+            return month >= start && month <= anchor
+        case .thisYear:
+            let year = Calendar.current.component(.year, from: Date())
+            return month.hasPrefix(String(format: "%04d", year))
+        case .custom:
+            let start = monthKey(customStart)
+            let end = monthKey(customEnd)
+            return month >= min(start, end) && month <= max(start, end)
+        }
+    }
+
+    private func month(byAdding delta: Int, to month: String) -> String? {
+        let parts = month.split(separator: "-")
+        guard parts.count == 2, let year = Int(parts[0]), let monthIndex = Int(parts[1]) else { return nil }
+        var comps = DateComponents()
+        comps.year = year
+        comps.month = monthIndex
+        comps.day = 1
+        guard let date = Calendar.current.date(from: comps),
+              let shifted = Calendar.current.date(byAdding: .month, value: delta, to: date) else { return nil }
+        return monthKey(shifted)
+    }
+
+    private func monthKey(_ date: Date) -> String {
+        let parts = Calendar.current.dateComponents([.year, .month], from: date)
+        return String(format: "%04d-%02d", parts.year ?? 0, parts.month ?? 1)
     }
 
     private func color(for bucket: AssetBucket) -> Color {
@@ -317,7 +382,7 @@ struct GroupTrendChart: View, Equatable {
             let amount = line.points.first { $0.month == month }?.amount ?? 0
             return "\(line.title) \(MoneyFormat.string(amount, hidden: hideAmounts))"
         }
-        return "每月趨勢，\(month.map(spokenMonth) ?? "")，" + bits.joined(separator: "，")
+        return "\(span.title)，\(month.map(spokenMonth) ?? "")，" + bits.joined(separator: "，")
     }
 }
 
