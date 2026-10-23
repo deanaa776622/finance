@@ -60,7 +60,7 @@ struct AssetListView: View {
         List {
             if exposureOnly {
                 TargetEditor()
-                    .frame(height: GroupTrendChart.bandHeight, alignment: .top)
+                    .frame(height: GroupTrendChart.bandHeight, alignment: .center)
                     .listRowInsets(EdgeInsets(top: 0, leading: 32, bottom: 8, trailing: 32))
                     .listRowSeparator(.hidden)
                     .listRowBackground(palette.ground)
