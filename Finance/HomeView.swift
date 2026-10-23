@@ -52,10 +52,7 @@ struct HomeView: View {
                 let topLift = safeTop * max(position, 0)
                 let bottomLift = safeBottom * drop
                 let assetTop = safeTop * drop
-                let savingsProgress = SavingsMath.outlook(
-                    plan: portfolio.savings ?? .prototype,
-                    presentValue: portfolio.allocableTotal
-                ).progress
+                let savingsProgress = portfolio.outlook?.progress ?? 0
 
                 let savingsGap: CGFloat = position > 0 ? 12 * position : 0
                 let assetHeight = position < 0 ? max(0, range * -position - bottomLift - assetTop) : 0
@@ -92,7 +89,7 @@ struct HomeView: View {
                         .frame(height: geo.size.height - range * reveal)
                         .overlay(alignment: .bottom) {
                             YearsProgressBar(progress: savingsProgress)
-                                .opacity(max(panel, 0))
+                                .opacity(portfolio.savings == nil ? 0 : max(panel, 0))
                                 .accessibilityHidden(true)
                                 .allowsHitTesting(false)
                         }
@@ -312,8 +309,7 @@ struct HomeView: View {
 
     private func heroLabel(_ position: CGFloat) -> String {
         if position > 0.5 {
-            let outlook = portfolio.outlook
-                ?? SavingsMath.outlook(plan: .prototype, presentValue: portfolio.allocableTotal)
+            guard let outlook = portfolio.outlook else { return "儲蓄目標尚未設定" }
             return "距離目標 \(outlook.yearsText) 年，\(outlook.detailText)"
         }
         if position < -0.5 {

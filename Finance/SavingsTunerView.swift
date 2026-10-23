@@ -162,7 +162,7 @@ struct SavingsTunerView: View {
         guard let cost = NumberParse.decimal(costText), cost >= 0,
               let withdrawal = NumberParse.double(withdrawText), withdrawal > 0, withdrawal <= 100,
               let amount = SavingsMath.targetAmount(cost: cost, withdrawalRatePercent: withdrawal)
-        else { return "提領率需大於 0" }
+        else { return costText.isEmpty && withdrawText.isEmpty ? "尚未設定" : "提領率需大於 0" }
         return MoneyFormat.string(amount, hidden: hideAmounts)
     }
 
@@ -171,7 +171,8 @@ struct SavingsTunerView: View {
     }
 
     private var planTimeText: String {
-        yearsText.isEmpty ? "--" : "\(yearsText) 年"
+        if portfolio.savings == nil, yearsText.isEmpty { return "尚未設定" }
+        return yearsText.isEmpty ? "--" : "\(yearsText) 年"
     }
 
     /// Spending not covered by withdrawing from today's assets at the set rate.
@@ -272,7 +273,10 @@ struct SavingsTunerView: View {
     }
 
     private func load() {
-        let plan = portfolio.savings ?? .prototype
+        guard let plan = portfolio.savings else {
+            baseline = nil
+            return
+        }
         horizon = plan.retirementYears
         costText = NumberParse.grouped(plan.annualCost)
         withdrawText = percentText(plan.withdrawalRatePercent)
@@ -371,8 +375,9 @@ struct SavingsTunerView: View {
     }
 
     private func persist() {
-        guard let draft, let baseline, draft != baseline else { return }
-        self.baseline = draft
+        guard let draft else { return }
+        guard baseline != draft else { return }
+        baseline = draft
         portfolio.setSavings(draft)
     }
 }

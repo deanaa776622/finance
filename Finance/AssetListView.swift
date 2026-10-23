@@ -17,6 +17,7 @@ struct AssetListView: View {
     @State private var showColors = false
     @State private var isRefreshing = false
     @State private var refreshConfirmed = false
+    @State private var showQuoteError = false
     @State private var collapsingLiquid = false
     @State private var collapsingAsset = false
     @State private var collapsingNet = false
@@ -125,6 +126,11 @@ struct AssetListView: View {
             Button("取消", role: .cancel) { pendingDelete = [] }
         } message: {
             Text("刪除後會從清單移除。")
+        }
+        .alert("無法更新現值", isPresented: $showQuoteError) {
+            Button("好", role: .cancel) {}
+        } message: {
+            Text("報價暫時取不到，請稍後再試。")
         }
         .onDisappear(perform: persistGroups)
     }
@@ -1126,7 +1132,12 @@ struct AssetListView: View {
         let rate = hasUsd ? try? await QuoteClient.fetchUsdTwd() : nil
         if let rate { portfolio.applyUsdTwd(rate) }
         isRefreshing = false
-        guard !quotes.isEmpty || rate != nil else { return }
+        let quotesOk = targets.isEmpty || quotes.count == targets.count
+        let rateOk = !hasUsd || rate != nil
+        guard quotesOk && rateOk else {
+            showQuoteError = true
+            return
+        }
         refreshConfirmed = true
         try? await Task.sleep(for: .seconds(3))
         refreshConfirmed = false

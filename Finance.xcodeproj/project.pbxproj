@@ -16,6 +16,7 @@
 		F9B3D5E26C7048B1A2D4E3F5 /* ColorDraftPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8A2C4D15B6F47A091C3D2E4 /* ColorDraftPicker.swift */; };
 		C570C3D396394F26AC8DDE7D /* Editors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 285FDE10B2E64BF885533CE6 /* Editors.swift */; };
 		CF93E2B4331F4B008B545BE9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0ACEF765DE7D48D9943D7D84 /* Assets.xcassets */; };
+		E6B2D4F96C3E40B7D1F25A39 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F7A1C3E85B2D49A6C0E14F28 /* PrivacyInfo.xcprivacy */; };
 		E0571D47B35541BCBAEFC46B /* FinanceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF766442653C438293CC0C5D /* FinanceApp.swift */; };
 		E14C5B0C803D4BB4B2DDBDA6 /* SavingsTunerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41CEA44175B4D908817A5A0 /* SavingsTunerView.swift */; };
 		F2C5492553DF4B92AA92D16C /* Portfolio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473D2B4067D142F2A2C45A33 /* Portfolio.swift */; };
@@ -36,6 +37,7 @@
 
 /* Begin PBXFileReference section */
 		0ACEF765DE7D48D9943D7D84 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F7A1C3E85B2D49A6C0E14F28 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		285FDE10B2E64BF885533CE6 /* Editors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Editors.swift; sourceTree = "<group>"; };
 		2D4C730906A644DC837867DB /* AssetListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetListView.swift; sourceTree = "<group>"; };
 		3E8A1B2C4D5E4F6A8B9C0D1E /* QuoteClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteClient.swift; sourceTree = "<group>"; };
@@ -102,6 +104,7 @@
 				E41CEA44175B4D908817A5A0 /* SavingsTunerView.swift */,
 				285FDE10B2E64BF885533CE6 /* Editors.swift */,
 				0ACEF765DE7D48D9943D7D84 /* Assets.xcassets */,
+				F7A1C3E85B2D49A6C0E14F28 /* PrivacyInfo.xcprivacy */,
 			);
 			path = Finance;
 			sourceTree = "<group>";
@@ -177,6 +180,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CF93E2B4331F4B008B545BE9 /* Assets.xcassets in Resources */,
+				E6B2D4F96C3E40B7D1F25A39 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

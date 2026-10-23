@@ -104,13 +104,6 @@ struct HomeHero: View {
         (lens < 0.5 ? 0 : 1) == index
     }
 
-    private var outlook: SavingsOutlook {
-        SavingsMath.outlook(
-            plan: portfolio.savings ?? .prototype,
-            presentValue: portfolio.allocableTotal
-        )
-    }
-
     private var statusCopy: some View {
         VStack(spacing: 14) {
             Text(portfolio.statusTitle)
@@ -130,20 +123,26 @@ struct HomeHero: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .tracking(2)
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(outlook.yearsText)
-                    .font(.largeTitle.weight(.bold))
-                    .fontDesign(.rounded)
-                    .monospacedDigit()
-                Text("年")
+            if let outlook = portfolio.outlook {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(outlook.yearsText)
+                        .font(.largeTitle.weight(.bold))
+                        .fontDesign(.rounded)
+                        .monospacedDigit()
+                    Text("年")
+                        .font(.title3.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
+                Text(outlook.detailText)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+            } else {
+                Text("尚未設定")
                     .font(.title3.weight(.medium))
                     .foregroundStyle(.secondary)
             }
-            Text(outlook.detailText)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
         }
     }
 }
