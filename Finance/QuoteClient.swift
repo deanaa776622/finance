@@ -7,28 +7,58 @@ struct Quote {
 }
 
 enum QuoteClient {
-    private static let endpoint = URL(string: "https://script.google.com/macros/s/AKfycbydO1G5uaoLlFgCC6lEBFEOeT0vwS5cycdMZ40Q20mxk9p-fNNws13cvBg3iqanpgqheQ/exec")!
+    /// ponytail: Yahoo chart, no key. The old script took ~4s per symbol. Swap the host if this starts refusing.
+    private static let session: URLSession = {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 8
+        config.httpAdditionalHeaders = ["User-Agent": "Mozilla/5.0"]
+        return URLSession(configuration: config)
+    }()
 
-    private struct Payload: Decodable {
-        var status: String
-        var price: Double?
-        var currency: String?
-        var usdtwd: Double?
+    private struct ChartPayload: Decodable {
+        struct Chart: Decodable {
+            struct Result: Decodable {
+                struct Meta: Decodable {
+                    var currency: String?
+                    var regularMarketPrice: Double?
+                }
+                var meta: Meta
+            }
+            var result: [Result]?
+        }
+        var chart: Chart
     }
 
     static func fetch(symbol: String) async throws -> Quote {
-        var comps = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)!
-        comps.queryItems = [URLQueryItem(name: "symbol", value: symbol)]
-        guard let url = comps.url else { throw QuoteError.unavailable }
-        let (data, _) = try await URLSession.shared.data(from: url)
-        let payload = try JSONDecoder().decode(Payload.self, from: data)
-        guard payload.status == "success", let price = payload.price else {
+        let symbol = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !symbol.isEmpty else { throw QuoteError.unavailable }
+        for ticker in tickers(for: symbol) {
+            if let quote = try? await chart(ticker) { return quote }
+        }
+        throw QuoteError.unavailable
+    }
+
+    /// Digit-leading codes are Taiwan listings. Try the main board, then OTC.
+    private static func tickers(for symbol: String) -> [String] {
+        if symbol.contains(".") || symbol.contains("=") { return [symbol] }
+        guard symbol.first?.isNumber == true else { return [symbol] }
+        return ["\(symbol).TW", "\(symbol).TWO"]
+    }
+
+    private static func chart(_ ticker: String) async throws -> Quote {
+        let encoded = ticker.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? ticker
+        guard let url = URL(string: "https://query1.finance.yahoo.com/v8/finance/chart/\(encoded)?range=1d&interval=1d") else {
+            throw QuoteError.unavailable
+        }
+        let (data, response) = try await session.data(from: url)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw QuoteError.unavailable }
+        let payload = try JSONDecoder().decode(ChartPayload.self, from: data)
+        guard let meta = payload.chart.result?.first?.meta, let price = meta.regularMarketPrice else {
             throw QuoteError.unavailable
         }
         return Quote(
             price: Decimal(price),
-            currency: payload.currency.flatMap { AssetCurrency(rawValue: $0.uppercased()) },
-            usdTwdRate: payload.usdtwd.map { Decimal($0) }
+            currency: meta.currency.flatMap { AssetCurrency(rawValue: $0.uppercased()) }
         )
     }
 
@@ -65,18 +95,23 @@ enum QuoteClient {
     }
 
     static func fetchAll(symbols: [UUID: String]) async -> [UUID: Quote] {
-        await withTaskGroup(of: (UUID, Quote?).self) { group in
-            for (id, symbol) in symbols {
-                group.addTask {
-                    (id, try? await fetch(symbol: symbol))
-                }
+        let pairs = symbols.compactMap { id, symbol -> (UUID, String)? in
+            let trimmed = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : (id, trimmed)
+        }
+        let bySymbol: [String: Quote] = await withTaskGroup(of: (String, Quote?).self) { group in
+            for symbol in Set(pairs.map(\.1)) {
+                group.addTask { (symbol, try? await fetch(symbol: symbol)) }
             }
-            var out: [UUID: Quote] = [:]
-            for await (id, quote) in group {
-                if let quote { out[id] = quote }
+            var out: [String: Quote] = [:]
+            for await (symbol, quote) in group {
+                if let quote { out[symbol] = quote }
             }
             return out
         }
+        return Dictionary(uniqueKeysWithValues: pairs.compactMap { id, symbol in
+            bySymbol[symbol].map { (id, $0) }
+        })
     }
 }
 

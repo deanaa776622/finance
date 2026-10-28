@@ -1177,11 +1177,12 @@ struct AssetListView: View {
         let hasUsd = portfolio.items.contains { $0.currency == .usd }
         guard !targets.isEmpty || hasUsd else { return }
         isRefreshing = true
-        let quotes = targets.isEmpty ? [:] : await QuoteClient.fetchAll(
-            symbols: Dictionary(uniqueKeysWithValues: targets.map { ($0.id, $0.symbol) })
-        )
+        let symbolMap = Dictionary(uniqueKeysWithValues: targets.map { ($0.id, $0.symbol) })
+        async let fetchedQuotes = QuoteClient.fetchAll(symbols: symbolMap)
+        async let fetchedRate: Decimal? = hasUsd ? try? await QuoteClient.fetchUsdTwd() : nil
+        let quotes = await fetchedQuotes
+        let rate = await fetchedRate
         portfolio.applyQuotes(quotes)
-        let rate = hasUsd ? try? await QuoteClient.fetchUsdTwd() : nil
         if let rate { portfolio.applyUsdTwd(rate) }
         isRefreshing = false
         let quotesOk = targets.isEmpty || quotes.count == targets.count
