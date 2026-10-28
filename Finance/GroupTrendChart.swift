@@ -261,6 +261,7 @@ struct GroupTrendChart: View, Equatable {
         }
         .font(.caption)
         .foregroundStyle(palette.quietInk)
+        .sensoryFeedback(.impact(flexibility: .soft), trigger: hiddenIDs)
     }
 
     /// Tallest legend is three rows. Fewer groups keep that height so the chart does not jump.
