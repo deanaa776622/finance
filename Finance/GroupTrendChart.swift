@@ -22,6 +22,8 @@ struct GroupTrendChart: View, Equatable {
     @State private var showCustom = false
     @State private var customStart = Calendar.current.date(byAdding: .year, value: -1, to: Date()) ?? Date()
     @State private var customEnd = Date()
+    /// Legend ids drawn without a swatch. Those lines stay off the chart.
+    @State private var hiddenIDs: Set<String> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -242,7 +244,7 @@ struct GroupTrendChart: View, Equatable {
     }
 
     private var legend: some View {
-        let lines = series
+        let lines = windowed
         let leftCount = (lines.count + 1) / 2
         return ZStack(alignment: .topLeading) {
             legendColumn(slotLines)
@@ -280,20 +282,33 @@ struct GroupTrendChart: View, Equatable {
     }
 
     private func legendRow(_ line: TrendLine) -> some View {
-        let ink = chipInk(line.color)
-        return HStack(spacing: 6) {
-            lineSwatch(ink)
-            Text(line.title).lineLimit(1)
-            Spacer(minLength: 4)
-            Text(selected == nil ? changeText(line) : amountText(line))
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+        let shown = !hiddenIDs.contains(line.id)
+        let ink = shown ? chipInk(line.color) : palette.quietInk
+        return Button {
+            var next = hiddenIDs
+            if shown { next.insert(line.id) } else { next.remove(line.id) }
+            hiddenIDs = next
+        } label: {
+            HStack(spacing: 6) {
+                lineSwatch(shown ? ink : line.color)
+                Text(line.title).lineLimit(1)
+                Spacer(minLength: 4)
+                Text(selected == nil ? changeText(line) : amountText(line))
+                    .monospacedDigit()
+                    .foregroundStyle(shown ? ink : line.color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .foregroundStyle(ink)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background { if shown { Capsule().fill(line.color) } }
+            .contentShape(Capsule())
         }
-        .foregroundStyle(ink)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(line.color, in: Capsule())
+        .buttonStyle(.plain)
+        .accessibilityLabel(line.title)
+        .accessibilityValue(shown ? "顯示趨勢線" : "不顯示趨勢線")
+        .accessibilityHint("點一下切換")
     }
 
     /// Black or white, so the title stays readable on the swatch.
@@ -332,7 +347,8 @@ struct GroupTrendChart: View, Equatable {
         }
     }
 
-    private var series: [TrendLine] {
+    /// Every group in the selected span, including ones tapped off the chart.
+    private var windowed: [TrendLine] {
         let rows = fullSeries
         let anchor = rows.flatMap { $0.points.map(\.month) }.max()
         return rows.map { line in
@@ -340,6 +356,11 @@ struct GroupTrendChart: View, Equatable {
             copy.points = line.points.filter { shows($0.month, anchor: anchor) }
             return copy
         }
+    }
+
+    /// Lines with a legend swatch. Hidden legends leave this set, so the stroke morphs away.
+    private var series: [TrendLine] {
+        windowed.filter { !hiddenIDs.contains($0.id) }
     }
 
     /// 今年 is this calendar year, 年 the twelve months ending at the latest record, 全部 every recorded month.
