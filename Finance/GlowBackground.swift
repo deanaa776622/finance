@@ -117,21 +117,36 @@ struct GlowBackground: View {
             )
     }
 
-    /// Waypoints are fractions of the current view, so the path scales with the card while dragging.
+    /// Stays in the old waypoint box. Two uneven periods, so the path doesn't close quickly.
     private func drift(_ orb: GlowOrb, at date: Date) -> CGSize {
         let points = orb.points
-        let count = points.count
-        guard count >= 2 else { return .zero }
-        let cycle = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: orb.duration) / orb.duration
-        let scaled = cycle * Double(count)
-        let index = Int(scaled) % count
-        let local = scaled - Double(Int(scaled))
-        let eased = local * local * (3 - 2 * local)
-        let from = points[index]
-        let to = points[(index + 1) % count]
+        guard points.count >= 2 else { return .zero }
+        let n = Double(points.count)
+        let meanX = points.reduce(0.0) { $0 + $1.width } / n
+        let meanY = points.reduce(0.0) { $0 + $1.height } / n
+        let roomX = min(meanX - points.map(\.width).min()!, points.map(\.width).max()! - meanX)
+        let roomY = min(meanY - points.map(\.height).min()!, points.map(\.height).max()! - meanY)
+        let t = date.timeIntervalSinceReferenceDate
+        let phase = phase(for: orb.id)
         return CGSize(
-            width: from.width + (to.width - from.width) * eased,
-            height: from.height + (to.height - from.height) * eased
+            width: meanX + roomX * mix(t, period: orb.duration, phase: phase),
+            height: meanY + roomY * mix(t, period: orb.duration * 1.414, phase: phase + 1.7)
         )
+    }
+
+    /// Weights sum to 1, so the wander stays inside the waypoint box.
+    private func mix(_ t: Double, period: Double, phase: Double) -> Double {
+        let slow = sin(t / period * 2 * .pi + phase)
+        let fast = sin(t / (period * 2.618) * 2 * .pi + phase * 1.3)
+        return slow * 0.68 + fast * 0.32
+    }
+
+    private func phase(for id: String) -> Double {
+        switch id {
+        case AssetKind.original.rawValue: 0.6
+        case AssetKind.leverage.rawValue: 2.4
+        case AssetKind.cash.rawValue: 4.2
+        default: 1
+        }
     }
 }
