@@ -4,7 +4,8 @@ import SwiftUI
 /// Monthly lines for the groups on screen. Press to read a month.
 struct GroupTrendChart: View, Equatable {
     /// Plot, the room above it, the gap, and three legend rows. The exposure page's target editor uses this band.
-    static let bandHeight: CGFloat = 112 + 36 + 8 + 60
+    private static let legendHeight: CGFloat = 84
+    static let bandHeight: CGFloat = 112 + 36 + 8 + legendHeight
     var buckets: [AssetBucket]
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
@@ -33,7 +34,7 @@ struct GroupTrendChart: View, Equatable {
                 rangeBand
             }
             legend
-                .frame(height: 60, alignment: .top)
+                .frame(height: Self.legendHeight, alignment: .top)
         }
         .frame(height: Self.bandHeight, alignment: .top)
         .onChange(of: plotKey, initial: true) { _, _ in
@@ -279,16 +280,25 @@ struct GroupTrendChart: View, Equatable {
     }
 
     private func legendRow(_ line: TrendLine) -> some View {
-        HStack(spacing: 6) {
-            lineSwatch(line.color)
+        let ink = chipInk(line.color)
+        return HStack(spacing: 6) {
+            lineSwatch(ink)
             Text(line.title).lineLimit(1)
             Spacer(minLength: 4)
             Text(selected == nil ? changeText(line) : amountText(line))
                 .monospacedDigit()
-                .foregroundStyle(line.color)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
+        .foregroundStyle(ink)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(line.color, in: Capsule())
+    }
+
+    /// Black or white, so the title stays readable on the swatch.
+    private func chipInk(_ color: Color) -> Color {
+        color.relativeLuminance(scheme: palette.colorScheme) > 0.179 ? .black : .white
     }
 
     /// Change across the months on screen: last value against the first.
