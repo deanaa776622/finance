@@ -73,6 +73,7 @@ struct GroupTrendChart: View, Equatable {
             }
         }
         .chartYScale(domain: 0...1)
+        .chartXScale(domain: xDomain)
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
         .chartLegend(.hidden)
@@ -413,6 +414,48 @@ struct GroupTrendChart: View, Equatable {
 
     private var months: [String] {
         Array(Set(series.flatMap { $0.points.map(\.month) })).sorted()
+    }
+
+    /// One recorded month would otherwise sit in the middle. Park it in its slot on the selected span.
+    private var xDomain: [String] {
+        let present = months
+        guard present.count == 1, let only = present.first else {
+            return present.isEmpty ? [monthKey(Date())] : present
+        }
+        let axis = axisMonths
+        guard axis.contains(only), axis.count > 1 else { return present }
+        return axis
+    }
+
+    /// Months the selected span covers, including ones with no mark yet.
+    private var axisMonths: [String] {
+        switch span {
+        case .thisYear:
+            let now = Date()
+            let year = Calendar.current.component(.year, from: now)
+            let end = Calendar.current.component(.month, from: now)
+            return (1...end).map { String(format: "%04d-%02d", year, $0) }
+        case .year:
+            let anchor = fullSeries.flatMap { $0.points.map(\.month) }.max() ?? monthKey(Date())
+            return (-11...0).compactMap { month(byAdding: $0, to: anchor) }
+        case .all:
+            return months
+        case .custom:
+            let start = monthKey(customStart)
+            let end = monthKey(customEnd)
+            return months(from: min(start, end), through: max(start, end))
+        }
+    }
+
+    private func months(from start: String, through end: String) -> [String] {
+        var out: [String] = []
+        var cursor = start
+        while cursor <= end, out.count < 600 {
+            out.append(cursor)
+            guard let next = month(byAdding: 1, to: cursor), next > cursor else { break }
+            cursor = next
+        }
+        return out
     }
 
     private func spokenMonth(_ month: String) -> String {
