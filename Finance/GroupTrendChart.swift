@@ -351,7 +351,7 @@ struct GroupTrendChart: View, Equatable {
         if let amount = line.points.first(where: { $0.month == month })?.amount {
             return MoneyFormat.string(amount, hidden: hideAmounts)
         }
-        guard let estimate = estimatedAmount(line, month: month) else { return " " }
+        guard let estimate = estimatedAmount(line, month: month) else { return "—" }
         return "（\(MoneyFormat.string(estimate, hidden: hideAmounts))）"
     }
 
