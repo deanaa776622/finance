@@ -77,6 +77,24 @@ enum AssetCurrency: String, Codable, CaseIterable, Identifiable {
         case .chf: "CHF 瑞士法郎"
         }
     }
+
+    /// Shown beside an amount. TWD uses the fullwidth dollar.
+    var symbol: String {
+        switch self {
+        case .twd: "＄"
+        case .usd: "$"
+        case .hkd: "HK$"
+        case .cny: "￥"
+        case .jpy: "¥"
+        case .eur: "€"
+        case .gbp: "£"
+        case .aud: "A$"
+        case .sgd: "S$"
+        case .krw: "₩"
+        case .cad: "C$"
+        case .chf: "Fr"
+        }
+    }
 }
 
 struct AssetItem: Identifiable, Codable, Hashable {
@@ -250,6 +268,10 @@ struct Snapshot: Codable, Equatable {
 }
 
 enum MoneyFormat {
+    /// Currency every on-screen amount uses.
+    /// ponytail: fixed TWD until a display-currency setting exists; point this at that setting.
+    static var currency: AssetCurrency { .twd }
+
     static func string(_ value: Decimal) -> String {
         string(value, hidden: false)
     }
@@ -258,7 +280,7 @@ enum MoneyFormat {
         if hidden { return "••••" }
         let f = NumberFormatter()
         f.numberStyle = .currency
-        f.currencyCode = "TWD"
+        f.currencyCode = currency.rawValue
         f.maximumFractionDigits = 0
         return f.string(from: NSDecimalNumber(decimal: value)) ?? "\(value)"
     }

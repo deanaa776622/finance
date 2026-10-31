@@ -42,19 +42,8 @@ struct MonthBackfillView: View {
                     if !months.contains(monthIndex) { monthIndex = months.last ?? 1 }
                 }
                 Section {
-                    TextField("資產", text: $assetsText)
-                        .keyboardType(.decimalPad)
-                        .listRowBackground(palette.panel)
-                    HStack(spacing: 2) {
-                        Text("−")
-                            .foregroundStyle(palette.quietInk)
-                            .accessibilityHidden(true)
-                        TextField("負債", text: $debtText)
-                            .keyboardType(.decimalPad)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("負債")
-                    .listRowBackground(palette.panel)
+                    amountRow("資產", text: $assetsText, debt: false)
+                    amountRow("負債", text: $debtText, debt: true)
                 }
             }
             .palettePanel(palette)
@@ -90,6 +79,24 @@ struct MonthBackfillView: View {
         let now = Calendar.current.dateComponents([.year, .month], from: Date())
         let last = year == now.year ? max(1, (now.month ?? 1) - 1) : 12
         return Array(1...last)
+    }
+
+    private func amountRow(_ title: String, text: Binding<String>, debt: Bool) -> some View {
+        HStack(spacing: 4) {
+            if debt {
+                Text("−")
+                    .foregroundStyle(palette.quietInk)
+                    .accessibilityHidden(true)
+            }
+            Text(MoneyFormat.currency.symbol)
+                .foregroundStyle(palette.quietInk)
+                .accessibilityHidden(true)
+            TextField(title, text: text)
+                .keyboardType(.decimalPad)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title)，\(MoneyFormat.currency.rawValue)")
+        .listRowBackground(palette.panel)
     }
 
     private var assets: Decimal? { amount(assetsText) }
