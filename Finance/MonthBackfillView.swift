@@ -26,12 +26,16 @@ struct MonthBackfillView: View {
                             Text(verbatim: "\(value)年").tag(value)
                         }
                     }
+                    .tint(palette.ink)
+                    .foregroundStyle(palette.ink)
                     .listRowBackground(palette.panel)
                     Picker("月", selection: $monthIndex) {
                         ForEach(months, id: \.self) { value in
                             Text("\(value)月").tag(value)
                         }
                     }
+                    .tint(palette.ink)
+                    .foregroundStyle(palette.ink)
                     .listRowBackground(palette.panel)
                 } footer: {
                     if !portfolio.canBackfill(month) {
@@ -101,6 +105,7 @@ struct MonthBackfillView: View {
             }
         } label: {
             Text(title)
+                .foregroundStyle(portfolio.canBackfill(month) ? palette.ink : palette.quietInk)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title)，\(MoneyFormat.currency.rawValue)")
