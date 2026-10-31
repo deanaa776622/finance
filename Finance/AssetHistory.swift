@@ -6,6 +6,8 @@ struct AssetMonthMark: Codable, Equatable {
     var native: Decimal
     var currency: AssetCurrency
     var twdPerUnit: Decimal
+    /// Share count that month. Missing on marks saved before this was kept.
+    var shares: Decimal?
 
     /// `native` in `display`, using this month's rates. Same currency needs no rate.
     func amount(in display: AssetCurrency, rates: [String: Decimal]) -> Decimal? {
@@ -63,7 +65,8 @@ enum AssetHistory {
                 month: month,
                 native: item.nativeValue,
                 currency: item.currency,
-                twdPerUnit: item.fxRate
+                twdPerUnit: item.fxRate,
+                shares: item.shares
             )
             if let index = marks.lastIndex(where: { $0.month == month }) {
                 if marks[index] != mark {
