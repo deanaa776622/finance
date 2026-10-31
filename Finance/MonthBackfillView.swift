@@ -82,17 +82,25 @@ struct MonthBackfillView: View {
     }
 
     private func amountRow(_ title: String, text: Binding<String>, debt: Bool) -> some View {
-        HStack(spacing: 4) {
-            if debt {
-                Text("−")
+        LabeledContent {
+            HStack(spacing: 4) {
+                Spacer(minLength: 12)
+                if debt {
+                    Text("−")
+                        .foregroundStyle(palette.quietInk)
+                        .accessibilityHidden(true)
+                }
+                Text(MoneyFormat.currency.symbol)
                     .foregroundStyle(palette.quietInk)
                     .accessibilityHidden(true)
+                TextField("", text: text)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(minWidth: 48, alignment: .trailing)
             }
-            Text(MoneyFormat.currency.symbol)
-                .foregroundStyle(palette.quietInk)
-                .accessibilityHidden(true)
-            TextField(title, text: text)
-                .keyboardType(.decimalPad)
+        } label: {
+            Text(title)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title)，\(MoneyFormat.currency.rawValue)")
