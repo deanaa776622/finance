@@ -5,17 +5,38 @@ struct MonthBackfillView: View {
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
     @Environment(\.dismiss) private var dismiss
-    @State private var date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+    @State private var year: Int
+    @State private var monthIndex: Int
     @State private var amounts: [AssetKind: String] = [:]
+
+    init() {
+        let previous = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+        let parts = Calendar.current.dateComponents([.year, .month], from: previous)
+        _year = State(initialValue: parts.year ?? 2020)
+        _monthIndex = State(initialValue: parts.month ?? 1)
+    }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    DatePicker("月份", selection: $date, displayedComponents: .date)
-                        .listRowBackground(palette.panel)
+                    Picker("年", selection: $year) {
+                        ForEach(years, id: \.self) { value in
+                            Text(verbatim: "\(value)年").tag(value)
+                        }
+                    }
+                    .listRowBackground(palette.panel)
+                    Picker("月", selection: $monthIndex) {
+                        ForEach(months, id: \.self) { value in
+                            Text("\(value)月").tag(value)
+                        }
+                    }
+                    .listRowBackground(palette.panel)
                 } footer: {
                     Text(note)
+                }
+                .onChange(of: year) {
+                    if !months.contains(monthIndex) { monthIndex = months.last ?? 1 }
                 }
                 Section {
                     ForEach(AssetKind.allCases) { kind in
@@ -46,12 +67,25 @@ struct MonthBackfillView: View {
         .presentationDragIndicator(.visible)
     }
 
-    private var month: String { AssetHistory.monthKey(date) }
+    private var month: String { String(format: "%04d-%02d", year, monthIndex) }
+
+    /// Past years only. The current year stops at last month.
+    private var years: [Int] {
+        let now = Calendar.current.dateComponents([.year, .month], from: Date())
+        let thisYear = now.year ?? 2020
+        let end = (now.month ?? 1) <= 1 ? thisYear - 1 : thisYear
+        return Array((end - 40)...end).reversed()
+    }
+
+    private var months: [Int] {
+        let now = Calendar.current.dateComponents([.year, .month], from: Date())
+        let last = year == now.year ? max(1, (now.month ?? 1) - 1) : 12
+        return Array(1...last)
+    }
 
     private var note: String {
-        if month >= AssetHistory.monthKey() { return "只能補登過去的月份" }
         if !portfolio.canBackfill(month) { return "這個月已有紀錄，不能補登" }
-        return "以所選日期的月份為準。五類都還沒有紀錄才能補。"
+        return "五類都還沒有紀錄才能補。"
     }
 
     private var parsed: [AssetKind: Decimal]? {
