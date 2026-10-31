@@ -29,6 +29,7 @@
 		E14C5B0C803D4BB4B2DDBDA6 /* SavingsTunerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41CEA44175B4D908817A5A0 /* SavingsTunerView.swift */; };
 		E2B3C4D55E6F47A8B9C01D22 /* ProPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C44D5E46F7A8B90C11 /* ProPreview.swift */; };
 		E3A91C07B4D64F28A5C01E66 /* AssetHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B02D18C5E74A39B6D12F77 /* AssetHistory.swift */; };
+		C4E8A1B72D9F40E6A5C31B90 /* MonthBackfillView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5F9B2C83E0A41F7B6D42C01 /* MonthBackfillView.swift */; };
 		E6B2D4F96C3E40B7D1F25A39 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F7A1C3E85B2D49A6C0E14F28 /* PrivacyInfo.xcprivacy */; };
 		E7C41A09B2D64F58A1C03E77 /* StockLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8D52B10C3E74A69B2D14F88 /* StockLink.swift */; };
 		F2C5492553DF4B92AA92D16C /* Portfolio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473D2B4067D142F2A2C45A33 /* Portfolio.swift */; };
@@ -62,6 +63,7 @@
 		EF766442653C438293CC0C5D /* FinanceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceApp.swift; sourceTree = "<group>"; };
 		F1A2B3C44D5E46F7A8B90C11 /* ProPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProPreview.swift; sourceTree = "<group>"; };
 		F4B02D18C5E74A39B6D12F77 /* AssetHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetHistory.swift; sourceTree = "<group>"; };
+		D5F9B2C83E0A41F7B6D42C01 /* MonthBackfillView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthBackfillView.swift; sourceTree = "<group>"; };
 		F7A1C3E85B2D49A6C0E14F28 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		F8D52B10C3E74A69B2D14F88 /* StockLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockLink.swift; sourceTree = "<group>"; };
 		FDFCB427774A44B9832BED06 /* Finance.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Finance.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -103,6 +105,7 @@
 				73726A8D522F4F929C007C02 /* Models.swift */,
 				C99AAE8E3DC34E89A9404102 /* SavingsMath.swift */,
 				F4B02D18C5E74A39B6D12F77 /* AssetHistory.swift */,
+				D5F9B2C83E0A41F7B6D42C01 /* MonthBackfillView.swift */,
 				E41CEA44175B4D908817A5A0 /* SavingsTunerView.swift */,
 				F1A2B3C44D5E46F7A8B90C11 /* ProPreview.swift */,
 				285FDE10B2E64BF885533CE6 /* Editors.swift */,
@@ -216,6 +219,7 @@
 				66B7520819D5483B958D0856 /* Models.swift in Sources */,
 				D2B3F65064B840CEA5F455D6 /* SavingsMath.swift in Sources */,
 				E3A91C07B4D64F28A5C01E66 /* AssetHistory.swift in Sources */,
+				C4E8A1B72D9F40E6A5C31B90 /* MonthBackfillView.swift in Sources */,
 				E14C5B0C803D4BB4B2DDBDA6 /* SavingsTunerView.swift in Sources */,
 				E2B3C4D55E6F47A8B9C01D22 /* ProPreview.swift in Sources */,
 				C570C3D396394F26AC8DDE7D /* Editors.swift in Sources */,

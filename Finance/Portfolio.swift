@@ -10,6 +10,8 @@ final class Portfolio {
     var savings: SavingsPlan?
     var histories: [UUID: [AssetMonthMark]]
     var rateMonths: [String: [String: Decimal]]
+    /// Hand-entered totals for past months that had no asset records.
+    var backfills: [MonthBackfill]
 
     /// First-use preview keeps edits in memory. The file on disk stays as it was.
     var discardsSaves = false
@@ -25,7 +27,8 @@ final class Portfolio {
         targetTotal: Decimal? = nil,
         savings: SavingsPlan? = nil,
         histories: [UUID: [AssetMonthMark]] = [:],
-        rateMonths: [String: [String: Decimal]] = [:]
+        rateMonths: [String: [String: Decimal]] = [:],
+        backfills: [MonthBackfill] = []
     ) {
         self.items = items
         self.targets = targets
@@ -33,6 +36,7 @@ final class Portfolio {
         self.savings = savings
         self.histories = histories
         self.rateMonths = rateMonths
+        self.backfills = backfills
     }
 
     static func load() -> Portfolio {
@@ -45,7 +49,8 @@ final class Portfolio {
             targetTotal: snap.targetTotal,
             savings: snap.savings,
             histories: Dictionary(uniqueKeysWithValues: snap.marks.map { ($0.assetID, $0.months) }),
-            rateMonths: Dictionary(uniqueKeysWithValues: snap.rateMonths.map { ($0.month, $0.twdPerUnit) })
+            rateMonths: Dictionary(uniqueKeysWithValues: snap.rateMonths.map { ($0.month, $0.twdPerUnit) }),
+            backfills: snap.backfills
         )
         if AssetHistory.stamp(
             items: portfolio.items,
@@ -72,7 +77,8 @@ final class Portfolio {
             targetTotal: targetTotal,
             savings: savings,
             marks: histories.map { AssetMarks(assetID: $0.key, months: $0.value) },
-            rateMonths: rateMonths.map { RateMonth(month: $0.key, twdPerUnit: $0.value) }
+            rateMonths: rateMonths.map { RateMonth(month: $0.key, twdPerUnit: $0.value) },
+            backfills: backfills
         )
         guard let data = try? JSONEncoder().encode(snap) else { return }
         try? data.write(to: Self.fileURL, options: [.atomic])
@@ -274,6 +280,7 @@ final class Portfolio {
         savings = nil
         histories = [:]
         rateMonths = [:]
+        backfills = []
     }
 
     /// Drop the preview and show the portfolio that was already on disk.
@@ -285,6 +292,34 @@ final class Portfolio {
         savings = stored.savings
         histories = stored.histories
         rateMonths = stored.rateMonths
+        backfills = stored.backfills
         discardsSaves = false
+    }
+
+    /// Past month with no mark on any asset and no earlier backfill.
+    func canBackfill(_ month: String) -> Bool {
+        guard month < AssetHistory.monthKey() else { return false }
+        if backfills.contains(where: { $0.month == month }) { return false }
+        return !histories.values.contains { marks in marks.contains { $0.month == month } }
+    }
+
+    func addBackfill(_ row: MonthBackfill) {
+        guard canBackfill(row.month) else { return }
+        backfills.append(row)
+        save()
+    }
+
+    /// Changes when a month's amount changes, so the trend chart redraws.
+    var historyKey: String {
+        var parts: [String] = []
+        for (id, marks) in histories {
+            for mark in marks {
+                parts.append("\(id.uuidString) \(mark.month) \(mark.native)")
+            }
+        }
+        for row in backfills {
+            parts.append("b \(row.month) \(row.original) \(row.leverage) \(row.cash) \(row.realEstate) \(row.debt)")
+        }
+        return parts.sorted().joined(separator: "|")
     }
 }

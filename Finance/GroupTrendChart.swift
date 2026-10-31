@@ -7,6 +7,8 @@ struct GroupTrendChart: View, Equatable {
     private static let legendHeight: CGFloat = 84
     static let bandHeight: CGFloat = 112 + 36 + 8 + legendHeight
     var buckets: [AssetBucket]
+    /// Marks and backfills. The chart ignores other parent updates so scrolling stays cheap.
+    var historyKey = ""
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -198,7 +200,7 @@ struct GroupTrendChart: View, Equatable {
     }
 
     static func == (lhs: GroupTrendChart, rhs: GroupTrendChart) -> Bool {
-        lhs.buckets == rhs.buckets
+        lhs.buckets == rhs.buckets && lhs.historyKey == rhs.historyKey
     }
 
     @ChartContentBuilder
@@ -349,7 +351,8 @@ struct GroupTrendChart: View, Equatable {
                     kinds: bucket.kinds,
                     items: portfolio.items,
                     histories: portfolio.histories,
-                    rateMonths: portfolio.rateMonths
+                    rateMonths: portfolio.rateMonths,
+                    backfills: portfolio.backfills
                 )
             )
         }

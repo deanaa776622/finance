@@ -19,6 +19,7 @@ struct AssetListView: View {
     @State private var showQuoteLocked = false
     @State private var addKind: AssetKind = .original
     @State private var showColors = false
+    @State private var showBackfill = false
     @State private var isRefreshing = false
     @State private var refreshConfirmed = false
     @State private var showQuoteError = false
@@ -70,7 +71,7 @@ struct AssetListView: View {
                     .listRowSeparator(.hidden)
                     .listRowBackground(palette.ground)
             } else {
-                GroupTrendChart(buckets: shownBuckets)
+                GroupTrendChart(buckets: shownBuckets, historyKey: portfolio.historyKey)
                     .listRowInsets(EdgeInsets(top: 0, leading: 32, bottom: 8, trailing: 32))
                     .listRowSeparator(.hidden)
                     .listRowBackground(palette.ground)
@@ -120,6 +121,9 @@ struct AssetListView: View {
         }
         .sheet(isPresented: $showColors) {
             ColorSettingsView()
+        }
+        .sheet(isPresented: $showBackfill) {
+            MonthBackfillView()
         }
         .alert(deleteTitle, isPresented: showDeleteConfirm) {
             Button("刪除", role: .destructive) {
@@ -392,6 +396,7 @@ struct AssetListView: View {
                 previewChoice("免費版", chosen: !isFresh && !isPro) { selectStored(pro: false) }
                 previewChoice("第一次使用", chosen: isFresh) { selectFirstUse() }
                 Button("顏色設定") { showColors = true }
+                Button("補登過去月份") { showBackfill = true }
             } label: {
                 Image(systemName: "gearshape")
             }

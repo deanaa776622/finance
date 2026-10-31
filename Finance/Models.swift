@@ -190,9 +190,11 @@ struct Snapshot: Codable, Equatable {
     var marks: [AssetMarks] = []
     /// TWD-per-unit rates for each month, so a later display currency can cross.
     var rateMonths: [RateMonth] = []
+    /// Hand-entered months. Old files omit it.
+    var backfills: [MonthBackfill] = []
 
     enum CodingKeys: String, CodingKey {
-        case items, targets, targetsChosen, targetTotal, savings, marks, rateMonths
+        case items, targets, targetsChosen, targetTotal, savings, marks, rateMonths, backfills
     }
 
     init(
@@ -201,7 +203,8 @@ struct Snapshot: Codable, Equatable {
         targetTotal: Decimal?,
         savings: SavingsPlan?,
         marks: [AssetMarks] = [],
-        rateMonths: [RateMonth] = []
+        rateMonths: [RateMonth] = [],
+        backfills: [MonthBackfill] = []
     ) {
         self.items = items
         self.targets = targets
@@ -209,6 +212,7 @@ struct Snapshot: Codable, Equatable {
         self.savings = savings
         self.marks = marks
         self.rateMonths = rateMonths
+        self.backfills = backfills
     }
 
     init(from decoder: Decoder) throws {
@@ -226,6 +230,7 @@ struct Snapshot: Codable, Equatable {
         savings = try c.decodeIfPresent(SavingsPlan.self, forKey: .savings)
         marks = try c.decodeIfPresent([AssetMarks].self, forKey: .marks) ?? []
         rateMonths = try c.decodeIfPresent([RateMonth].self, forKey: .rateMonths) ?? []
+        backfills = try c.decodeIfPresent([MonthBackfill].self, forKey: .backfills) ?? []
     }
 
     func encode(to encoder: Encoder) throws {
@@ -237,6 +242,7 @@ struct Snapshot: Codable, Equatable {
         try c.encodeIfPresent(savings, forKey: .savings)
         try c.encode(marks, forKey: .marks)
         try c.encode(rateMonths, forKey: .rateMonths)
+        try c.encode(backfills, forKey: .backfills)
     }
 
     /// Written automatically before a mix could be chosen. A later explicit 50 / 30 / 20 is kept.

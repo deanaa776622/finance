@@ -1,6 +1,24 @@
 import Foundation
 
-/// One month of one asset: the native amount, and what one unit of that currency bought in TWD then.
+/// A past month filled in by hand. Amounts are TWD. Debt is the positive loan size.
+struct MonthBackfill: Codable, Equatable {
+    var month: String
+    var original: Decimal
+    var leverage: Decimal
+    var cash: Decimal
+    var realEstate: Decimal
+    var debt: Decimal
+
+    func amount(for kind: AssetKind) -> Decimal {
+        switch kind {
+        case .original: original
+        case .leverage: leverage
+        case .cash: cash
+        case .realEstate: realEstate
+        case .debt: debt
+        }
+    }
+}
 struct AssetMonthMark: Codable, Equatable {
     var month: String
     var native: Decimal
@@ -91,17 +109,27 @@ enum AssetHistory {
         kinds: [AssetKind],
         items: [AssetItem],
         histories: [UUID: [AssetMonthMark]],
-        rateMonths: [String: [String: Decimal]]
+        rateMonths: [String: [String: Decimal]],
+        backfills: [MonthBackfill] = []
     ) -> [GroupMonthPoint] {
         let mine = items.filter { kinds.contains($0.kind) }
-        let keys = Set(mine.flatMap { histories[$0.id]?.map(\.month) ?? [] }).sorted()
-        return keys.map { month in
+        var keys = Set(mine.flatMap { histories[$0.id]?.map(\.month) ?? [] })
+        for row in backfills {
+            keys.insert(row.month)
+        }
+        return keys.sorted().map { month in
             let rates = rateMonths[month] ?? [:]
-            let total = mine.reduce(Decimal.zero) { partial, item in
+            var total = mine.reduce(Decimal.zero) { partial, item in
                 guard let mark = histories[item.id]?.last(where: { $0.month == month }),
                       let amount = mark.amount(in: .twd, rates: rates) else { return partial }
                 if item.kind == .debt { return partial - amount }
                 return partial + amount
+            }
+            if let row = backfills.first(where: { $0.month == month }) {
+                for kind in kinds {
+                    let value = row.amount(for: kind)
+                    total += kind == .debt ? -value : value
+                }
             }
             return GroupMonthPoint(month: month, amount: total)
         }
