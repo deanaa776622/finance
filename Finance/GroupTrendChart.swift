@@ -60,6 +60,12 @@ struct GroupTrendChart: View, Equatable {
 
     private var chart: some View {
         Chart {
+            // Empty months keep a lone point in its slot. An explicit x scale traps Charts.
+            ForEach(axisSlots, id: \.self) { month in
+                PointMark(x: .value("月", month), y: .value("位置", 0))
+                    .foregroundStyle(.clear)
+                    .opacity(0)
+            }
             ForEach(visibleLines) { line in
                 marks(line)
             }
@@ -73,7 +79,6 @@ struct GroupTrendChart: View, Equatable {
             }
         }
         .chartYScale(domain: 0...1)
-        .chartXScale(domain: xDomain)
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
         .chartLegend(.hidden)
@@ -319,8 +324,9 @@ struct GroupTrendChart: View, Equatable {
     }
 
     /// Change across the months on screen: last value against the first.
+    /// One mark has not moved, so it reads as zero. A zero starting amount has no base.
     private func changeText(_ line: TrendLine) -> String {
-        guard let first = line.points.first, let last = line.points.last, first.month != last.month else { return "—" }
+        guard let first = line.points.first, let last = line.points.last else { return "—" }
         let start = first.plot
         guard start != 0 else { return "—" }
         let change = (last.plot - start) / abs(start) * 100
@@ -414,6 +420,12 @@ struct GroupTrendChart: View, Equatable {
 
     private var months: [String] {
         Array(Set(series.flatMap { $0.points.map(\.month) })).sorted()
+    }
+
+    /// Empty months ahead of the real mark, so a lone point keeps its place on the span.
+    private var axisSlots: [String] {
+        guard months.count == 1 else { return [] }
+        return xDomain
     }
 
     /// One recorded month would otherwise sit in the middle. Park it in its slot on the selected span.
