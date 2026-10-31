@@ -206,15 +206,17 @@ struct GroupTrendChart: View, Equatable {
     @ChartContentBuilder
     private func marks(_ line: DrawnLine) -> some ChartContent {
         if line.points.count >= 2 {
-            ForEach(line.points) { point in
-                LineMark(
-                    x: .value("月", point.month),
-                    y: .value("位置", point.unit),
-                    series: .value("群組", line.id)
-                )
-                .interpolationMethod(.monotone)
-                .foregroundStyle(line.color)
-                .lineStyle(StrokeStyle(lineWidth: 2))
+            ForEach(strokeRuns(line.points, lineID: line.id)) { run in
+                ForEach(run.points) { point in
+                    LineMark(
+                        x: .value("月", point.month),
+                        y: .value("位置", point.unit),
+                        series: .value("群組", run.id)
+                    )
+                    .interpolationMethod(run.dashed ? .linear : .monotone)
+                    .foregroundStyle(line.color)
+                    .lineStyle(StrokeStyle(lineWidth: 2, dash: run.dashed ? [4, 3] : []))
+                }
             }
         } else if let point = line.points.first {
             PointMark(x: .value("月", point.month), y: .value("位置", point.unit))
@@ -336,9 +338,23 @@ struct GroupTrendChart: View, Equatable {
     }
 
     private func amountText(_ line: TrendLine) -> String {
-        guard let month = selected,
-              let amount = line.points.first(where: { $0.month == month })?.amount else { return " " }
-        return MoneyFormat.string(amount, hidden: hideAmounts)
+        guard let month = selected else { return " " }
+        if let amount = line.points.first(where: { $0.month == month })?.amount {
+            return MoneyFormat.string(amount, hidden: hideAmounts)
+        }
+        guard let estimate = estimatedAmount(line, month: month) else { return " " }
+        return "（\(MoneyFormat.string(estimate, hidden: hideAmounts))）"
+    }
+
+    /// Straight estimate between the recorded months on either side, matching the dashed stroke.
+    private func estimatedAmount(_ line: TrendLine, month: String) -> Decimal? {
+        guard let after = line.points.first(where: { $0.month > month }),
+              let before = line.points.last(where: { $0.month < month }) else { return nil }
+        let span = monthSpan(before.month, after.month)
+        let step = monthSpan(before.month, month)
+        guard span > 1, step > 0, step < span else { return nil }
+        let weight = Decimal(step) / Decimal(span)
+        return before.amount + (after.amount - before.amount) * weight
     }
 
     private var fullSeries: [TrendLine] {
@@ -425,14 +441,53 @@ struct GroupTrendChart: View, Equatable {
         Array(Set(series.flatMap { $0.points.map(\.month) })).sorted()
     }
 
-    /// Sorted months first, so a mark that only one line has keeps its calendar place.
+    /// Recorded months, with the empty ones between them kept so spacing stays one month.
     /// One recorded month still uses the whole span, or it would sit in the middle.
     private var axisSlots: [String] {
         let present = months
-        guard present.count == 1, let only = present.first else { return present }
-        let axis = axisMonths
-        guard axis.contains(only), axis.count > 1 else { return present }
-        return axis
+        guard let first = present.first else { return [] }
+        guard present.count > 1, let last = present.last else {
+            let axis = axisMonths
+            return axis.contains(first) && axis.count > 1 ? axis : present
+        }
+        return months(from: first, through: last)
+    }
+
+    /// Adjacent months stay solid. A longer gap is a straight dashed estimate.
+    private func strokeRuns(_ points: [DrawnPoint], lineID: String) -> [StrokeRun] {
+        guard let first = points.first else { return [] }
+        var runs: [StrokeRun] = []
+        var solid: [DrawnPoint] = [first]
+        var solidIndex = 0
+        var gapIndex = 0
+        for point in points.dropFirst() {
+            let span = monthSpan(solid.last?.month ?? point.month, point.month)
+            if span > 1, let left = solid.last {
+                if solid.count >= 2 {
+                    runs.append(StrokeRun(id: "\(lineID)-s\(solidIndex)", points: solid, dashed: false))
+                    solidIndex += 1
+                }
+                runs.append(StrokeRun(id: "\(lineID)-g\(gapIndex)", points: [left, point], dashed: true))
+                gapIndex += 1
+                solid = [point]
+            } else {
+                solid.append(point)
+            }
+        }
+        if solid.count >= 2 {
+            runs.append(StrokeRun(id: "\(lineID)-s\(solidIndex)", points: solid, dashed: false))
+        }
+        return runs
+    }
+
+    private func monthSpan(_ earlier: String, _ later: String) -> Int {
+        func parts(_ month: String) -> (Int, Int)? {
+            let bits = month.split(separator: "-")
+            guard bits.count == 2, let year = Int(bits[0]), let month = Int(bits[1]) else { return nil }
+            return (year, month)
+        }
+        guard let start = parts(earlier), let end = parts(later) else { return 1 }
+        return (end.0 - start.0) * 12 + (end.1 - start.1)
     }
 
     /// Months the selected span covers, including ones with no mark yet.
@@ -476,8 +531,9 @@ struct GroupTrendChart: View, Equatable {
         let month = selected ?? months.last
         let bits = series.map { line -> String in
             if selected == nil { return "\(line.title) \(changeText(line))" }
-            let amount = line.points.first { $0.month == month }?.amount ?? 0
-            return "\(line.title) \(MoneyFormat.string(amount, hidden: hideAmounts))"
+            let spoken = amountText(line)
+            if spoken.hasPrefix("（") { return "\(line.title) 推估 \(spoken)" }
+            return "\(line.title) \(spoken)"
         }
         return "\(span.title)，\(month.map(spokenMonth) ?? "")，" + bits.joined(separator: "，")
     }
@@ -501,6 +557,12 @@ private struct DrawnLine: Identifiable {
         for index in copy.points.indices { copy.points[index].unit = unit }
         return copy
     }
+}
+
+private struct StrokeRun: Identifiable {
+    var id: String
+    var points: [DrawnPoint]
+    var dashed: Bool
 }
 
 private struct DrawnPoint: Identifiable {
