@@ -450,16 +450,22 @@ struct GroupTrendChart: View, Equatable {
         Array(Set(series.flatMap { $0.points.map(\.month) })).sorted()
     }
 
-    /// Recorded months, with the empty ones between them kept so spacing stays one month.
-    /// One recorded month still uses the whole span, or it would sit in the middle.
+    /// 今年 and 年 keep every month in the span, even with no mark.
+    /// 全部 and 自訂 keep the empty months between the first and last record.
+    /// One recorded month on those spans still uses the whole span, or it would sit in the middle.
     private var axisSlots: [String] {
-        let present = months
-        guard let first = present.first else { return [] }
-        guard present.count > 1, let last = present.last else {
-            let axis = axisMonths
-            return axis.contains(first) && axis.count > 1 ? axis : present
+        switch span {
+        case .thisYear, .year:
+            return axisMonths
+        case .all, .custom:
+            let present = months
+            guard let first = present.first else { return [] }
+            guard present.count > 1, let last = present.last else {
+                let axis = axisMonths
+                return axis.contains(first) && axis.count > 1 ? axis : present
+            }
+            return months(from: first, through: last)
         }
-        return months(from: first, through: last)
     }
 
     /// Adjacent months stay solid. A longer gap is a straight dashed estimate.
