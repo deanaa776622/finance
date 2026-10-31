@@ -167,15 +167,15 @@ struct GroupTrendChart: View, Equatable {
     }
 
     /// Horizontal only, and shared with the list, so a vertical flick can still scroll.
+    /// Once the drag is sideways it keeps tracking, including past the plot edges.
     private func scrub(proxy: ChartProxy, geometry: GeometryProxy) -> some Gesture {
         DragGesture(minimumDistance: 8)
             .onChanged { drag in
                 let travel = drag.translation
-                guard abs(travel.width) > abs(travel.height) else { return }
+                if selected == nil, abs(travel.width) <= abs(travel.height) { return }
                 guard let plotFrame = proxy.plotFrame else { return }
                 let plot = geometry[plotFrame]
-                let x = drag.location.x - plot.origin.x
-                guard let month: String = proxy.value(atX: x) else { return }
+                guard let month = month(atPlotX: drag.location.x - plot.origin.x, width: plot.width) else { return }
                 withoutAnimation {
                     if month != selected { selected = month }
                     if let plotX = proxy.position(forX: month) {
@@ -190,6 +190,15 @@ struct GroupTrendChart: View, Equatable {
                 markerX = nil
             }
         }
+    }
+
+    /// The plot’s own lookup stops short of the first and last month. Split the width instead.
+    private func month(atPlotX x: CGFloat, width: CGFloat) -> String? {
+        let slots = axisSlots
+        guard !slots.isEmpty, width > 0 else { return nil }
+        let t = min(max(x / width, 0), 1)
+        let index = min(slots.count - 1, Int(t * CGFloat(slots.count)))
+        return slots[index]
     }
 
     /// Finger scrub stays put. Page changes move the strokes themselves.
