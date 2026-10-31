@@ -3,20 +3,48 @@ import Foundation
 /// A past month filled in by hand. Amounts are TWD. Debt is the positive loan size.
 struct MonthBackfill: Codable, Equatable {
     var month: String
-    var original: Decimal
-    var leverage: Decimal
-    var cash: Decimal
-    var realEstate: Decimal
+    var assets: Decimal
     var debt: Decimal
 
-    func amount(for kind: AssetKind) -> Decimal {
-        switch kind {
-        case .original: original
-        case .leverage: leverage
-        case .cash: cash
-        case .realEstate: realEstate
-        case .debt: debt
+    init(month: String, assets: Decimal, debt: Decimal) {
+        self.month = month
+        self.assets = assets
+        self.debt = debt
+    }
+
+    /// Whole asset total, whole debt, or net worth. A single slice gets nothing.
+    func total(for kinds: [AssetKind]) -> Decimal? {
+        let set = Set(kinds)
+        if set == [.debt] { return -debt }
+        if set.contains(.debt), set.count > 1 { return assets - debt }
+        if set.contains(.realEstate), set.count > 1 { return assets }
+        return nil
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case month, assets, debt, original, leverage, cash, realEstate
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        month = try c.decode(String.self, forKey: .month)
+        debt = try c.decodeIfPresent(Decimal.self, forKey: .debt) ?? 0
+        if let assets = try c.decodeIfPresent(Decimal.self, forKey: .assets) {
+            self.assets = assets
+            return
         }
+        let original = try c.decodeIfPresent(Decimal.self, forKey: .original) ?? 0
+        let leverage = try c.decodeIfPresent(Decimal.self, forKey: .leverage) ?? 0
+        let cash = try c.decodeIfPresent(Decimal.self, forKey: .cash) ?? 0
+        let realEstate = try c.decodeIfPresent(Decimal.self, forKey: .realEstate) ?? 0
+        assets = original + leverage + cash + realEstate
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(month, forKey: .month)
+        try c.encode(assets, forKey: .assets)
+        try c.encode(debt, forKey: .debt)
     }
 }
 struct AssetMonthMark: Codable, Equatable {
@@ -114,7 +142,7 @@ enum AssetHistory {
     ) -> [GroupMonthPoint] {
         let mine = items.filter { kinds.contains($0.kind) }
         var keys = Set(mine.flatMap { histories[$0.id]?.map(\.month) ?? [] })
-        for row in backfills {
+        for row in backfills where row.total(for: kinds) != nil {
             keys.insert(row.month)
         }
         return keys.sorted().map { month in
@@ -125,11 +153,8 @@ enum AssetHistory {
                 if item.kind == .debt { return partial - amount }
                 return partial + amount
             }
-            if let row = backfills.first(where: { $0.month == month }) {
-                for kind in kinds {
-                    let value = row.amount(for: kind)
-                    total += kind == .debt ? -value : value
-                }
+            if let extra = backfills.first(where: { $0.month == month })?.total(for: kinds) {
+                total += extra
             }
             return GroupMonthPoint(month: month, amount: total)
         }

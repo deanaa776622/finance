@@ -425,18 +425,11 @@ struct GroupTrendChart: View, Equatable {
         Array(Set(series.flatMap { $0.points.map(\.month) })).sorted()
     }
 
-    /// Empty months ahead of the real mark, so a lone point keeps its place on the span.
+    /// Sorted months first, so a mark that only one line has keeps its calendar place.
+    /// One recorded month still uses the whole span, or it would sit in the middle.
     private var axisSlots: [String] {
-        guard months.count == 1 else { return [] }
-        return xDomain
-    }
-
-    /// One recorded month would otherwise sit in the middle. Park it in its slot on the selected span.
-    private var xDomain: [String] {
         let present = months
-        guard present.count == 1, let only = present.first else {
-            return present.isEmpty ? [monthKey(Date())] : present
-        }
+        guard present.count == 1, let only = present.first else { return present }
         let axis = axisMonths
         guard axis.contains(only), axis.count > 1 else { return present }
         return axis

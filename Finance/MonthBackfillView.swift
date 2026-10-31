@@ -1,13 +1,14 @@
 import SwiftUI
 
-/// Enter one past month's five totals. The month must have no records yet.
+/// Enter one past month's asset total and debt. The month must have no records yet.
 struct MonthBackfillView: View {
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
     @Environment(\.dismiss) private var dismiss
     @State private var year: Int
     @State private var monthIndex: Int
-    @State private var amounts: [AssetKind: String] = [:]
+    @State private var assetsText = ""
+    @State private var debtText = ""
 
     init() {
         let previous = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
@@ -39,11 +40,12 @@ struct MonthBackfillView: View {
                     if !months.contains(monthIndex) { monthIndex = months.last ?? 1 }
                 }
                 Section {
-                    ForEach(AssetKind.allCases) { kind in
-                        TextField(kind.compactTitle, text: text(for: kind))
-                            .keyboardType(.decimalPad)
-                            .listRowBackground(palette.panel)
-                    }
+                    TextField("資產", text: $assetsText)
+                        .keyboardType(.decimalPad)
+                        .listRowBackground(palette.panel)
+                    TextField("負債", text: $debtText)
+                        .keyboardType(.decimalPad)
+                        .listRowBackground(palette.panel)
                 } footer: {
                     Text("金額為台幣。空白視為 0，負債填正數。")
                 }
@@ -88,42 +90,24 @@ struct MonthBackfillView: View {
         return "五類都還沒有紀錄才能補。"
     }
 
-    private var parsed: [AssetKind: Decimal]? {
-        var out: [AssetKind: Decimal] = [:]
-        for kind in AssetKind.allCases {
-            let raw = (amounts[kind] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            if raw.isEmpty {
-                out[kind] = 0
-                continue
-            }
-            guard let value = NumberParse.decimal(raw), value >= 0 else { return nil }
-            out[kind] = value
-        }
-        return out
+    private var assets: Decimal? { amount(assetsText) }
+    private var debt: Decimal? { amount(debtText) }
+
+    private func amount(_ text: String) -> Decimal? {
+        let raw = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if raw.isEmpty { return 0 }
+        guard let value = NumberParse.decimal(raw), value >= 0 else { return nil }
+        return value
     }
 
     private var canSave: Bool {
-        guard portfolio.canBackfill(month), let parsed else { return false }
-        return parsed.values.contains { $0 > 0 }
-    }
-
-    private func text(for kind: AssetKind) -> Binding<String> {
-        Binding(
-            get: { amounts[kind, default: ""] },
-            set: { amounts[kind] = $0 }
-        )
+        guard portfolio.canBackfill(month), let assets, let debt else { return false }
+        return assets > 0 || debt > 0
     }
 
     private func save() {
-        guard canSave, let parsed else { return }
-        portfolio.addBackfill(MonthBackfill(
-            month: month,
-            original: parsed[.original] ?? 0,
-            leverage: parsed[.leverage] ?? 0,
-            cash: parsed[.cash] ?? 0,
-            realEstate: parsed[.realEstate] ?? 0,
-            debt: parsed[.debt] ?? 0
-        ))
+        guard canSave, let assets, let debt else { return }
+        portfolio.addBackfill(MonthBackfill(month: month, assets: assets, debt: debt))
         dismiss()
     }
 }

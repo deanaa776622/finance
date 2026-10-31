@@ -318,7 +318,7 @@ final class Portfolio {
             }
         }
         for row in backfills {
-            parts.append("b \(row.month) \(row.original) \(row.leverage) \(row.cash) \(row.realEstate) \(row.debt)")
+            parts.append("b \(row.month) \(row.assets) \(row.debt)")
         }
         return parts.sorted().joined(separator: "|")
     }
