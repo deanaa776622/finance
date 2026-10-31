@@ -34,7 +34,9 @@ struct MonthBackfillView: View {
                     }
                     .listRowBackground(palette.panel)
                 } footer: {
-                    Text(note)
+                    if !portfolio.canBackfill(month) {
+                        Text("這個月已有紀錄，不能補登")
+                    }
                 }
                 .onChange(of: year) {
                     if !months.contains(monthIndex) { monthIndex = months.last ?? 1 }
@@ -43,11 +45,16 @@ struct MonthBackfillView: View {
                     TextField("資產", text: $assetsText)
                         .keyboardType(.decimalPad)
                         .listRowBackground(palette.panel)
-                    TextField("負債", text: $debtText)
-                        .keyboardType(.decimalPad)
-                        .listRowBackground(palette.panel)
-                } footer: {
-                    Text("金額為台幣。空白視為 0，負債填正數。")
+                    HStack(spacing: 2) {
+                        Text("−")
+                            .foregroundStyle(palette.quietInk)
+                            .accessibilityHidden(true)
+                        TextField("負債", text: $debtText)
+                            .keyboardType(.decimalPad)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("負債")
+                    .listRowBackground(palette.panel)
                 }
             }
             .palettePanel(palette)
@@ -83,11 +90,6 @@ struct MonthBackfillView: View {
         let now = Calendar.current.dateComponents([.year, .month], from: Date())
         let last = year == now.year ? max(1, (now.month ?? 1) - 1) : 12
         return Array(1...last)
-    }
-
-    private var note: String {
-        if !portfolio.canBackfill(month) { return "這個月已有紀錄，不能補登" }
-        return "五類都還沒有紀錄才能補。"
     }
 
     private var assets: Decimal? { amount(assetsText) }
