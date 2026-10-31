@@ -21,6 +21,7 @@
 		C2E6A94371B84D3E8F71A5C6 /* GlowBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = D48F02C6AE514B75B60C287A /* GlowBackground.swift */; };
 		C570C3D396394F26AC8DDE7D /* Editors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 285FDE10B2E64BF885533CE6 /* Editors.swift */; };
 		C8E5A13D6F2B40C9A7D38E14 /* GroupTrendChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9F6B24E7A3C41D0B8E49F25 /* GroupTrendChart.swift */; };
+		A11C0C0E5B1A4F0E9C2D11A1 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = B22D1D1F6C2B4A1F0D3E22B2 /* AppIcon.icon */; };
 		CF93E2B4331F4B008B545BE9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0ACEF765DE7D48D9943D7D84 /* Assets.xcassets */; };
 		D2B3F65064B840CEA5F455D6 /* SavingsMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AAE8E3DC34E89A9404102 /* SavingsMath.swift */; };
 		D4B02F8C5A3E49B1C7F26D95 /* AssetGrouping.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A91E7B4F2D48A0B6E15C84 /* AssetGrouping.swift */; };
@@ -39,6 +40,7 @@
 
 /* Begin PBXFileReference section */
 		0ACEF765DE7D48D9943D7D84 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B22D1D1F6C2B4A1F0D3E22B2 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		285FDE10B2E64BF885533CE6 /* Editors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Editors.swift; sourceTree = "<group>"; };
 		2D4C730906A644DC837867DB /* AssetListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetListView.swift; sourceTree = "<group>"; };
 		3E8A1B2C4D5E4F6A8B9C0D1E /* QuoteClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteClient.swift; sourceTree = "<group>"; };
@@ -110,6 +112,7 @@
 				F1A2B3C44D5E46F7A8B90C11 /* ProPreview.swift */,
 				285FDE10B2E64BF885533CE6 /* Editors.swift */,
 				0ACEF765DE7D48D9943D7D84 /* Assets.xcassets */,
+				B22D1D1F6C2B4A1F0D3E22B2 /* AppIcon.icon */,
 				F7A1C3E85B2D49A6C0E14F28 /* PrivacyInfo.xcprivacy */,
 			);
 			path = Finance;
@@ -186,6 +189,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CF93E2B4331F4B008B545BE9 /* Assets.xcassets in Resources */,
+				A11C0C0E5B1A4F0E9C2D11A1 /* AppIcon.icon in Resources */,
 				E6B2D4F96C3E40B7D1F25A39 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
