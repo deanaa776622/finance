@@ -26,6 +26,8 @@ struct GroupTrendChart: View, Equatable {
     @State private var customEnd = Date()
     /// Legend ids drawn without a swatch. Those lines stay off the chart.
     @State private var hiddenIDs: Set<String> = []
+    /// Months under the two fingers. The right month is compared with the left.
+    @State private var fingerSpan: FingerSpan?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -54,8 +56,8 @@ struct GroupTrendChart: View, Equatable {
     private var rangeBand: some View {
         ZStack {
             ChartSpanPicker(span: $span) { showCustom = true }
-                .opacity(selected == nil ? 1 : 0)
-                .allowsHitTesting(selected == nil)
+                .opacity(selected == nil && fingerSpan == nil ? 1 : 0)
+                .allowsHitTesting(selected == nil && fingerSpan == nil)
             monthLabel
         }
     }
@@ -71,7 +73,12 @@ struct GroupTrendChart: View, Equatable {
             ForEach(visibleLines) { line in
                 marks(line)
             }
-            if let selected {
+            if let fingerSpan {
+                RuleMark(x: .value("月", fingerSpan.start))
+                    .foregroundStyle(palette.quietInk.opacity(0.7))
+                RuleMark(x: .value("月", fingerSpan.end))
+                    .foregroundStyle(palette.quietInk.opacity(0.7))
+            } else if let selected {
                 RuleMark(x: .value("月", selected))
                     .foregroundStyle(palette.quietInk.opacity(0.7))
             }
@@ -90,6 +97,7 @@ struct GroupTrendChart: View, Equatable {
                     .fill(.clear)
                     .contentShape(Rectangle())
                     .simultaneousGesture(scrub(proxy: proxy, geometry: geometry))
+                    .gesture(rangeGesture(proxy: proxy, geometry: geometry))
             }
         }
     }
@@ -171,6 +179,7 @@ struct GroupTrendChart: View, Equatable {
     private func scrub(proxy: ChartProxy, geometry: GeometryProxy) -> some Gesture {
         DragGesture(minimumDistance: 8)
             .onChanged { drag in
+                if fingerSpan != nil { return }
                 let travel = drag.translation
                 if selected == nil, abs(travel.width) <= abs(travel.height) { return }
                 guard let plotFrame = proxy.plotFrame else { return }
@@ -189,6 +198,28 @@ struct GroupTrendChart: View, Equatable {
                 selected = nil
                 markerX = nil
             }
+        }
+    }
+
+    /// Left and right fingers. Each one picks the month under it.
+    private func rangeGesture(proxy: ChartProxy, geometry: GeometryProxy) -> ChartRangeGesture {
+        ChartRangeGesture { left, right in
+            guard let plotFrame = proxy.plotFrame else { return }
+            let plot = geometry[plotFrame]
+            guard let start = month(atPlotX: left - plot.origin.x, width: plot.width),
+                  let end = month(atPlotX: right - plot.origin.x, width: plot.width) else { return }
+            withoutAnimation {
+                selected = nil
+                markerX = nil
+                fingerSpan = FingerSpan(
+                    start: start,
+                    end: end,
+                    startX: proxy.position(forX: start).map { plot.minX + $0 } ?? left,
+                    endX: proxy.position(forX: end).map { plot.minX + $0 } ?? right
+                )
+            }
+        } onEnd: {
+            withoutAnimation { fingerSpan = nil }
         }
     }
 
@@ -236,7 +267,8 @@ struct GroupTrendChart: View, Equatable {
 
     private var monthLabel: some View {
         GeometryReader { row in
-            Text(selected.map(spokenMonth) ?? " ")
+            let pair = placedPair(in: row.size.width)
+            Text(fingerSpan.map { spokenMonth($0.start) } ?? selected.map(spokenMonth) ?? " ")
                 .font(.footnote)
                 .monospacedDigit()
                 .foregroundStyle(palette.ink)
@@ -249,11 +281,36 @@ struct GroupTrendChart: View, Equatable {
                             }
                     }
                 }
-                .position(x: placedMonthX(in: row.size.width), y: row.size.height / 2)
-                .opacity(selected == nil ? 0 : 1)
+                .position(
+                    x: fingerSpan == nil ? placedMonthX(in: row.size.width) : pair.left,
+                    y: row.size.height / 2
+                )
+                .opacity(selected == nil && fingerSpan == nil ? 0 : 1)
+            if fingerSpan != nil {
+                Text(fingerSpan.map { spokenMonth($0.end) } ?? " ")
+                    .font(.footnote)
+                    .monospacedDigit()
+                    .foregroundStyle(palette.ink)
+                    .fixedSize()
+                    .position(x: pair.right, y: row.size.height / 2)
+            }
         }
         .frame(height: 32)
         .allowsHitTesting(false)
+    }
+
+    private func placedPair(in width: CGFloat) -> (left: CGFloat, right: CGFloat) {
+        let half = monthLabelWidth / 2
+        func clamp(_ x: CGFloat) -> CGFloat { min(max(x, half), max(half, width - half)) }
+        var left = clamp(fingerSpan?.startX ?? 0)
+        var right = clamp(fingerSpan?.endX ?? width)
+        let gap = monthLabelWidth + 8
+        if right - left < gap {
+            let mid = (left + right) / 2
+            left = clamp(mid - gap / 2)
+            right = clamp(mid + gap / 2)
+        }
+        return (left, right)
     }
 
     private func placedMonthX(in width: CGFloat) -> CGFloat {
@@ -313,7 +370,7 @@ struct GroupTrendChart: View, Equatable {
                 lineSwatch(shown ? ink : line.color)
                 Text(line.title).lineLimit(1)
                 Spacer(minLength: 4)
-                Text(selected == nil ? changeText(line) : amountText(line))
+                Text(legendValue(line))
                     .monospacedDigit()
                     .foregroundStyle(shown ? ink : line.color)
                     .lineLimit(1)
@@ -334,6 +391,43 @@ struct GroupTrendChart: View, Equatable {
     /// Black or white, so the title stays readable on the swatch.
     private func chipInk(_ color: Color) -> Color {
         color.relativeLuminance(scheme: palette.colorScheme) > 0.179 ? .black : .white
+    }
+
+    private func legendValue(_ line: TrendLine) -> String {
+        if fingerSpan != nil { return rangeText(line) }
+        return selected == nil ? changeText(line) : amountText(line)
+    }
+
+    /// Right month against the left: percent, then the amount.
+    private func rangeText(_ line: TrendLine) -> String {
+        guard let span = fingerSpan,
+              let left = amount(on: line, month: span.start),
+              let right = amount(on: line, month: span.end) else { return "—" }
+        let delta = right.amount - left.amount
+        let percent: String
+        if left.amount == 0 {
+            percent = "—"
+        } else {
+            let change = NSDecimalNumber(decimal: delta / abs(left.amount) * 100).doubleValue
+            percent = String(format: "%+.0f%%", change)
+        }
+        let money = signedMoney(delta)
+        let text = "\(percent) \(money)"
+        return left.estimated || right.estimated ? "（\(text)）" : text
+    }
+
+    private func amount(on line: TrendLine, month: String) -> (amount: Decimal, estimated: Bool)? {
+        if let amount = line.points.first(where: { $0.month == month })?.amount {
+            return (amount, false)
+        }
+        guard let estimate = estimatedAmount(line, month: month) else { return nil }
+        return (estimate, true)
+    }
+
+    private func signedMoney(_ value: Decimal) -> String {
+        let text = MoneyFormat.string(value, hidden: hideAmounts)
+        guard !hideAmounts, value > 0 else { return text }
+        return "+\(text)"
     }
 
     /// Change across the months on screen: last value against the first.
@@ -545,13 +639,28 @@ struct GroupTrendChart: View, Equatable {
     private var accessibilityText: String {
         let month = selected ?? months.last
         let bits = series.map { line -> String in
+            if fingerSpan != nil {
+                let spoken = rangeText(line)
+                if spoken.hasPrefix("（") { return "\(line.title) 推估 \(spoken)" }
+                return "\(line.title) \(spoken)"
+            }
             if selected == nil { return "\(line.title) \(changeText(line))" }
             let spoken = amountText(line)
             if spoken.hasPrefix("（") { return "\(line.title) 推估 \(spoken)" }
             return "\(line.title) \(spoken)"
         }
+        if let span = fingerSpan {
+            return "\(spokenMonth(span.start))到\(spokenMonth(span.end))，" + bits.joined(separator: "，")
+        }
         return "\(span.title)，\(month.map(spokenMonth) ?? "")，" + bits.joined(separator: "，")
     }
+}
+
+private struct FingerSpan {
+    var start: String
+    var end: String
+    var startX: CGFloat
+    var endX: CGFloat
 }
 
 private struct TrendLine: Identifiable {
