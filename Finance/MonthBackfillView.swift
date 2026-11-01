@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Enter one past month's asset total and debt. The month must have no records yet.
+/// Enter one past month's asset total and debt. A month already filled in here can be edited.
 struct MonthBackfillView: View {
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
@@ -44,7 +44,9 @@ struct MonthBackfillView: View {
                 }
                 .onChange(of: year) {
                     if !months.contains(monthIndex) { monthIndex = months.last ?? 1 }
+                    loadMonth()
                 }
+                .onChange(of: monthIndex) { loadMonth() }
                 Section {
                     amountRow("資產", text: $assetsText, debt: false)
                     amountRow("負債", text: $debtText, debt: true)
@@ -67,6 +69,7 @@ struct MonthBackfillView: View {
         .presentationBackground(palette.panel)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .onAppear { loadMonth() }
     }
 
     private var month: String { String(format: "%04d-%02d", year, monthIndex) }
@@ -108,6 +111,16 @@ struct MonthBackfillView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title)，\(MoneyFormat.currency.rawValue)")
         .listRowBackground(palette.panel)
+    }
+
+    private func loadMonth() {
+        guard let row = portfolio.backfills.first(where: { $0.month == month }) else {
+            assetsText = ""
+            debtText = ""
+            return
+        }
+        assetsText = row.assets == 0 ? "" : NumberParse.display(row.assets)
+        debtText = row.debt == 0 ? "" : NumberParse.display(row.debt)
     }
 
     private var assets: Decimal? { amount(assetsText) }

@@ -296,16 +296,19 @@ final class Portfolio {
         discardsSaves = false
     }
 
-    /// Past month with no mark on any asset and no earlier backfill.
+    /// A past month with no per-asset mark. An existing backfill can be replaced.
     func canBackfill(_ month: String) -> Bool {
         guard month < AssetHistory.monthKey() else { return false }
-        if backfills.contains(where: { $0.month == month }) { return false }
         return !histories.values.contains { marks in marks.contains { $0.month == month } }
     }
 
     func addBackfill(_ row: MonthBackfill) {
         guard canBackfill(row.month) else { return }
-        backfills.append(row)
+        if let index = backfills.firstIndex(where: { $0.month == row.month }) {
+            backfills[index] = row
+        } else {
+            backfills.append(row)
+        }
         save()
     }
 
