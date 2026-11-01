@@ -400,10 +400,17 @@ struct GroupTrendChart: View, Equatable {
         .accessibilityHint("點一下切換")
     }
 
-    /// The five kind colors, with three tenths of the page color mixed in. Merged groups stay ink.
+    /// The five kind colors, three tenths less saturated. Merged groups stay ink.
     private func legendFill(_ line: TrendLine) -> Color {
         guard AssetKind.allCases.contains(where: { $0.compactTitle == line.title }) else { return line.color }
-        return line.color.mix(with: palette.ground, by: 0.30)
+        var hue: CGFloat = 0
+        var saturation: CGFloat = 0
+        var brightness: CGFloat = 0
+        var alpha: CGFloat = 0
+        guard UIColor(line.color).getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha) else {
+            return line.color
+        }
+        return Color(hue: hue, saturation: saturation * 0.7, brightness: brightness, opacity: alpha)
     }
 
     /// Black or white, so the title stays readable on the swatch.
