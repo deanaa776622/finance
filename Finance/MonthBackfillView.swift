@@ -9,6 +9,7 @@ struct MonthBackfillView: View {
     @State private var monthIndex: Int
     @State private var assetsText = ""
     @State private var debtText = ""
+    @State private var confirmDelete = false
 
     init() {
         let previous = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
@@ -51,9 +52,24 @@ struct MonthBackfillView: View {
                     amountRow("資產", text: $assetsText, debt: false)
                     amountRow("負債", text: $debtText, debt: true)
                 }
+                if hasBackfill {
+                    Section {
+                        Button("刪除", role: .destructive) { confirmDelete = true }
+                            .listRowBackground(palette.panel)
+                    }
+                }
             }
             .palettePanel(palette)
             .scrollEdgeFade()
+            .alert("刪除這個月的補登？", isPresented: $confirmDelete) {
+                Button("刪除", role: .destructive) {
+                    portfolio.removeBackfill(month)
+                    dismiss()
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("刪除後，這個月不再有補登金額。")
+            }
             .navigationTitle("補登")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -121,6 +137,10 @@ struct MonthBackfillView: View {
         }
         assetsText = row.assets == 0 ? "" : NumberParse.display(row.assets)
         debtText = row.debt == 0 ? "" : NumberParse.display(row.debt)
+    }
+
+    private var hasBackfill: Bool {
+        portfolio.backfills.contains { $0.month == month }
     }
 
     private var assets: Decimal? { amount(assetsText) }

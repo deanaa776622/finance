@@ -312,6 +312,12 @@ final class Portfolio {
         save()
     }
 
+    func removeBackfill(_ month: String) {
+        guard let index = backfills.firstIndex(where: { $0.month == month }) else { return }
+        backfills.remove(at: index)
+        save()
+    }
+
     /// Changes when a month's amount changes, so the trend chart redraws.
     var historyKey: String {
         var parts: [String] = []
