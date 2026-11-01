@@ -415,14 +415,15 @@ struct GroupTrendChart: View, Equatable {
               let left = amount(on: line, month: span.start),
               let right = amount(on: line, month: span.end) else { return "—" }
         let delta = right.amount - left.amount
+        let signed = isDebt(line) ? -delta : delta
         let percent: String
         if left.amount == 0 {
             percent = "—"
         } else {
-            let change = NSDecimalNumber(decimal: delta / abs(left.amount) * 100).doubleValue
+            let change = NSDecimalNumber(decimal: signed / abs(left.amount) * 100).doubleValue
             percent = String(format: "%+.0f%%", change)
         }
-        let money = signedMoney(delta)
+        let money = signedMoney(signed)
         let text = "\(percent) \(money)"
         return left.estimated || right.estimated ? "（\(text)）" : text
     }
@@ -448,7 +449,13 @@ struct GroupTrendChart: View, Equatable {
         let start = first.plot
         guard start != 0 else { return "—" }
         let change = (last.plot - start) / abs(start) * 100
-        return String(format: "%+.0f%%", change)
+        let shown = isDebt(line) ? -change : change
+        return String(format: "%+.0f%%", shown)
+    }
+
+    /// Debt is drawn below zero, so a larger loan would otherwise read as a drop.
+    private func isDebt(_ line: TrendLine) -> Bool {
+        line.id == AssetKind.debt.rawValue || line.title == "負債"
     }
 
     private func amountText(_ line: TrendLine) -> String {
