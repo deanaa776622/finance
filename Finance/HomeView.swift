@@ -16,8 +16,10 @@ struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("hideAmounts") private var hideAmounts = false
     @AppStorage(ProPreview.key) private var isPro = true
-    /// -1 assets, 0 home, 1 savings
+    /// -1 assets, 0 home, 1 savings. Animated, so it passes through values between pages.
     @State private var panel: CGFloat = 0
+    /// The page the sheet is committed to. Stays on a detent, so a flick cannot park between pages and lock the list.
+    @State private var dock: CGFloat = 0
     @State private var drag: CGFloat = 0
     /// 0 = 總淨值, 1 = 總曝險
     @State private var lens: CGFloat = 0
@@ -75,8 +77,8 @@ struct HomeView: View {
                             }
                         }
                         .opacity(position < 0 ? -position : 0)
-                        .scrollDisabled(panel > -0.95)
-                        .allowsHitTesting(position < 0 && panel < -0.85)
+                        .scrollDisabled(dock != -1)
+                        .allowsHitTesting(position < 0 && (dock == -1 || panel < -0.85))
                     }
 
                     HomeHero(
@@ -210,10 +212,10 @@ struct HomeView: View {
             }
     }
 
-    /// List and savings own the drag once they are settled. The card does not.
+    /// List and savings own the drag once that page is committed. The card does not.
     private func ignoresShell(_ start: CGPoint) -> Bool {
         if heroFrame.contains(start) { return false }
-        return panel <= -0.95 || panel >= 0.95
+        return dock != 0
     }
 
     private func applyDrag(_ moved: CGSize, axis: Axis, screen: CGFloat) {
@@ -297,15 +299,17 @@ struct HomeView: View {
     }
 
     private func snap(_ to: CGFloat) {
+        let detent: CGFloat = to > 0.5 ? 1 : (to < -0.5 ? -1 : 0)
         let current = min(1, max(-1, panel + drag))
         panel = current
         drag = 0
+        dock = detent
         let animation: Animation = reduceMotion
             ? .easeInOut(duration: 0.2)
             : .spring(response: 0.48, dampingFraction: 0.88)
         DispatchQueue.main.async {
             withAnimation(animation) {
-                panel = to
+                panel = detent
             }
         }
     }
