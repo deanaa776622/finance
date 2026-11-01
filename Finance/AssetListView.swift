@@ -72,7 +72,13 @@ struct AssetListView: View {
                     .listRowBackground(palette.ground)
             } else {
                 GroupTrendChart(buckets: shownBuckets, historyKey: portfolio.historyKey)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 32, bottom: 8, trailing: 32))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background {
+                        RoundedRectangle(cornerRadius: GroupCardBackground.radius, style: .continuous)
+                            .fill(palette.panel)
+                    }
+                    .listRowInsets(EdgeInsets(top: -8, leading: 16, bottom: 0, trailing: 16))
                     .listRowSeparator(.hidden)
                     .listRowBackground(palette.ground)
             }
