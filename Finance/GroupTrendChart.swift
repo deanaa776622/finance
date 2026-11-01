@@ -371,7 +371,8 @@ struct GroupTrendChart: View, Equatable {
 
     private func legendRow(_ line: TrendLine) -> some View {
         let shown = !hiddenIDs.contains(line.id)
-        let ink = shown ? chipInk(line.color) : palette.quietInk
+        let fill = legendFill(line)
+        let ink = shown ? chipInk(fill) : palette.quietInk
         return Button {
             var next = hiddenIDs
             if shown { next.insert(line.id) } else { next.remove(line.id) }
@@ -390,13 +391,19 @@ struct GroupTrendChart: View, Equatable {
             .foregroundStyle(ink)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background { if shown { Capsule().fill(line.color) } }
+            .background { if shown { Capsule().fill(fill) } }
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(line.title)
         .accessibilityValue(shown ? "顯示趨勢線" : "不顯示趨勢線")
         .accessibilityHint("點一下切換")
+    }
+
+    /// The five kind colors, with three tenths of the page color mixed in. Merged groups stay ink.
+    private func legendFill(_ line: TrendLine) -> Color {
+        guard AssetKind.allCases.contains(where: { $0.compactTitle == line.title }) else { return line.color }
+        return line.color.mix(with: palette.ground, by: 0.30)
     }
 
     /// Black or white, so the title stays readable on the swatch.
