@@ -283,7 +283,7 @@ struct GroupTrendChart: View, Equatable {
                 }
                 .position(
                     x: fingerSpan == nil ? placedMonthX(in: row.size.width) : pair.left,
-                    y: row.size.height / 2
+                    y: pair.stacked ? 8 : row.size.height / 2
                 )
                 .opacity(selected == nil && fingerSpan == nil ? 0 : 1)
             if fingerSpan != nil {
@@ -292,25 +292,36 @@ struct GroupTrendChart: View, Equatable {
                     .monospacedDigit()
                     .foregroundStyle(palette.ink)
                     .fixedSize()
-                    .position(x: pair.right, y: row.size.height / 2)
+                    .position(x: pair.right, y: pair.stacked ? 28 : row.size.height / 2)
             }
         }
-        .frame(height: 32)
+        .frame(height: 36)
         .allowsHitTesting(false)
     }
 
-    private func placedPair(in width: CGFloat) -> (left: CGFloat, right: CGFloat) {
-        let half = monthLabelWidth / 2
+    /// Keeps the two month labels from drawing on top of each other.
+    /// Side by side when the row has room; otherwise the left month sits above the right.
+    private func placedPair(in width: CGFloat) -> (left: CGFloat, right: CGFloat, stacked: Bool) {
+        let label = (40...160).contains(monthLabelWidth) ? monthLabelWidth : 88
+        let half = label / 2
         func clamp(_ x: CGFloat) -> CGFloat { min(max(x, half), max(half, width - half)) }
-        var left = clamp(fingerSpan?.startX ?? 0)
-        var right = clamp(fingerSpan?.endX ?? width)
-        let gap = monthLabelWidth + 8
-        if right - left < gap {
+        var left = clamp(fingerSpan?.startX ?? half)
+        var right = clamp(fingerSpan?.endX ?? width - half)
+        let needed = label + 8
+        if right < left { swap(&left, &right) }
+        if right - left < needed {
             let mid = (left + right) / 2
-            left = clamp(mid - gap / 2)
-            right = clamp(mid + gap / 2)
+            left = mid - needed / 2
+            right = mid + needed / 2
+            if left < half {
+                left = half
+                right = min(width - half, left + needed)
+            } else if right > width - half {
+                right = max(half, width - half)
+                left = max(half, right - needed)
+            }
         }
-        return (left, right)
+        return (left, right, right - left < needed - 0.5)
     }
 
     private func placedMonthX(in width: CGFloat) -> CGFloat {
