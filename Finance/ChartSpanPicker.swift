@@ -105,12 +105,21 @@ private final class SpanControl: UISegmentedControl, UIGestureRecognizerDelegate
     required init?(coder: NSCoder) { return nil }
 
     /// The home screen's drag starts on any touch and would cancel this control.
+    /// The list's own pan is left alone, or one claim here freezes every later scroll.
     func gestureRecognizer(
         _ gestureRecognizer: UIGestureRecognizer,
         shouldBeRequiredToFailBy other: UIGestureRecognizer
     ) -> Bool {
+        if other.view is UIScrollView { return false }
         guard let view = other.view else { return false }
         return view !== self && !view.isDescendant(of: self)
+    }
+
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
+    ) -> Bool {
+        other.view is UIScrollView
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -123,10 +132,20 @@ private final class SpanControl: UISegmentedControl, UIGestureRecognizerDelegate
     }
 }
 
-/// Holds the touch so an ancestor drag cannot cancel the glass knob.
+/// Holds a tap so an ancestor drag cannot cancel the glass knob. A real drag fails, so the list can scroll.
 private final class TouchClaim: UIGestureRecognizer {
+    private var origin: CGPoint?
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+        origin = touches.first?.location(in: view)
         state = .began
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
+        guard let origin, let point = touches.first?.location(in: view) else { return }
+        if hypot(point.x - origin.x, point.y - origin.y) > 8 {
+            state = .failed
+        }
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
@@ -135,6 +154,11 @@ private final class TouchClaim: UIGestureRecognizer {
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
         state = .cancelled
+    }
+
+    override func reset() {
+        origin = nil
+        super.reset()
     }
 }
 

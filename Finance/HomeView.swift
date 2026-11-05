@@ -170,7 +170,9 @@ struct HomeView: View {
     }
 
     private func panelDrag(screen: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 0, coordinateSpace: .global)
+        // On the home card the finger tracks immediately. Once a page is open, leave the first
+        // movement to that page's scroll; a zero-distance drag here keeps the list from ever moving.
+        DragGesture(minimumDistance: dock == 0 ? 0 : 18, coordinateSpace: .global)
             .onChanged { value in
                 if !dragSession.decided {
                     dragSession.decided = true
