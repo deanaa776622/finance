@@ -1,5 +1,4 @@
 node_modules/
-out/raw/
-out/blur/
+out/
 preview/
 *.log
