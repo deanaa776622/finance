@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Home — Calm Ledger</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 48px 24px;
+    }
+
+    .mist {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(72px);
+      opacity: 0.42;
+    }
+
+    .orb.teal {
+      width: 280px; height: 280px;
+      background: var(--mist-teal);
+      top: 18%; left: -8%;
+    }
+    .orb.sage {
+      width: 240px; height: 240px;
+      background: var(--mist-sage);
+      top: 42%; right: -12%;
+      opacity: 0.34;
+    }
+    .orb.sand {
+      width: 200px; height: 200px;
+      background: var(--warm-sand);
+      bottom: 16%; left: 28%;
+      opacity: 0.28;
+    }
+
+    .vignette {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 45%, transparent 0%, rgba(12, 14, 18, 0.55) 100%),
+        linear-gradient(180deg, rgba(12, 14, 18, 0.2) 0%, transparent 20%, transparent 80%, rgba(12, 14, 18, 0.35) 100%);
+    }
+
+    .center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 40px;
+      z-index: 2;
+    }
+
+    .status-word {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: 0.42em;
+      padding-left: 0.42em;
+      color: var(--paper);
+    }
+
+    .status-sub {
+      margin-top: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--quiet);
+      max-width: 240px;
+    }
+
+    .chev {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(244, 241, 236, 0.22);
+      font-size: 22px;
+      z-index: 3;
+      font-weight: 300;
+    }
+    .chev.up { top: 68px; }
+    .chev.down { bottom: 36px; }
+
+    .hint-label {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      color: rgba(244, 241, 236, 0.18);
+      z-index: 3;
+    }
+    .hint-label.top { top: 96px; }
+    .hint-label.bot { bottom: 64px; }
+  </style>
+</head>
+<body>
+  <div class="phone" data-screen="home">
+    <div class="screen">
+      <div class="mist" aria-hidden="true">
+        <div class="orb teal"></div>
+        <div class="orb sage"></div>
+        <div class="orb sand"></div>
+        <div class="vignette"></div>
+      </div>
+
+      <div class="status-bar">
+        <span>9:41</span>
+        <span class="icons">
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="4.5" y="5" width="3" height="7" rx="0.5"/><rect x="9" y="2" width="3" height="10" rx="0.5"/><rect x="13.5" y="0" width="3" height="12" rx="0.5"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 3.2c1.8 0 3.4.7 4.6 1.9l1.1-1.1A8.1 8.1 0 0 0 8 1.2 8.1 8.1 0 0 0 2.3 4l1.1 1.1A6.5 6.5 0 0 1 8 3.2zm0 3.2c1 0 1.9.4 2.6 1l1.1-1.1A5 5 0 0 0 8 4.8a5 5 0 0 0-3.7 1.5l1.1 1.1A3.6 3.6 0 0 1 8 6.4zm0 3.1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/></svg>
+          <svg width="27" height="12" viewBox="0 0 27 12" fill="currentColor"><rect x="0" y="1" width="22" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="1.5" y="2.5" width="16" height="7" rx="1.2"/><rect x="23.2" y="4" width="2" height="4" rx="0.6"/></svg>
+        </span>
+      </div>
+
+      <div class="chev up">⌄</div>
+      <div class="hint-label top">儲蓄目標</div>
+
+      <div class="center">
+        <div class="status-word">平衡</div>
+        <p class="status-sub">配置大致平衡</p>
+      </div>
+
+      <div class="hint-label bot">資產</div>
+      <div class="chev down">⌃</div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+</body>
+</html>
