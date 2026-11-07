@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calm Ledger — Redesign Gallery</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      padding: 56px 40px 80px;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 0%, rgba(91, 154, 168, 0.08), transparent 60%),
+        #14161a;
+    }
+    header {
+      max-width: 1400px;
+      margin: 0 auto 40px;
+    }
+    header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    header p {
+      margin-top: 8px;
+      color: var(--quiet);
+      font-size: 14px;
+      max-width: 560px;
+      line-height: 1.55;
+    }
+    .row {
+      display: flex;
+      gap: 48px;
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+    .col label {
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      color: var(--quiet);
+    }
+    iframe {
+      width: 393px;
+      height: 852px;
+      border: none;
+      border-radius: 48px;
+      background: transparent;
+      overflow: hidden;
+      /* Hide the phone chrome inside iframe pages — we want nested phone only.
+         Actually each page already has .phone — so iframe should clip to phone.
+         Better: load pages that are just the phone, which they are. */
+      box-shadow: none;
+      /* Expand iframe to include phone shadow — add padding wrapper */
+    }
+    .frame-wrap {
+      padding: 16px;
+      border-radius: 56px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>CALM LEDGER · REDESIGN</h1>
+    <p>依 stitch-skills generate-design / taste-design 強化後的靜態渲染。保留三頁手勢殼層，改為低飽和霧氣配置色與冷靜中文狀態。未改動任何 Swift 程式碼。</p>
+  </header>
+  <div class="row">
+    <div class="col">
+      <label>01 · 首屏</label>
+      <div class="frame-wrap"><iframe src="01-home.html" title="Home"></iframe></div>
+    </div>
+    <div class="col">
+      <label>02 · 資產</label>
+      <div class="frame-wrap"><iframe src="02-assets.html" title="Assets"></iframe></div>
+    </div>
+    <div class="col">
+      <label>03 · 儲蓄</label>
+      <div class="frame-wrap"><iframe src="03-savings.html" title="Savings"></iframe></div>
+    </div>
+  </div>
+</body>
+</html>

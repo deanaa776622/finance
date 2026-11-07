@@ -1,0 +1,26 @@
+{
+  "project": "finance-calm-ledger",
+  "source": "stitch-skills prompt pipeline (local HTML mockups; Stitch MCP unavailable)",
+  "designSystem": ".stitch/DESIGN.md",
+  "deviceType": "MOBILE",
+  "screens": [
+    {
+      "id": "01-home",
+      "title": "首屏 · 平衡狀態",
+      "file": ".stitch/designs/01-home.html",
+      "render": ".stitch/designs/01-home-render.png"
+    },
+    {
+      "id": "02-assets",
+      "title": "資產 · 總淨值與長期趨勢",
+      "file": ".stitch/designs/02-assets.html",
+      "render": ".stitch/designs/02-assets-render.png"
+    },
+    {
+      "id": "03-savings",
+      "title": "儲蓄 · 距離目標年數",
+      "file": ".stitch/designs/03-savings.html",
+      "render": ".stitch/designs/03-savings-render.png"
+    }
+  ]
+}
