@@ -14,6 +14,7 @@ struct HomeView: View {
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hideAmounts") private var hideAmounts = false
     @AppStorage(ProPreview.key) private var isPro = true
     /// -1 assets, 0 home, 1 savings. Animated, so it passes through values between pages.
@@ -135,6 +136,10 @@ struct HomeView: View {
             .preferredColorScheme(palette.colorScheme)
             .toolbar(.hidden, for: .navigationBar)
         }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase != .active else { return }
+            releaseDrag()
+        }
     }
 
     private static let dockedCard: CGFloat = 168
@@ -195,8 +200,7 @@ struct HomeView: View {
             }
             .onEnded { value in
                 let axis = dragSession.axis
-                let anchor = dragSession.anchor
-                let moved = anchor.map {
+                let moved = dragSession.anchor.map {
                     CGSize(width: value.location.x - $0.x, height: value.location.y - $0.y)
                 }
                 if let moved {
@@ -206,12 +210,29 @@ struct HomeView: View {
                         endPanel(moved, screen: screen)
                     }
                 }
-                dragSession.anchor = nil
-                dragSession.axis = nil
-                dragSession.grabFraction = 0.5
-                dragSession.decided = false
-                dragSession.ignored = false
+                clearDrag()
             }
+    }
+
+    /// App 切走時系統取消觸控，不一定會呼叫 onEnded。狀態留著的話，回來之後滑動會一直被丟掉。
+    private func releaseDrag() {
+        let axis = dragSession.axis
+        let tracking = dragSession.anchor != nil
+        clearDrag()
+        guard tracking else { return }
+        if axis == .horizontal {
+            settleLens(min(1, max(0, lens + lensDrag)))
+        } else {
+            settlePanel(min(1, max(-1, panel + drag)))
+        }
+    }
+
+    private func clearDrag() {
+        dragSession.anchor = nil
+        dragSession.axis = nil
+        dragSession.grabFraction = 0.5
+        dragSession.decided = false
+        dragSession.ignored = false
     }
 
     /// List and savings own the drag once that page is committed. The card does not.
@@ -263,7 +284,10 @@ struct HomeView: View {
     }
 
     private func endPanel(_ translation: CGSize, screen: CGFloat) {
-        let end = trackedPanel(dy: translation.height, screen: screen)
+        settlePanel(trackedPanel(dy: translation.height, screen: screen))
+    }
+
+    private func settlePanel(_ end: CGFloat) {
         let moved = end - panel
         if abs(moved) <= 0.25 { snap(panel) }
         else if panel == 0 { snap(moved > 0 ? 1 : -1) }
@@ -273,7 +297,10 @@ struct HomeView: View {
 
     private func endLens(_ translation: CGSize) {
         let width = max(heroFrame.width, 1)
-        let end = min(1, max(0, lens - translation.width / width))
+        settleLens(min(1, max(0, lens - translation.width / width)))
+    }
+
+    private func settleLens(_ end: CGFloat) {
         let moved = end - lens
         snapLens(abs(moved) <= 0.25 ? lens : (moved > 0 ? 1 : 0))
     }
