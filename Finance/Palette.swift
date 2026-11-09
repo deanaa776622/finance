@@ -121,6 +121,20 @@ final class Palette {
         return color.mix(with: drift, by: factor)
     }
 
+    /// Mix a bucket toward its own gray. 0 is the set color, 1 is fully gray.
+    func grayed(for kind: AssetKind, factor: Double) -> Color {
+        let color = swatch(for: kind)
+        let t = min(1, max(0, factor))
+        guard kind.countsTowardAllocation, t > 0 else { return color }
+        let resolved = color.resolve(in: EnvironmentValues())
+        let y = 0.2126 * Double(resolved.red) + 0.7152 * Double(resolved.green) + 0.0722 * Double(resolved.blue)
+        return Color(
+            red: Double(resolved.red) * (1 - t) + y * t,
+            green: Double(resolved.green) * (1 - t) + y * t,
+            blue: Double(resolved.blue) * (1 - t) + y * t
+        )
+    }
+
     private func swatch(for kind: AssetKind) -> Color {
         switch kind {
         case .original: original

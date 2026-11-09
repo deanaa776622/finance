@@ -152,7 +152,7 @@ struct TargetEditor: View {
         }
         .font(.title3.weight(.semibold))
         .foregroundStyle(
-            palette.glow(for: kind, factor: portfolio.driftFactor(for: kind))
+            palette.grayed(for: kind, factor: portfolio.driftFactor(for: kind))
                 .readable(on: palette.ground, scheme: palette.colorScheme)
         )
         .frame(maxWidth: .infinity)
@@ -235,9 +235,9 @@ private struct AllocationGlowTrack: View {
         let lev = min(max(0, leverage), 100 - orig)
         let p1 = orig / 100
         let p2 = (orig + lev) / 100
-        let originalColor = palette.glow(for: .original, factor: drift(.original))
-        let leverageColor = palette.glow(for: .leverage, factor: drift(.leverage))
-        let cashColor = palette.glow(for: .cash, factor: drift(.cash))
+        let originalColor = segmentColor(.original)
+        let leverageColor = segmentColor(.leverage)
+        let cashColor = segmentColor(.cash)
         GeometryReader { geo in
             let bar = Capsule()
                 .fill(barFill(originalColor: originalColor, leverageColor: leverageColor, cashColor: cashColor, p1: p1, p2: p2))
@@ -276,8 +276,11 @@ private struct AllocationGlowTrack: View {
         ], startPoint: .leading, endPoint: .trailing))
     }
 
-    private func drift(_ kind: AssetKind) -> Double {
-        tracksDrift ? portfolio.driftFactor(for: kind) : 0
+    private func segmentColor(_ kind: AssetKind) -> Color {
+        if tracksDrift {
+            return palette.grayed(for: kind, factor: portfolio.driftFactor(for: kind))
+        }
+        return palette.glow(for: kind, factor: 0)
     }
 
     private var seam: some View {
