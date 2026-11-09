@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// One soft light per bucket: size = progress toward that slice of 目標總額, hue = allocation drift.
+/// One soft light per bucket: size = progress toward that slice of 目標總額, color fades to its own gray with allocation drift.
 struct GlowOrb: Identifiable {
     let id: String
     let color: Color
@@ -22,7 +22,7 @@ extension GlowOrb {
             let layout = kind.glowLayout
             return GlowOrb(
                 id: kind.rawValue,
-                color: palette.glow(for: kind, factor: portfolio.driftFactor(for: kind)),
+                color: palette.grayed(for: kind, factor: portfolio.driftFactor(for: kind)),
                 diameter: fullDiameter * achieve,
                 anchor: layout.anchor,
                 points: layout.points,
