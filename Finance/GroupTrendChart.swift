@@ -15,8 +15,6 @@ struct GroupTrendChart: View, Equatable {
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hideAmounts") private var hideAmounts = false
     @State private var selected: String?
-    @State private var markerX: CGFloat?
-    @State private var monthLabelWidth: CGFloat = 0
     /// Screen positions, 0 = bottom of the plot and 1 = top. Animating these moves the strokes.
     @State private var drawn: [DrawnLine] = []
     @State private var zeroUnit: Double = 0
@@ -52,7 +50,6 @@ struct GroupTrendChart: View, Equatable {
             guard phase != .active, selected != nil || fingerSpan != nil else { return }
             withoutAnimation {
                 selected = nil
-                markerX = nil
                 fingerSpan = nil
             }
         }
@@ -61,7 +58,7 @@ struct GroupTrendChart: View, Equatable {
         }
     }
 
-    /// The month row. Scrubbing hides the ranges and shows the month under the finger.
+    /// The month row. Scrubbing hides the ranges and shows the month in the center.
     private var rangeBand: some View {
         ZStack {
             ChartSpanPicker(span: $span) { showCustom = true }
@@ -196,17 +193,10 @@ struct GroupTrendChart: View, Equatable {
                 guard let month = month(atPlotX: drag.location.x - plot.origin.x, width: plot.width) else { return }
                 withoutAnimation {
                     if month != selected { selected = month }
-                    if let plotX = proxy.position(forX: month) {
-                        let next = plot.minX + plotX
-                        if markerX != next { markerX = next }
-                    }
                 }
             }
         .onEnded { _ in
-            withoutAnimation {
-                selected = nil
-                markerX = nil
-            }
+            withoutAnimation { selected = nil }
         }
     }
 
@@ -219,13 +209,7 @@ struct GroupTrendChart: View, Equatable {
                   let end = month(atPlotX: right - plot.origin.x, width: plot.width) else { return }
             withoutAnimation {
                 selected = nil
-                markerX = nil
-                fingerSpan = FingerSpan(
-                    start: start,
-                    end: end,
-                    startX: proxy.position(forX: start).map { plot.minX + $0 } ?? left,
-                    endX: proxy.position(forX: end).map { plot.minX + $0 } ?? right
-                )
+                fingerSpan = FingerSpan(start: start, end: end)
             }
         } onEnd: {
             withoutAnimation { fingerSpan = nil }
@@ -275,68 +259,26 @@ struct GroupTrendChart: View, Equatable {
     }
 
     private var monthLabel: some View {
-        GeometryReader { row in
-            let pair = placedPair(in: row.size.width)
-            Text(fingerSpan.map { spokenMonth($0.start) } ?? selected.map(spokenMonth) ?? " ")
-                .font(.footnote)
-                .monospacedDigit()
-                .foregroundStyle(palette.ink)
-                .fixedSize()
-                .background {
-                    GeometryReader { text in
-                        Color.clear
-                            .onChange(of: text.size.width, initial: true) { _, width in
-                                if monthLabelWidth != width { monthLabelWidth = width }
-                            }
-                    }
-                }
-                .position(
-                    x: fingerSpan == nil ? placedMonthX(in: row.size.width) : pair.left,
-                    y: pair.stacked ? 8 : row.size.height / 2
-                )
-                .opacity(selected == nil && fingerSpan == nil ? 0 : 1)
-            if fingerSpan != nil {
-                Text(fingerSpan.map { spokenMonth($0.end) } ?? " ")
-                    .font(.footnote)
-                    .monospacedDigit()
-                    .foregroundStyle(palette.ink)
-                    .fixedSize()
-                    .position(x: pair.right, y: pair.stacked ? 28 : row.size.height / 2)
-            }
-        }
-        .frame(height: 36)
-        .allowsHitTesting(false)
+        Text(monthCaption)
+            .font(.footnote)
+            .monospacedDigit()
+            .foregroundStyle(palette.ink)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+            .frame(maxWidth: .infinity)
+            .frame(height: 36)
+            .opacity(selected == nil && fingerSpan == nil ? 0 : 1)
+            .allowsHitTesting(false)
     }
 
-    /// Keeps the two month labels from drawing on top of each other.
-    /// Side by side when the row has room; otherwise the left month sits above the right.
-    private func placedPair(in width: CGFloat) -> (left: CGFloat, right: CGFloat, stacked: Bool) {
-        let label = (40...160).contains(monthLabelWidth) ? monthLabelWidth : 88
-        let half = label / 2
-        func clamp(_ x: CGFloat) -> CGFloat { min(max(x, half), max(half, width - half)) }
-        var left = clamp(fingerSpan?.startX ?? half)
-        var right = clamp(fingerSpan?.endX ?? width - half)
-        let needed = label + 8
-        if right < left { swap(&left, &right) }
-        if right - left < needed {
-            let mid = (left + right) / 2
-            left = mid - needed / 2
-            right = mid + needed / 2
-            if left < half {
-                left = half
-                right = min(width - half, left + needed)
-            } else if right > width - half {
-                right = max(half, width - half)
-                left = max(half, right - needed)
-            }
+    /// One month sits in the center. Two fingers read as one range, earlier month first.
+    private var monthCaption: String {
+        if let span = fingerSpan {
+            let first = min(span.start, span.end)
+            let last = max(span.start, span.end)
+            return "\(spokenMonth(first)) - \(spokenMonth(last))"
         }
-        return (left, right, right - left < needed - 0.5)
-    }
-
-    private func placedMonthX(in width: CGFloat) -> CGFloat {
-        let half = monthLabelWidth / 2
-        let x = markerX ?? width / 2
-        return min(max(x, half), max(half, width - half))
+        return selected.map(spokenMonth) ?? " "
     }
 
     private var legend: some View {
@@ -700,8 +642,6 @@ struct GroupTrendChart: View, Equatable {
 private struct FingerSpan {
     var start: String
     var end: String
-    var startX: CGFloat
-    var endX: CGFloat
 }
 
 private struct TrendLine: Identifiable {
