@@ -12,6 +12,7 @@ struct GroupTrendChart: View, Equatable {
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hideAmounts") private var hideAmounts = false
     @State private var selected: String?
     @State private var markerX: CGFloat?
@@ -46,6 +47,14 @@ struct GroupTrendChart: View, Equatable {
         .onChange(of: plotKey, initial: true) { _, _ in
             let placed = layout()
             morph(to: placed.lines, zero: placed.zero)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase != .active, selected != nil || fingerSpan != nil else { return }
+            withoutAnimation {
+                selected = nil
+                markerX = nil
+                fingerSpan = nil
+            }
         }
         .sheet(isPresented: $showCustom) {
             ChartSpanEditor(start: $customStart, end: $customEnd)

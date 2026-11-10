@@ -2,11 +2,12 @@ import SwiftUI
 
 /// Finger position once a drag passes the slack. Held on a class so the arming sample cannot be published late.
 private final class DragSession {
+    /// First sample of the gesture now in progress. A new finger-down has a new start.
+    var start: CGPoint?
     var anchor: CGPoint?
     var axis: Axis?
     /// Where the finger sat in the card, 0 = top, 1 = bottom. That point tracks the finger.
     var grabFraction: CGFloat = 0.5
-    var decided = false
     var ignored = false
 }
 
@@ -140,6 +141,7 @@ struct HomeView: View {
             guard phase != .active else { return }
             releaseDrag()
         }
+        .onAppear(perform: GestureReset.arm)
     }
 
     private static let dockedCard: CGFloat = 168
@@ -179,8 +181,12 @@ struct HomeView: View {
         // movement to that page's scroll; a zero-distance drag here keeps the list from ever moving.
         DragGesture(minimumDistance: dock == 0 ? 0 : 18, coordinateSpace: .global)
             .onChanged { value in
-                if !dragSession.decided {
-                    dragSession.decided = true
+                // A chart scrub can end without onEnded. The next finger-down must not inherit "ignore".
+                if dragSession.start != value.startLocation {
+                    dragSession.start = value.startLocation
+                    dragSession.anchor = nil
+                    dragSession.axis = nil
+                    dragSession.grabFraction = 0.5
                     dragSession.ignored = ignoresShell(value.startLocation)
                 }
                 if dragSession.ignored { return }
@@ -228,10 +234,10 @@ struct HomeView: View {
     }
 
     private func clearDrag() {
+        dragSession.start = nil
         dragSession.anchor = nil
         dragSession.axis = nil
         dragSession.grabFraction = 0.5
-        dragSession.decided = false
         dragSession.ignored = false
     }
 

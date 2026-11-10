@@ -30,6 +30,8 @@ final class TwoFingerRangeRecognizer: UIGestureRecognizer, UIGestureRecognizerDe
         super.init(target: target, action: action)
         delegate = self
         cancelsTouchesInView = false
+        delaysTouchesBegan = false
+        delaysTouchesEnded = false
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
@@ -47,12 +49,20 @@ final class TwoFingerRangeRecognizer: UIGestureRecognizer, UIGestureRecognizerDe
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesEnded(touches, with: event)
         let staying = event.allTouches?.filter { $0.phase != .ended && $0.phase != .cancelled }.count ?? 0
-        if staying < 2, state == .began || state == .changed { state = .ended }
+        if state == .possible {
+            state = .failed
+        } else if staying < 2, state == .began || state == .changed {
+            state = .ended
+        }
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesCancelled(touches, with: event)
-        if state == .began || state == .changed { state = .cancelled }
+        if state == .possible {
+            state = .failed
+        } else if state == .began || state == .changed {
+            state = .cancelled
+        }
     }
 
     func gestureRecognizer(
@@ -60,5 +70,35 @@ final class TwoFingerRangeRecognizer: UIGestureRecognizer, UIGestureRecognizerDe
         shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
     ) -> Bool {
         true
+    }
+}
+
+/// A chart scrub can leave a recognizer in `.changed` after the app is suspended.
+/// The net-worth card's drag never begins until that recognizer is back at `.possible`.
+enum GestureReset {
+    private static var observer: NSObjectProtocol?
+
+    static func arm() {
+        guard observer == nil else { return }
+        observer = NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { _ in reset() }
+    }
+
+    private static func reset() {
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+        windows.forEach(reset)
+    }
+
+    private static func reset(_ view: UIView) {
+        for recognizer in view.gestureRecognizers ?? [] where recognizer.state != .possible {
+            recognizer.isEnabled = false
+            recognizer.isEnabled = true
+        }
+        view.subviews.forEach(reset)
     }
 }
