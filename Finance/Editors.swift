@@ -106,25 +106,31 @@ struct TargetEditor: View {
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(.secondary)
             } else {
-                HStack(alignment: .firstTextBaseline, spacing: 1) {
-                    Text(text)
-                        .monospacedDigit()
-                        .fixedSize(horizontal: true, vertical: false)
-                        .frame(minWidth: 42, alignment: .trailing)
-                    Text("%")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(
-                    palette.glow(for: kind, factor: 0)
-                        .readable(on: palette.ground, scheme: palette.colorScheme)
-                )
+                centeredPercent(text)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(
+                        palette.glow(for: kind, factor: 0)
+                            .readable(on: palette.ground, scheme: palette.colorScheme)
+                    )
             }
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(text.isEmpty ? "\(title)，尚未設定" : "\(title)，\(text)%")
+    }
+
+    /// The digits stay centered. The percent sign hangs off the trailing edge and does not shift them.
+    private func centeredPercent(_ text: String) -> some View {
+        Text(text)
+            .monospacedDigit()
+            .fixedSize(horizontal: true, vertical: false)
+            .overlay(alignment: .trailing) {
+                Text("%")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize()
+                    .alignmentGuide(.trailing) { $0[.leading] - 1 }
+            }
     }
 
     private func gapReadout(_ title: String, kind: AssetKind, percent: Double) -> some View {
@@ -141,23 +147,15 @@ struct TargetEditor: View {
 
     private func percentReadout(_ title: String, percent: Double, kind: AssetKind) -> some View {
         let shown = NumberParse.displayPercent(percent.rounded())
-        return HStack(alignment: .firstTextBaseline, spacing: 1) {
-            Text(shown)
-                .monospacedDigit()
-                .fixedSize(horizontal: true, vertical: false)
-                .frame(minWidth: 42, alignment: .trailing)
-            Text("%")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-        .font(.title3.weight(.semibold))
-        .foregroundStyle(
-            palette.grayed(for: kind, factor: portfolio.driftFactor(for: kind))
-                .readable(on: palette.ground, scheme: palette.colorScheme)
-        )
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(title)，\(shown)%")
+        return centeredPercent(shown)
+            .font(.title3.weight(.semibold))
+            .foregroundStyle(
+                palette.grayed(for: kind, factor: portfolio.driftFactor(for: kind))
+                    .readable(on: palette.ground, scheme: palette.colorScheme)
+            )
+            .frame(maxWidth: .infinity)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(title)，\(shown)%")
     }
 
     private func gapLabel(kind: AssetKind, percent: Double) -> String {
