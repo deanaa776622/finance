@@ -79,15 +79,6 @@ struct GroupTrendChart: View, Equatable {
             ForEach(visibleLines) { line in
                 marks(line)
             }
-            if let fingerSpan {
-                RuleMark(x: .value("月", fingerSpan.start))
-                    .foregroundStyle(palette.quietInk.opacity(0.7))
-                RuleMark(x: .value("月", fingerSpan.end))
-                    .foregroundStyle(palette.quietInk.opacity(0.7))
-            } else if let selected {
-                RuleMark(x: .value("月", selected))
-                    .foregroundStyle(palette.quietInk.opacity(0.7))
-            }
             if months.isEmpty == false {
                 RuleMark(y: .value("金額", visibleZero))
                     .foregroundStyle(palette.quietInk.opacity(0.35))
@@ -99,11 +90,20 @@ struct GroupTrendChart: View, Equatable {
         .chartLegend(.hidden)
         .chartOverlay { proxy in
             GeometryReader { geometry in
-                Rectangle()
-                    .fill(.clear)
-                    .contentShape(Rectangle())
-                    .simultaneousGesture(scrub(proxy: proxy, geometry: geometry))
-                    .gesture(rangeGesture(proxy: proxy, geometry: geometry))
+                let plot = proxy.plotFrame.map { geometry[$0] } ?? .zero
+                ZStack {
+                    if let fingerSpan {
+                        scrubRule(fingerSpan.start, plot: plot, proxy: proxy)
+                        scrubRule(fingerSpan.end, plot: plot, proxy: proxy)
+                    } else if let selected {
+                        scrubRule(selected, plot: plot, proxy: proxy)
+                    }
+                    Rectangle()
+                        .fill(.clear)
+                        .contentShape(Rectangle())
+                        .simultaneousGesture(scrub(proxy: proxy, geometry: geometry))
+                        .gesture(rangeGesture(proxy: proxy, geometry: geometry))
+                }
             }
         }
     }
@@ -178,6 +178,17 @@ struct GroupTrendChart: View, Equatable {
                 }
             }
         }
+    }
+
+    /// Full weight through the middle. Both tips come to a point so the rule feels light.
+    private func scrubRule(_ month: String, plot: CGRect, proxy: ChartProxy) -> some View {
+        let x = proxy.position(forX: month).map { plot.minX + $0 }
+        return TaperedRule()
+            .fill(palette.quietInk.opacity(0.7))
+            .frame(width: 1, height: plot.height)
+            .position(x: x ?? 0, y: plot.midY)
+            .opacity(x == nil ? 0 : 1)
+            .allowsHitTesting(false)
     }
 
     /// Horizontal only, and shared with the list, so a vertical flick can still scroll.
@@ -642,6 +653,22 @@ struct GroupTrendChart: View, Equatable {
 private struct FingerSpan {
     var start: String
     var end: String
+}
+
+/// Vertical scrub rule. The middle stays a hairline; each end tapers to a point.
+private struct TaperedRule: Shape {
+    func path(in rect: CGRect) -> Path {
+        let tip = rect.height * 0.22
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + tip))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - tip))
+        path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY - tip))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + tip))
+        path.closeSubpath()
+        return path
+    }
 }
 
 private struct TrendLine: Identifiable {
