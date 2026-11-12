@@ -100,8 +100,8 @@ struct AssetEditor: View {
                         titles: ["總金額", "股數與單價"],
                         index: usesSharePrice ? 1 : 0,
                         enabled: !kind.prefersSharePrice,
-                        tint: kind.prefersSharePrice ? nil : UIColor(kindTint),
-                        titleInk: kind.prefersSharePrice ? nil : UIColor(knobInk)
+                        tint: UIColor(kindTint),
+                        titleInk: UIColor(knobInk)
                     ) { index in
                         usesSharePrice = index == 1
                         lumpShowsTwd = false
@@ -162,8 +162,8 @@ struct AssetEditor: View {
                             index: Self.leverageSteps.firstIndex { $0.value == leverage } ?? 2,
                             enabled: kind == .leverage,
                             off: kind == .leverage ? [0] : [],
-                            tint: kind == .leverage ? UIColor(kindTint) : nil,
-                            titleInk: kind == .leverage ? UIColor(knobInk) : nil
+                            tint: UIColor(kindTint),
+                            titleInk: UIColor(knobInk)
                         ) { leverage = Self.leverageSteps[$0].value }
                     } label: {
                         alignedTitle("槓桿倍數")
@@ -515,7 +515,7 @@ private extension View {
     }
 }
 
-/// Segmented choices. The selected knob uses the kind color only while the control can be changed.
+/// Segmented choices. A locked control keeps a quieter knob so the current choice stays visible.
 private struct PaletteSegments: UIViewRepresentable {
     var titles: [String]
     var index: Int
@@ -545,17 +545,19 @@ private struct PaletteSegments: UIViewRepresentable {
             control.setTitle(title, forSegmentAt: offset)
         }
         let selected = titles.indices.contains(index) ? index : UISegmentedControl.noSegment
+        context.coordinator.index = selected
         if control.selectedSegmentIndex != selected {
             control.selectedSegmentIndex = selected
         }
-        control.isEnabled = enabled
-        if enabled {
-            for segment in 0..<control.numberOfSegments {
-                control.setEnabled(!off.contains(segment), forSegmentAt: segment)
-            }
+        // Keep the control enabled so the selected knob still draws. Interaction is what locks it.
+        control.isEnabled = true
+        for segment in 0..<control.numberOfSegments {
+            let segmentOn = !enabled || !off.contains(segment)
+            control.setEnabled(segmentOn, forSegmentAt: segment)
         }
-        control.selectedSegmentTintColor = enabled ? tint : nil
-        control.restingInk = enabled ? titleInk : nil
+        control.isUserInteractionEnabled = enabled
+        control.selectedSegmentTintColor = enabled ? tint : tint?.withAlphaComponent(0.45)
+        control.restingInk = titleInk
         control.applyTitle()
     }
 
@@ -567,12 +569,19 @@ private struct PaletteSegments: UIViewRepresentable {
 
     final class Coordinator: NSObject {
         var select: (Int) -> Void
+        var index = 0
         init(select: @escaping (Int) -> Void) { self.select = select }
         @objc func changed(_ sender: UISegmentedControl) {
-            let index = sender.selectedSegmentIndex
-            guard index >= 0 else { return }
+            let chosen = sender.selectedSegmentIndex
+            guard sender.isUserInteractionEnabled, chosen >= 0, sender.isEnabledForSegment(at: chosen) else {
+                if sender.selectedSegmentIndex != index {
+                    sender.selectedSegmentIndex = index
+                }
+                (sender as? KindSegments)?.applyTitle()
+                return
+            }
             (sender as? KindSegments)?.beginTravel()
-            select(index)
+            select(chosen)
         }
     }
 }
@@ -587,7 +596,12 @@ private final class KindSegments: UISegmentedControl {
     private var link: CADisplayLink?
     private var watch: FlightWatch?
 
+    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+        isEnabled && isUserInteractionEnabled && super.point(inside: point, with: event)
+    }
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard isEnabled, isUserInteractionEnabled else { return }
         holding = true
         applyTitle()
         super.touchesBegan(touches, with: event)
@@ -599,10 +613,12 @@ private final class KindSegments: UISegmentedControl {
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard isEnabled, isUserInteractionEnabled else { return }
         holding = false
         if let point = touches.first?.location(in: self),
            let index = segmentIndex(at: point),
-           index != selectedSegmentIndex {
+           index != selectedSegmentIndex,
+           isEnabledForSegment(at: index) {
             beginTravel()
         }
         super.touchesEnded(touches, with: event)
@@ -610,6 +626,7 @@ private final class KindSegments: UISegmentedControl {
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard isEnabled, isUserInteractionEnabled else { return }
         holding = false
         super.touchesCancelled(touches, with: event)
         applyTitle()
@@ -649,6 +666,11 @@ private final class KindSegments: UISegmentedControl {
     }
 
     func applyTitle() {
+        if isUserInteractionEnabled {
+            setTitleTextAttributes(nil, for: .normal)
+        } else {
+            setTitleTextAttributes([.foregroundColor: UIColor.tertiaryLabel], for: .normal)
+        }
         guard let restingInk else {
             setTitleTextAttributes(nil, for: .selected)
             setTitleTextAttributes(nil, for: [.selected, .highlighted])
@@ -658,9 +680,10 @@ private final class KindSegments: UISegmentedControl {
         let onTrack = holding || traveling
         setTitleTextAttributes([.foregroundColor: onTrack ? track : restingInk], for: .selected)
         setTitleTextAttributes([.foregroundColor: track], for: [.selected, .highlighted])
-        let index = selectedSegmentIndex
-        guard index >= 0, let title = titleForSegment(at: index) else { return }
-        setTitle(title, forSegmentAt: index)
+        for segment in 0..<numberOfSegments {
+            guard let title = titleForSegment(at: segment) else { continue }
+            setTitle(title, forSegmentAt: segment)
+        }
     }
 
     private func stopWatch() {
