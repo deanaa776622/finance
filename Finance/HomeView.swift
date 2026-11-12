@@ -285,6 +285,8 @@ struct HomeView: View {
         if axis == .horizontal {
             dotToken += 1
             withAnimation(.easeOut(duration: 0.12)) { showDots = true }
+        } else {
+            hidePageDots()
         }
         return axis
     }
@@ -322,8 +324,8 @@ struct HomeView: View {
         DispatchQueue.main.async {
             var transaction = Transaction(animation: animation)
             transaction.addAnimationCompletion {
-                guard token == dotToken, dragSession.axis == nil else { return }
-                withAnimation(.easeOut(duration: 0.25)) { showDots = false }
+                guard token == dotToken else { return }
+                hidePageDots()
             }
             withTransaction(transaction) {
                 lens = to
@@ -339,6 +341,7 @@ struct HomeView: View {
         panel = current
         drag = 0
         dock = detent
+        if detent != -1 { hidePageDots() }
         let animation: Animation = reduceMotion
             ? .easeInOut(duration: 0.2)
             : .spring(response: 0.48, dampingFraction: 0.88)
@@ -347,6 +350,13 @@ struct HomeView: View {
                 panel = detent
             }
         }
+    }
+
+    /// Net-worth and exposure only. A later vertical flick must not leave them on 距離目標.
+    private func hidePageDots() {
+        guard showDots else { return }
+        dotToken += 1
+        withAnimation(.easeOut(duration: 0.2)) { showDots = false }
     }
 
     private func heroLabel(_ position: CGFloat) -> String {

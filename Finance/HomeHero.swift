@@ -47,7 +47,7 @@ struct HomeHero: View {
         .overlay(alignment: .bottom) {
             pageDots
                 .padding(.bottom, 14)
-                .opacity(showsDots ? 1 : 0)
+                .opacity(showsDots && position < -0.5 ? 1 : 0)
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
