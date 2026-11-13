@@ -656,7 +656,7 @@ private struct FingerSpan {
 }
 
 /// Vertical scrub rule. The middle stays a hairline; each end tapers to a point.
-private struct TaperedRule: Shape {
+struct TaperedRule: Shape {
     func path(in rect: CGRect) -> Path {
         let tip = rect.height * 0.22
         var path = Path()

@@ -1,6 +1,92 @@
 import SwiftUI
 import UIKit
 
+/// One finger scrubs. A second finger adds the other end without moving the first.
+struct ChartTouchGesture: UIGestureRecognizerRepresentable {
+    var onChange: ([CGFloat]) -> Void
+    var onEnd: () -> Void
+
+    func makeUIGestureRecognizer(context: Context) -> ChartTouchRecognizer {
+        let recognizer = ChartTouchRecognizer(target: nil, action: nil)
+        recognizer.onChange = onChange
+        recognizer.onEnd = onEnd
+        return recognizer
+    }
+
+    func updateUIGestureRecognizer(_ recognizer: ChartTouchRecognizer, context: Context) {
+        recognizer.onChange = onChange
+        recognizer.onEnd = onEnd
+    }
+
+    func handleUIGestureRecognizerAction(_ recognizer: ChartTouchRecognizer, context: Context) {
+        switch recognizer.state {
+        case .ended, .cancelled, .failed:
+            onEnd()
+        default:
+            break
+        }
+    }
+}
+
+final class ChartTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerDelegate {
+    var onChange: (([CGFloat]) -> Void)?
+    var onEnd: (() -> Void)?
+
+    override init(target: Any?, action: Selector?) {
+        super.init(target: target, action: action)
+        delegate = self
+        cancelsTouchesInView = false
+        delaysTouchesBegan = false
+        delaysTouchesEnded = false
+    }
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesBegan(touches, with: event)
+        guard (event.allTouches?.count ?? 0) >= 1 else { return }
+        if state == .possible { state = .began }
+        report(event)
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesMoved(touches, with: event)
+        guard state == .began || state == .changed else { return }
+        state = .changed
+        report(event)
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesEnded(touches, with: event)
+        let staying = event.allTouches?.filter { $0.phase != .ended && $0.phase != .cancelled }.count ?? 0
+        if staying == 0 {
+            if state == .possible { state = .failed } else { state = .ended }
+        } else if state == .began || state == .changed {
+            report(event)
+        }
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesCancelled(touches, with: event)
+        if state == .possible { state = .failed } else { state = .cancelled }
+    }
+
+    func report(_ event: UIEvent?) {
+        guard let view, let onChange else { return }
+        let xs = (event?.allTouches ?? [])
+            .filter { $0.phase != .ended && $0.phase != .cancelled }
+            .map { $0.location(in: view).x }
+            .sorted()
+        guard let first = xs.first else { return }
+        onChange(xs.count == 1 ? [first] : [first, xs[xs.count - 1]])
+    }
+
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
+    ) -> Bool {
+        true
+    }
+}
+
 /// Two fingers on the trend chart. Reports the left and right touch as they move.
 struct ChartRangeGesture: UIGestureRecognizerRepresentable {
     var onChange: (CGFloat, CGFloat) -> Void
