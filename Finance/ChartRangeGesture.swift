@@ -31,11 +31,12 @@ struct ChartTouchGesture: UIGestureRecognizerRepresentable {
 final class ChartTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerDelegate {
     var onChange: (([CGFloat]) -> Void)?
     var onEnd: (() -> Void)?
+    private weak var lockedScroll: UIScrollView?
 
     override init(target: Any?, action: Selector?) {
         super.init(target: target, action: action)
         delegate = self
-        cancelsTouchesInView = false
+        cancelsTouchesInView = true
         delaysTouchesBegan = false
         delaysTouchesEnded = false
     }
@@ -44,6 +45,7 @@ final class ChartTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerDelega
         super.touchesBegan(touches, with: event)
         guard (event.allTouches?.count ?? 0) >= 1 else { return }
         if state == .possible { state = .began }
+        lockScroll()
         report(event)
     }
 
@@ -58,6 +60,7 @@ final class ChartTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerDelega
         super.touchesEnded(touches, with: event)
         let staying = event.allTouches?.filter { $0.phase != .ended && $0.phase != .cancelled }.count ?? 0
         if staying == 0 {
+            unlockScroll()
             if state == .possible { state = .failed } else { state = .ended }
         } else if state == .began || state == .changed {
             report(event)
@@ -66,7 +69,30 @@ final class ChartTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerDelega
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesCancelled(touches, with: event)
+        unlockScroll()
         if state == .possible { state = .failed } else { state = .cancelled }
+    }
+
+    /// The list keeps the page still while a finger is choosing a year.
+    private func lockScroll() {
+        guard lockedScroll == nil else { return }
+        var current = view
+        while let candidate = current {
+            if let scroll = candidate as? UIScrollView {
+                scroll.isScrollEnabled = false
+                let pan = scroll.panGestureRecognizer
+                pan.isEnabled = false
+                pan.isEnabled = true
+                lockedScroll = scroll
+                return
+            }
+            current = candidate.superview
+        }
+    }
+
+    private func unlockScroll() {
+        lockedScroll?.isScrollEnabled = true
+        lockedScroll = nil
     }
 
     func report(_ event: UIEvent?) {
@@ -83,7 +109,14 @@ final class ChartTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerDelega
         _ gestureRecognizer: UIGestureRecognizer,
         shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
     ) -> Bool {
-        true
+        !(other is UIPanGestureRecognizer)
+    }
+
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldBeRequiredToFailBy other: UIGestureRecognizer
+    ) -> Bool {
+        other is UIPanGestureRecognizer
     }
 }
 
