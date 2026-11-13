@@ -226,8 +226,9 @@ struct SavingsCurve: View {
         ChartTouchGesture { xs in
             guard let plotFrame = proxy.plotFrame else { return }
             let plot = geometry[plotFrame]
+            let origin = geometry.frame(in: .global).minX
             func placed(_ x: CGFloat) -> Double? {
-                year(atPlotX: x - plot.origin.x, years: years, proxy: proxy)
+                year(atPlotX: x - origin - plot.origin.x, years: years, proxy: proxy)
             }
             withoutAnimation {
                 if xs.count >= 2, let start = placed(xs[0]), let end = placed(xs[1]) {

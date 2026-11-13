@@ -95,11 +95,13 @@ final class ChartTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerDelega
         lockedScroll = nil
     }
 
+    /// Window x, so the chart can place the rule in its own geometry. The recognizer's view is wider than the plot.
     func report(_ event: UIEvent?) {
         guard let view, let onChange else { return }
+        let space = view.window ?? view
         let xs = (event?.allTouches ?? [])
             .filter { $0.phase != .ended && $0.phase != .cancelled }
-            .map { $0.location(in: view).x }
+            .map { $0.location(in: space).x }
             .sorted()
         guard let first = xs.first else { return }
         onChange(xs.count == 1 ? [first] : [first, xs[xs.count - 1]])
