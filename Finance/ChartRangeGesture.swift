@@ -1,6 +1,16 @@
 import SwiftUI
 import UIKit
 
+/// Window x of each finger still down. The recognizer's view is wider than the plot.
+func chartTouchXs(_ recognizer: UIGestureRecognizer, event: UIEvent?) -> [CGFloat] {
+    guard let view = recognizer.view else { return [] }
+    let space = view.window ?? view
+    return (event?.allTouches ?? [])
+        .filter { $0.phase != .ended && $0.phase != .cancelled }
+        .map { $0.location(in: space).x }
+        .sorted()
+}
+
 /// One finger scrubs. A second finger adds the other end without moving the first.
 struct ChartTouchGesture: UIGestureRecognizerRepresentable {
     var onChange: ([CGFloat]) -> Void
@@ -95,14 +105,10 @@ final class ChartTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerDelega
         lockedScroll = nil
     }
 
-    /// Window x, so the chart can place the rule in its own geometry. The recognizer's view is wider than the plot.
+    /// Each live touch keeps its own window x. A new finger does not move the one already down.
     func report(_ event: UIEvent?) {
-        guard let view, let onChange else { return }
-        let space = view.window ?? view
-        let xs = (event?.allTouches ?? [])
-            .filter { $0.phase != .ended && $0.phase != .cancelled }
-            .map { $0.location(in: space).x }
-            .sorted()
+        guard let onChange else { return }
+        let xs = chartTouchXs(self, event: event)
         guard let first = xs.first else { return }
         onChange(xs.count == 1 ? [first] : [first, xs[xs.count - 1]])
     }
@@ -128,16 +134,17 @@ struct ChartRangeGesture: UIGestureRecognizerRepresentable {
     var onEnd: () -> Void
 
     func makeUIGestureRecognizer(context: Context) -> TwoFingerRangeRecognizer {
-        TwoFingerRangeRecognizer(target: nil, action: nil)
+        let recognizer = TwoFingerRangeRecognizer(target: nil, action: nil)
+        recognizer.onChange = onChange
+        return recognizer
+    }
+
+    func updateUIGestureRecognizer(_ recognizer: TwoFingerRangeRecognizer, context: Context) {
+        recognizer.onChange = onChange
     }
 
     func handleUIGestureRecognizerAction(_ recognizer: TwoFingerRangeRecognizer, context: Context) {
         switch recognizer.state {
-        case .began, .changed:
-            guard recognizer.numberOfTouches >= 2, let view = recognizer.view else { return }
-            let first = recognizer.location(ofTouch: 0, in: view)
-            let second = recognizer.location(ofTouch: 1, in: view)
-            onChange(min(first.x, second.x), max(first.x, second.x))
         case .ended, .cancelled, .failed:
             onEnd()
         default:
@@ -147,6 +154,8 @@ struct ChartRangeGesture: UIGestureRecognizerRepresentable {
 }
 
 final class TwoFingerRangeRecognizer: UIGestureRecognizer, UIGestureRecognizerDelegate {
+    var onChange: ((CGFloat, CGFloat) -> Void)?
+
     override init(target: Any?, action: Selector?) {
         super.init(target: target, action: action)
         delegate = self
@@ -158,13 +167,15 @@ final class TwoFingerRangeRecognizer: UIGestureRecognizer, UIGestureRecognizerDe
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesBegan(touches, with: event)
         guard (event.allTouches?.count ?? 0) >= 2 else { return }
-        state = .began
+        if state == .possible { state = .began }
+        report(event)
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesMoved(touches, with: event)
         guard state == .began || state == .changed else { return }
         state = .changed
+        report(event)
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
@@ -184,6 +195,13 @@ final class TwoFingerRangeRecognizer: UIGestureRecognizer, UIGestureRecognizerDe
         } else if state == .began || state == .changed {
             state = .cancelled
         }
+    }
+
+    /// Read each finger from the event. `location(ofTouch:)` shifts the first finger when the second lands.
+    func report(_ event: UIEvent?) {
+        let xs = chartTouchXs(self, event: event)
+        guard xs.count >= 2, let onChange else { return }
+        onChange(xs[0], xs[xs.count - 1])
     }
 
     func gestureRecognizer(

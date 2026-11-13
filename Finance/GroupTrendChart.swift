@@ -216,8 +216,9 @@ struct GroupTrendChart: View, Equatable {
         ChartRangeGesture { left, right in
             guard let plotFrame = proxy.plotFrame else { return }
             let plot = geometry[plotFrame]
-            guard let start = month(atPlotX: left - plot.origin.x, width: plot.width),
-                  let end = month(atPlotX: right - plot.origin.x, width: plot.width) else { return }
+            let origin = geometry.frame(in: .global).minX
+            guard let start = month(atPlotX: left - origin - plot.origin.x, width: plot.width),
+                  let end = month(atPlotX: right - origin - plot.origin.x, width: plot.width) else { return }
             withoutAnimation {
                 selected = nil
                 fingerSpan = FingerSpan(start: start, end: end)
