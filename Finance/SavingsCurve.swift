@@ -8,7 +8,6 @@ struct SavingsCurve: View {
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hideAmounts") private var hideAmounts = false
     @State private var selectedYear: Double?
-    @State private var markerX: CGFloat?
     @State private var yearLabelWidth: CGFloat = 0
     /// Years under the two fingers. The right year is compared with the left.
     @State private var fingerSpan: SavingsFingerSpan?
@@ -93,7 +92,7 @@ struct SavingsCurve: View {
         .overlay(alignment: .top) { yearLabel }
     }
 
-    /// Sits in the padding above the plot and tracks the pressed year.
+    /// Sits in the padding above the plot, centered, whether one year or a span.
     private var yearLabel: some View {
         GeometryReader { row in
             Text(readout)
@@ -118,11 +117,10 @@ struct SavingsCurve: View {
 
     private func placedYearX(in width: CGFloat) -> CGFloat {
         let half = yearLabelWidth / 2
-        let x = fingerSpan == nil ? (markerX ?? width / 2) : width / 2
-        return min(max(x, half), max(half, width - half))
+        return min(max(width / 2, half), max(half, width - half))
     }
 
-    /// One year follows the finger. Two fingers read as one range, centered.
+    /// One year, or the two-finger span. Both stay in the center.
     private var readout: String {
         if let span = fingerSpan {
             return "\(yearText(span.start)) - \(yearText(span.end))"
@@ -234,14 +232,10 @@ struct SavingsCurve: View {
             withoutAnimation {
                 if xs.count >= 2, let start = placed(xs[0]), let end = placed(xs[1]) {
                     selectedYear = nil
-                    markerX = nil
                     fingerSpan = SavingsFingerSpan(start: start, end: end)
                 } else if let year = placed(xs[0]) {
                     fingerSpan = nil
                     selectedYear = year
-                    if let plotX = proxy.position(forX: year) {
-                        markerX = plot.minX + plotX
-                    }
                 }
             }
         } onEnd: {
@@ -256,7 +250,6 @@ struct SavingsCurve: View {
 
     private func clearPress() {
         selectedYear = nil
-        markerX = nil
         fingerSpan = nil
     }
 
