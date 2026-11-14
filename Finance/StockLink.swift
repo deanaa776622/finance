@@ -22,6 +22,36 @@ struct StockLinkMark: View {
     }
 }
 
+/// White rail beside one group: from the title’s top through its last open row.
+struct GroupRail: View {
+    var title: CGRect?
+    var bottom: CGFloat?
+    var origin: CGPoint
+
+    var body: some View {
+        if let span {
+            StockLinkMark(
+                x: span.x,
+                top: span.top,
+                height: span.height,
+                collapsed: false,
+                color: Color.primary.opacity(0.85)
+            )
+            .allowsHitTesting(false)
+        }
+    }
+
+    /// Same 16pt inset as the asset-group line.
+    private var span: (x: CGFloat, top: CGFloat, height: CGFloat)? {
+        guard let title, title.height > 1 else { return nil }
+        let top = title.minY - origin.y
+        let end = max(title.maxY, bottom ?? title.maxY) - origin.y
+        let height = end - top
+        guard height > 1 else { return nil }
+        return (title.minX - origin.x - 16, top, height)
+    }
+}
+
 extension View {
     /// Tap strip in the margin to the left of this view. `margin` is its width; it does not cover the view.
     func stockLinkHit(enabled: Bool, margin: CGFloat, action: @escaping () -> Void) -> some View {

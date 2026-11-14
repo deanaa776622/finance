@@ -65,8 +65,8 @@ extension View {
         modifier(GroupHeaderChrome())
     }
 
-    func groupCardRow(isFirst: Bool, isLast: Bool) -> some View {
-        modifier(GroupCardRow(isFirst: isFirst, isLast: isLast))
+    func groupCardRow(isFirst: Bool, isLast: Bool, reportBottom: ((CGFloat) -> Void)? = nil) -> some View {
+        modifier(GroupCardRow(isFirst: isFirst, isLast: isLast, reportBottom: reportBottom))
     }
 
     func groupPlainRow() -> some View {
@@ -89,11 +89,19 @@ private struct GroupHeaderChrome: ViewModifier {
 private struct GroupCardRow: ViewModifier {
     var isFirst: Bool
     var isLast: Bool
+    var reportBottom: ((CGFloat) -> Void)? = nil
 
     func body(content: Content) -> some View {
         content
             .padding(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
             .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .bottom) {
+                if let reportBottom {
+                    Color.clear
+                        .frame(height: 0)
+                        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { reportBottom($0) }
+                }
+            }
             .listRowInsets(EdgeInsets(
                 top: 0,
                 leading: GroupCardBackground.leading,

@@ -86,6 +86,8 @@ struct GoalDistanceCopy: View {
 
 /// Plan, years, monthly amount, and the curve stay behind this row.
 struct SavingsPlanLocked: View {
+    var titleFrame: ((CGRect) -> Void)? = nil
+    var rowBottom: ((CGFloat) -> Void)? = nil
     @Environment(Palette.self) private var palette
     @ScaledMetric(relativeTo: .title3) private var titleSize: CGFloat = 20
 
@@ -94,6 +96,7 @@ struct SavingsPlanLocked: View {
             HStack {
                 Text("計畫")
                     .font(.system(size: titleSize, weight: .semibold))
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { titleFrame?($0) }
                 Spacer()
                 Text("未解鎖")
                     .font(.system(size: titleSize))
@@ -103,7 +106,7 @@ struct SavingsPlanLocked: View {
             Text("解鎖後可看還要幾年、每月該存多少")
                 .font(.footnote)
                 .foregroundStyle(palette.quietInk)
-                .groupCardRow(isFirst: true, isLast: true)
+                .groupCardRow(isFirst: true, isLast: true, reportBottom: rowBottom)
         }
         .foregroundStyle(palette.ink)
     }

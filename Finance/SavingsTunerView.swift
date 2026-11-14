@@ -18,29 +18,33 @@ struct SavingsTunerView: View {
     @State private var goalOpen = false
     @State private var planOpen = false
     @State private var statusOpen = false
+    @State private var listOrigin: CGPoint = .zero
+    @State private var goalRail = Rail()
+    @State private var planRail = Rail()
+    @State private var statusRail = Rail()
 
     private enum Field: Hashable { case cost, withdraw, rate, pmt, years }
 
     var body: some View {
         List {
             Section {
-                GroupTitle(title: "目標", value: targetAmountText, open: goalOpen, valueMuted: true) {
-                    withAnimation { goalOpen.toggle() }
+                GroupTitle(title: "目標", value: targetAmountText, open: goalOpen, valueMuted: true, titleFrame: { goalRail.title = $0 }) {
+                    toggle($goalOpen, $goalRail)
                 }
                 .groupHeaderChrome()
                 if goalOpen {
                     moneyRow("年花費", text: $costText, field: .cost)
                         .groupCardRow(isFirst: true, isLast: false)
                     percentRow("提領率", text: $withdrawText, focus: .withdraw)
-                        .groupCardRow(isFirst: false, isLast: true)
+                        .groupCardRow(isFirst: false, isLast: true) { goalRail.bottom = $0 }
                 }
             }
             .foregroundStyle(palette.ink)
 
             if isPro {
                 Section {
-                    GroupTitle(title: "計畫", value: planTimeText, open: planOpen, valueMuted: true) {
-                        withAnimation { planOpen.toggle() }
+                    GroupTitle(title: "計畫", value: planTimeText, open: planOpen, valueMuted: true, titleFrame: { planRail.title = $0 }) {
+                        toggle($planOpen, $planRail)
                     }
                     .groupHeaderChrome()
                     if planOpen {
@@ -49,23 +53,23 @@ struct SavingsTunerView: View {
                         moneyRow("月投資額", text: $pmtText, field: .pmt, keepSign: true)
                             .groupCardRow(isFirst: false, isLast: false)
                         yearsRow
-                            .groupCardRow(isFirst: false, isLast: horizonNote == nil)
+                            .groupCardRow(isFirst: false, isLast: horizonNote == nil, reportBottom: horizonNote == nil ? { planRail.bottom = $0 } : nil)
                         if let note = horizonNote {
                             Text(note)
                                 .font(.footnote)
                                 .foregroundStyle(palette.quietInk)
-                                .groupCardRow(isFirst: false, isLast: true)
+                                .groupCardRow(isFirst: false, isLast: true) { planRail.bottom = $0 }
                         }
                     }
                 }
                 .foregroundStyle(palette.ink)
             } else {
-                SavingsPlanLocked()
+                SavingsPlanLocked(titleFrame: { planRail.title = $0 }, rowBottom: { planRail.bottom = $0 })
             }
 
             Section {
-                GroupTitle(title: "現狀", value: currentAssetsText, open: statusOpen, valueMuted: true) {
-                    withAnimation { statusOpen.toggle() }
+                GroupTitle(title: "現狀", value: currentAssetsText, open: statusOpen, valueMuted: true, titleFrame: { statusRail.title = $0 }) {
+                    toggle($statusOpen, $statusRail)
                 }
                 .groupHeaderChrome()
                 if statusOpen {
@@ -78,7 +82,7 @@ struct SavingsTunerView: View {
                         Text(incomeShortfallText)
                             .foregroundStyle(palette.quietInk)
                     }
-                    .groupCardRow(isFirst: false, isLast: true)
+                    .groupCardRow(isFirst: false, isLast: true) { statusRail.bottom = $0 }
                 }
             }
             .foregroundStyle(palette.ink)
@@ -98,6 +102,11 @@ struct SavingsTunerView: View {
         .background(palette.ground)
         .contentMargins(.top, ScrollFade.depth - 18, for: .scrollContent)
         .contentMargins(.bottom, ScrollFade.depth + 8, for: .scrollContent)
+        .onGeometryChange(for: CGPoint.self) {
+            let frame = $0.frame(in: .global)
+            return CGPoint(x: frame.minX, y: frame.minY)
+        } action: { listOrigin = $0 }
+        .overlay(alignment: .topLeading) { groupRails }
         .scrollEdgeFade()
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
@@ -138,6 +147,26 @@ struct SavingsTunerView: View {
         .onChange(of: field) { old, _ in
             finishPercent(old)
         }
+    }
+
+    private var groupRails: some View {
+        ZStack(alignment: .topLeading) {
+            GroupRail(title: goalRail.title, bottom: goalOpen ? goalRail.bottom : nil, origin: listOrigin)
+            GroupRail(title: planRail.title, bottom: planRowsOpen ? planRail.bottom : nil, origin: listOrigin)
+            GroupRail(title: statusRail.title, bottom: statusOpen ? statusRail.bottom : nil, origin: listOrigin)
+        }
+        .allowsHitTesting(false)
+    }
+
+    /// Locked plan stays open. A collapsed group keeps only the title-height rail.
+    private var planRowsOpen: Bool { !isPro || planOpen }
+
+    private func toggle(_ open: Binding<Bool>, _ rail: Binding<Rail>) {
+        withAnimation { open.wrappedValue.toggle() }
+        guard !open.wrappedValue else { return }
+        var next = rail.wrappedValue
+        next.bottom = nil
+        rail.wrappedValue = next
     }
 
     private var horizonNote: String? {
@@ -407,6 +436,11 @@ struct SavingsTunerView: View {
         baseline = draft
         portfolio.setSavings(draft)
     }
+}
+
+private struct Rail {
+    var title: CGRect?
+    var bottom: CGFloat?
 }
 
 #Preview {
