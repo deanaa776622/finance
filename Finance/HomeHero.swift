@@ -12,6 +12,7 @@ struct HomeHero: View {
     var safeBottom: CGFloat
     @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
+    @AppStorage(ProPreview.key) private var isPro = true
 
     private var reveal: CGFloat { abs(position) }
     private var settledReveal: CGFloat { abs(settled) }
@@ -109,7 +110,7 @@ struct HomeHero: View {
             Text(portfolio.statusTitle)
                 .font(.title3.weight(.semibold))
                 .tracking(6)
-            Text(portfolio.allocationStatus)
+            Text(portfolio.homeSubtitle(isPro: isPro))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

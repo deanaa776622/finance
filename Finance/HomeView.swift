@@ -377,7 +377,7 @@ struct HomeView: View {
             }
             return "總淨值 \(MoneyFormat.string(portfolio.netWorth))"
         }
-        return "\(portfolio.statusTitle)。\(portfolio.allocationStatus)"
+        return "\(portfolio.statusTitle)。\(portfolio.homeSubtitle(isPro: isPro))"
     }
 }
 

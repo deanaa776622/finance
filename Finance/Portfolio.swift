@@ -227,10 +227,18 @@ final class Portfolio {
         return isBalanced ? "平衡" : "留意配置"
     }
 
-    var allocationStatus: String {
-        if allocableTotal <= 0 { return "新增資產後，會顯示與目標配置的差距" }
+    /// Home footnote. Empty net worth comes first; an unfinished goal is the other cue.
+    func homeSubtitle(isPro: Bool) -> String {
+        if items.isEmpty { return "下滑新增資產與負債" }
+        if !goalReady(isPro: isPro) { return "上滑設定目標" }
         if isBalanced { return "配置大致平衡" }
         return String(format: "與目標最多偏離約 %.0f%%", maxAllocationDrift)
+    }
+
+    /// Pro needs the whole plan. Free only needs a target amount; the plan stays locked.
+    private func goalReady(isPro: Bool) -> Bool {
+        if isPro { return savings != nil && (targetFromSavings ?? 0) > 0 }
+        return (goalAmount ?? 0) > 0
     }
 
     func upsert(_ item: AssetItem) {
