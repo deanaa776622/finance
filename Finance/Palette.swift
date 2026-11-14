@@ -177,13 +177,13 @@ final class Palette {
 
     private static let key = "palette"
     private static let themesKey = "palette.themes"
-    static let defaultOriginal = Color(red: 0.22, green: 0.74, blue: 0.97)
-    static let defaultLeverage = Color(red: 0.29, green: 0.87, blue: 0.50)
-    static let defaultCash = Color(red: 0.98, green: 0.80, blue: 0.08)
-    static let defaultRealEstate = Color(red: 0.93, green: 0.94, blue: 0.95)
-    static let defaultDebt = Color(red: 0.58, green: 0.64, blue: 0.72)
+    static let defaultOriginal = Color(red: 123 / 255.0, green: 163 / 255.0, blue: 201 / 255.0)
+    static let defaultLeverage = Color(red: 125 / 255.0, green: 154 / 255.0, blue: 134 / 255.0)
+    static let defaultCash = Color(red: 196 / 255.0, green: 180 / 255.0, blue: 138 / 255.0)
+    static let defaultRealEstate = Color(red: 168 / 255.0, green: 176 / 255.0, blue: 184 / 255.0)
+    static let defaultDebt = Color(red: 110 / 255.0, green: 98 / 255.0, blue: 88 / 255.0)
     static let defaultDrift = Color(red: 0.85, green: 0.58, blue: 0.42)
-    static let defaultGround = Color(red: 0.03, green: 0.05, blue: 0.10)
+    static let defaultGround = Color(red: 20 / 255.0, green: 22 / 255.0, blue: 28 / 255.0)
 
     private static func automaticInk(on ground: Color) -> Color {
         ground.relativeLuminance(scheme: .dark) > 0.179 ? .black : .white
