@@ -65,8 +65,13 @@ extension View {
         modifier(GroupHeaderChrome())
     }
 
-    func groupCardRow(isFirst: Bool, isLast: Bool, reportBottom: ((CGFloat) -> Void)? = nil) -> some View {
-        modifier(GroupCardRow(isFirst: isFirst, isLast: isLast, reportBottom: reportBottom))
+    func groupCardRow(
+        isFirst: Bool,
+        isLast: Bool,
+        measureID: Int = 0,
+        reportBottom: ((CGFloat) -> Void)? = nil
+    ) -> some View {
+        modifier(GroupCardRow(isFirst: isFirst, isLast: isLast, reportBottom: reportBottom, measureID: measureID))
     }
 
     func groupPlainRow() -> some View {
@@ -90,16 +95,21 @@ private struct GroupCardRow: ViewModifier {
     var isFirst: Bool
     var isLast: Bool
     var reportBottom: ((CGFloat) -> Void)? = nil
+    /// New identity after the list finishes inserting, so the bottom is read again.
+    var measureID = 0
 
     func body(content: Content) -> some View {
         content
             .padding(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
             .frame(maxWidth: .infinity, alignment: .leading)
-            .overlay(alignment: .bottom) {
+            .background {
                 if let reportBottom {
                     Color.clear
-                        .frame(height: 0)
-                        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { reportBottom($0) }
+                        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { y in
+                            guard y > 1 else { return }
+                            reportBottom(y)
+                        }
+                        .id(measureID)
                 }
             }
             .listRowInsets(EdgeInsets(

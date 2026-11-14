@@ -88,6 +88,7 @@ struct GoalDistanceCopy: View {
 struct SavingsPlanLocked: View {
     var titleFrame: ((CGRect) -> Void)? = nil
     var rowBottom: ((CGFloat) -> Void)? = nil
+    var measureID = 0
     @Environment(Palette.self) private var palette
     @ScaledMetric(relativeTo: .title3) private var titleSize: CGFloat = 20
 
@@ -106,7 +107,7 @@ struct SavingsPlanLocked: View {
             Text("解鎖後可看還要幾年、每月該存多少")
                 .font(.footnote)
                 .foregroundStyle(palette.quietInk)
-                .groupCardRow(isFirst: true, isLast: true, reportBottom: rowBottom)
+                .groupCardRow(isFirst: true, isLast: true, measureID: measureID, reportBottom: rowBottom)
         }
         .foregroundStyle(palette.ink)
     }

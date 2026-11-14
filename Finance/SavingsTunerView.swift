@@ -22,71 +22,39 @@ struct SavingsTunerView: View {
     @State private var goalRail = Rail()
     @State private var planRail = Rail()
     @State private var statusRail = Rail()
+    /// Bumped after a group finishes opening, so the rail reads the settled row bottom.
+    @State private var railEpoch = 0
 
     private enum Field: Hashable { case cost, withdraw, rate, pmt, years }
 
     var body: some View {
+        groups
+            .onAppear(perform: load)
+            .onChange(of: isFresh) { _, _ in load() }
+            .onChange(of: costText) { _, _ in followInputs() }
+            .onChange(of: withdrawText) { _, _ in followInputs() }
+            .onChange(of: rateText) { _, _ in followInputs() }
+            .onChange(of: pmtText, notePayment)
+            .onChange(of: yearsText) { _, _ in
+                guard field == .years else { return }
+                applyHorizon()
+            }
+            .onChange(of: portfolio.allocableTotal) { _, _ in
+                if horizon != nil { applyHorizon() } else { syncYears() }
+            }
+            .onChange(of: field) { old, _ in
+                finishPercent(old)
+            }
+            .onChange(of: horizonNote) { _, _ in
+                railEpoch += 1
+            }
+    }
+
+    private var groups: some View {
         List {
-            Section {
-                GroupTitle(title: "目標", value: targetAmountText, open: goalOpen, valueMuted: true, titleFrame: { goalRail.title = $0 }) {
-                    toggle($goalOpen, $goalRail)
-                }
-                .groupHeaderChrome()
-                if goalOpen {
-                    moneyRow("年花費", text: $costText, field: .cost)
-                        .groupCardRow(isFirst: true, isLast: false)
-                    percentRow("提領率", text: $withdrawText, focus: .withdraw)
-                        .groupCardRow(isFirst: false, isLast: true) { goalRail.bottom = $0 }
-                }
-            }
-            .foregroundStyle(palette.ink)
-
-            if isPro {
-                Section {
-                    GroupTitle(title: "計畫", value: planTimeText, open: planOpen, valueMuted: true, titleFrame: { planRail.title = $0 }) {
-                        toggle($planOpen, $planRail)
-                    }
-                    .groupHeaderChrome()
-                    if planOpen {
-                        percentRow("年報酬率", text: $rateText, focus: .rate)
-                            .groupCardRow(isFirst: true, isLast: false)
-                        moneyRow("月投資額", text: $pmtText, field: .pmt, keepSign: true)
-                            .groupCardRow(isFirst: false, isLast: false)
-                        yearsRow
-                            .groupCardRow(isFirst: false, isLast: horizonNote == nil, reportBottom: horizonNote == nil ? { planRail.bottom = $0 } : nil)
-                        if let note = horizonNote {
-                            Text(note)
-                                .font(.footnote)
-                                .foregroundStyle(palette.quietInk)
-                                .groupCardRow(isFirst: false, isLast: true) { planRail.bottom = $0 }
-                        }
-                    }
-                }
-                .foregroundStyle(palette.ink)
-            } else {
-                SavingsPlanLocked(titleFrame: { planRail.title = $0 }, rowBottom: { planRail.bottom = $0 })
-            }
-
-            Section {
-                GroupTitle(title: "現狀", value: currentAssetsText, open: statusOpen, valueMuted: true, titleFrame: { statusRail.title = $0 }) {
-                    toggle($statusOpen, $statusRail)
-                }
-                .groupHeaderChrome()
-                if statusOpen {
-                    LabeledContent("目前流動資產") {
-                        Text(currentAssetsText)
-                            .foregroundStyle(palette.quietInk)
-                    }
-                    .groupCardRow(isFirst: true, isLast: false)
-                    LabeledContent("額外收入") {
-                        Text(incomeShortfallText)
-                            .foregroundStyle(palette.quietInk)
-                    }
-                    .groupCardRow(isFirst: false, isLast: true) { statusRail.bottom = $0 }
-                }
-            }
-            .foregroundStyle(palette.ink)
-
+            goalSection
+            planSection
+            statusSection
             if isPro, let outlook = draftOutlook {
                 Section {
                     SavingsCurve(outlook: outlook)
@@ -118,35 +86,95 @@ struct SavingsTunerView: View {
                 }
             }
         }
-        .onAppear(perform: load)
-        .onChange(of: isFresh) { _, _ in load() }
-        .onChange(of: costText) { _, _ in followInputs() }
-        .onChange(of: withdrawText) { _, _ in followInputs() }
-        .onChange(of: rateText) { _, _ in followInputs() }
-        .onChange(of: pmtText) { old, new in
-            guard field == .pmt else { return }
-            if let solved = solvedPayment(),
-               let shown = NumberParse.decimal(new),
-               shown == solved || shown == -solved {
-                let text = contributionText(solved)
-                if pmtText != text { pmtText = text }
-                return
+    }
+
+    private var goalSection: some View {
+        Section {
+            GroupTitle(title: "目標", value: targetAmountText, open: goalOpen, valueMuted: true, titleFrame: { goalRail.title = $0 }) {
+                toggle($goalOpen, $goalRail)
             }
-            if NumberParse.decimal(old) == NumberParse.decimal(new) { return }
-            horizon = nil
-            persist()
-            syncYears()
+            .groupHeaderChrome()
+            if goalOpen {
+                moneyRow("年花費", text: $costText, field: .cost)
+                    .groupCardRow(isFirst: true, isLast: false)
+                percentRow("提領率", text: $withdrawText, focus: .withdraw)
+                    .groupCardRow(isFirst: false, isLast: true, measureID: railEpoch) { goalRail.bottom = $0 }
+            }
         }
-        .onChange(of: yearsText) { _, _ in
-            guard field == .years else { return }
-            applyHorizon()
+        .foregroundStyle(palette.ink)
+    }
+
+    private var planSection: some View {
+        Group {
+            if isPro {
+                Section {
+                    GroupTitle(title: "計畫", value: planTimeText, open: planOpen, valueMuted: true, titleFrame: { planRail.title = $0 }) {
+                        toggle($planOpen, $planRail)
+                    }
+                    .groupHeaderChrome()
+                    if planOpen {
+                        percentRow("年報酬率", text: $rateText, focus: .rate)
+                            .groupCardRow(isFirst: true, isLast: false)
+                        moneyRow("月投資額", text: $pmtText, field: .pmt, keepSign: true)
+                            .groupCardRow(isFirst: false, isLast: false)
+                        yearsRow
+                            .groupCardRow(isFirst: false, isLast: horizonNote == nil, measureID: railEpoch) {
+                                if horizonNote == nil { planRail.bottom = $0 }
+                            }
+                        if let note = horizonNote {
+                            Text(note)
+                                .font(.footnote)
+                                .foregroundStyle(palette.quietInk)
+                                .groupCardRow(isFirst: false, isLast: true, measureID: railEpoch) { planRail.bottom = $0 }
+                        }
+                    }
+                }
+                .foregroundStyle(palette.ink)
+            } else {
+                SavingsPlanLocked(
+                    titleFrame: { planRail.title = $0 },
+                    rowBottom: { planRail.bottom = $0 },
+                    measureID: railEpoch
+                )
+            }
         }
-        .onChange(of: portfolio.allocableTotal) { _, _ in
-            if horizon != nil { applyHorizon() } else { syncYears() }
+    }
+
+    private var statusSection: some View {
+        Section {
+            GroupTitle(title: "現狀", value: currentAssetsText, open: statusOpen, valueMuted: true, titleFrame: { statusRail.title = $0 }) {
+                toggle($statusOpen, $statusRail)
+            }
+            .groupHeaderChrome()
+            if statusOpen {
+                LabeledContent("目前流動資產") {
+                    Text(currentAssetsText)
+                        .foregroundStyle(palette.quietInk)
+                }
+                .groupCardRow(isFirst: true, isLast: false)
+                LabeledContent("額外收入") {
+                    Text(incomeShortfallText)
+                        .foregroundStyle(palette.quietInk)
+                }
+                .groupCardRow(isFirst: false, isLast: true, measureID: railEpoch) { statusRail.bottom = $0 }
+            }
         }
-        .onChange(of: field) { old, _ in
-            finishPercent(old)
+        .foregroundStyle(palette.ink)
+    }
+
+    private func notePayment(_ old: String, _ new: String) {
+        guard field == .pmt else { return }
+        if let solved = solvedPayment(),
+           let shown = NumberParse.decimal(new),
+           shown == solved || shown == -solved {
+            let text = contributionText(solved)
+            if pmtText != text { pmtText = text }
+            return
         }
+        if NumberParse.decimal(old) == NumberParse.decimal(new) { return }
+        horizon = nil
+        persist()
+        syncYears()
     }
 
     private var groupRails: some View {
@@ -162,11 +190,21 @@ struct SavingsTunerView: View {
     private var planRowsOpen: Bool { !isPro || planOpen }
 
     private func toggle(_ open: Binding<Bool>, _ rail: Binding<Rail>) {
-        withAnimation { open.wrappedValue.toggle() }
-        guard !open.wrappedValue else { return }
-        var next = rail.wrappedValue
-        next.bottom = nil
-        rail.wrappedValue = next
+        let opening = !open.wrappedValue
+        withAnimation {
+            open.wrappedValue.toggle()
+        } completion: {
+            guard opening else { return }
+            railEpoch += 1
+            // List keeps the inserted row's global frame until the next layout.
+            DispatchQueue.main.async { railEpoch += 1 }
+        }
+        guard opening else {
+            var next = rail.wrappedValue
+            next.bottom = nil
+            rail.wrappedValue = next
+            return
+        }
     }
 
     private var horizonNote: String? {
