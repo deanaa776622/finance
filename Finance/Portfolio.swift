@@ -229,7 +229,7 @@ final class Portfolio {
 
     /// Home footnote. Empty net worth comes first; an unfinished goal is the other cue.
     func homeSubtitle(isPro: Bool) -> String {
-        if items.isEmpty { return "下滑新增資產與負債" }
+        if items.isEmpty { return "下滑新增流動資產" }
         if !goalReady(isPro: isPro) { return "上滑設定目標" }
         if isBalanced { return "配置大致平衡" }
         return String(format: "與目標最多偏離約 %.0f%%", maxAllocationDrift)

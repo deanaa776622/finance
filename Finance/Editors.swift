@@ -48,7 +48,7 @@ struct TargetEditor: View {
                     }
                 }
             } else {
-                Text("新增資產後，會顯示再平衡差額")
+                Text("新增流動資產後，會顯示再平衡差額")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
