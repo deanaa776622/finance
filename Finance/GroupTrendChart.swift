@@ -266,7 +266,7 @@ struct GroupTrendChart: View, Equatable {
         } else if let point = line.points.first {
             PointMark(x: .value("月", point.month), y: .value("位置", point.unit))
                 .foregroundStyle(.clear)
-                .annotation(position: .overlay) { lineSwatch(line.color, height: 1) }
+                .annotation(position: .overlay) { lineSwatch(line.color) }
         }
     }
 
@@ -328,57 +328,36 @@ struct GroupTrendChart: View, Equatable {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func lineSwatch(_ color: Color, height: CGFloat = 2) -> some View {
-        Capsule().fill(color).frame(width: 16, height: height)
+    private func lineSwatch(_ color: Color) -> some View {
+        Capsule().fill(color).frame(width: 16, height: 1)
     }
 
     private func legendRow(_ line: TrendLine) -> some View {
         let shown = !hiddenIDs.contains(line.id)
-        let fill = legendFill(line)
-        let ink = shown ? chipInk(fill) : palette.quietInk
         return Button {
             var next = hiddenIDs
             if shown { next.insert(line.id) } else { next.remove(line.id) }
             hiddenIDs = next
         } label: {
             HStack(spacing: 6) {
-                lineSwatch(shown ? ink : line.color)
+                lineSwatch(line.color.opacity(shown ? 1 : 0.35))
                 Text(line.title).lineLimit(1)
                 Spacer(minLength: 4)
                 Text(legendValue(line))
                     .monospacedDigit()
-                    .foregroundStyle(shown ? ink : line.color)
+                    .foregroundStyle(palette.quietInk)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
-            .foregroundStyle(ink)
+            .foregroundStyle(shown ? palette.ink : palette.quietInk)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background { if shown { Capsule().fill(fill) } }
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(line.title)
         .accessibilityValue(shown ? "顯示趨勢線" : "不顯示趨勢線")
         .accessibilityHint("點一下切換")
-    }
-
-    /// The five kind colors, three tenths less saturated. Merged groups stay ink.
-    private func legendFill(_ line: TrendLine) -> Color {
-        guard AssetKind.allCases.contains(where: { $0.compactTitle == line.title }) else { return line.color }
-        var hue: CGFloat = 0
-        var saturation: CGFloat = 0
-        var brightness: CGFloat = 0
-        var alpha: CGFloat = 0
-        guard UIColor(line.color).getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha) else {
-            return line.color
-        }
-        return Color(hue: hue, saturation: saturation * 0.7, brightness: brightness, opacity: alpha)
-    }
-
-    /// Black or white, so the title stays readable on the swatch.
-    private func chipInk(_ color: Color) -> Color {
-        color.relativeLuminance(scheme: palette.colorScheme) > 0.179 ? .black : .white
     }
 
     private func legendValue(_ line: TrendLine) -> String {
