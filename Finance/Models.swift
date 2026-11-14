@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftUI
 
 enum AssetKind: String, Codable, CaseIterable, Identifiable {
     case original, leverage, cash, realEstate, debt
@@ -299,16 +300,16 @@ enum NumberParse {
     /// Same as `oneDecimal` for rates ≥ 1. Smaller rates (JPY, KRW) keep four places.
     static func fx(_ value: Decimal) -> String {
         let number = NSDecimalNumber(decimal: value).doubleValue
-        if number >= 1 { return oneDecimal(value) }
-        return String(format: "%.4f", number)
+        if number >= 1 { return grouped(oneDecimal(value), fractionDigits: 1) }
+        return grouped(String(format: "%.4f", number), fractionDigits: 4)
     }
 
-    /// Share price: at most two decimal places.
+    /// Share price: at most two decimal places, with thousands separators.
     static func price(_ value: Decimal) -> String {
         var input = value
         var rounded = Decimal()
         NSDecimalRound(&rounded, &input, 2, .plain)
-        return NSDecimalNumber(decimal: rounded).stringValue
+        return grouped(NSDecimalNumber(decimal: rounded).stringValue, fractionDigits: 2)
     }
 
     static func grouped(_ value: Decimal) -> String {
@@ -320,10 +321,37 @@ enum NumberParse {
         return f.string(from: NSDecimalNumber(decimal: value)) ?? display(value)
     }
 
-    static func grouped(_ text: String) -> String {
-        let digits = text.filter(\.isNumber)
-        guard !digits.isEmpty, let value = Decimal(string: digits) else { return "" }
-        return grouped(value)
+    /// Thousands separators on each keystroke. A decimal point stays so the next digit can follow it.
+    static func grouped(_ text: String, fractionDigits: Int = 0) -> String {
+        let cleaned = text.replacingOccurrences(of: ",", with: "")
+        guard !cleaned.isEmpty else { return "" }
+        var intDigits = ""
+        var fraction: String?
+        for character in cleaned {
+            if character.isNumber {
+                if var part = fraction {
+                    guard part.count < fractionDigits else { continue }
+                    part.append(character)
+                    fraction = part
+                } else {
+                    intDigits.append(character)
+                }
+            } else if character == ".", fractionDigits > 0, fraction == nil {
+                fraction = ""
+            }
+        }
+        guard !intDigits.isEmpty || fraction != nil else { return "" }
+        let whole = grouped(Decimal(string: intDigits.isEmpty ? "0" : intDigits) ?? 0)
+        guard let fraction else { return whole }
+        return whole + "." + fraction
+    }
+
+    /// Amount field. Formats the text as it changes.
+    static func money(_ text: Binding<String>, fractionDigits: Int = 2) -> Binding<String> {
+        Binding(
+            get: { text.wrappedValue },
+            set: { text.wrappedValue = grouped($0, fractionDigits: fractionDigits) }
+        )
     }
 
     static func displayPercent(_ value: Double) -> String {

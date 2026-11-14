@@ -115,7 +115,7 @@ struct MonthBackfillView: View {
                 Text(MoneyFormat.currency.symbol)
                     .foregroundStyle(palette.quietInk)
                     .accessibilityHidden(true)
-                TextField("", text: text)
+                TextField("", text: NumberParse.money(text))
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -135,8 +135,8 @@ struct MonthBackfillView: View {
             debtText = ""
             return
         }
-        assetsText = row.assets == 0 ? "" : NumberParse.display(row.assets)
-        debtText = row.debt == 0 ? "" : NumberParse.display(row.debt)
+        assetsText = row.assets == 0 ? "" : NumberParse.grouped(NumberParse.display(row.assets), fractionDigits: 2)
+        debtText = row.debt == 0 ? "" : NumberParse.grouped(NumberParse.display(row.debt), fractionDigits: 2)
     }
 
     private var hasBackfill: Bool {

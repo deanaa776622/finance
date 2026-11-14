@@ -49,10 +49,10 @@ struct AssetEditor: View {
         _rateText = State(initialValue: NumberParse.fx(storedRate))
         _fullRate = State(initialValue: storedRate)
         _usesSharePrice = State(initialValue: item?.usesSharePrice ?? kind.prefersSharePrice)
-        _sharesText = State(initialValue: item?.shares.map(NumberParse.display) ?? "")
+        _sharesText = State(initialValue: item?.shares.map { NumberParse.grouped(NumberParse.display($0), fractionDigits: 8) } ?? "")
         _fullPrice = State(initialValue: item?.price ?? 0)
         _priceText = State(initialValue: item?.price.map(NumberParse.price) ?? "")
-        _amountText = State(initialValue: item.map { NumberParse.display($0.amount) } ?? "")
+        _amountText = State(initialValue: item.map { NumberParse.grouped(NumberParse.display($0.amount), fractionDigits: 2) } ?? "")
         _leverage = State(initialValue: Self.clampedLeverage(kind: kind, value: item?.leverageMultiple))
         self.onSave = onSave
         self.onDelete = onDelete
@@ -125,7 +125,7 @@ struct AssetEditor: View {
                     .editable(usesSharePrice)
                     .listRowSeparator(.hidden)
                     LabeledContent {
-                        TextField("", text: $sharesText)
+                        TextField("", text: NumberParse.money($sharesText, fractionDigits: 8))
                             .keyboardType(.decimalPad)
                             .focused($focus, equals: .shares)
                     } label: {
@@ -135,7 +135,7 @@ struct AssetEditor: View {
                     .listRowSeparator(.hidden)
                     LabeledContent {
                         HStack {
-                            TextField("", text: $priceText)
+                            TextField("", text: NumberParse.money($priceText))
                                 .keyboardType(.decimalPad)
                                 .focused($focus, equals: .price)
                                 .editable(usesSharePrice)
@@ -223,7 +223,7 @@ struct AssetEditor: View {
                                     .foregroundStyle(.secondary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             } else {
-                                TextField("匯率", text: $rateText)
+                                TextField("匯率", text: NumberParse.money($rateText, fractionDigits: 4))
                                     .keyboardType(.decimalPad)
                                     .focused($focus, equals: .rate)
                             }
@@ -252,7 +252,7 @@ struct AssetEditor: View {
                                 .foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         } else {
-                            TextField("", text: $amountText)
+                            TextField("", text: NumberParse.money($amountText))
                                 .keyboardType(.decimalPad)
                                 .focused($focus, equals: .amount)
                         }
