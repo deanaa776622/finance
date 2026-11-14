@@ -180,7 +180,7 @@ final class Palette {
     static let defaultOriginal = Color(red: 123 / 255.0, green: 163 / 255.0, blue: 201 / 255.0)
     static let defaultLeverage = Color(red: 125 / 255.0, green: 154 / 255.0, blue: 134 / 255.0)
     static let defaultCash = Color(red: 196 / 255.0, green: 180 / 255.0, blue: 138 / 255.0)
-    static let defaultRealEstate = Color(red: 168 / 255.0, green: 176 / 255.0, blue: 184 / 255.0)
+    static let defaultRealEstate = Color(red: 168 / 255.0, green: 146 / 255.0, blue: 184 / 255.0)
     static let defaultDebt = Color(red: 110 / 255.0, green: 98 / 255.0, blue: 88 / 255.0)
     static let defaultDrift = Color(red: 0.85, green: 0.58, blue: 0.42)
     static let defaultGround = Color(red: 20 / 255.0, green: 22 / 255.0, blue: 28 / 255.0)

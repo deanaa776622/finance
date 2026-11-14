@@ -106,10 +106,13 @@ struct HomeHero: View {
     }
 
     private var statusCopy: some View {
-        VStack(spacing: 14) {
+        let tracking: CGFloat = 6
+        return VStack(spacing: 14) {
             Text(portfolio.statusTitle)
                 .font(.title3.weight(.semibold))
-                .tracking(6)
+                .tracking(tracking)
+                // The last glyph keeps a tracking gap. Without this the title sits left of the subtitle.
+                .padding(.trailing, -tracking)
             Text(portfolio.homeSubtitle(isPro: isPro))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
