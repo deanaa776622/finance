@@ -12,7 +12,6 @@ struct HomeHero: View {
     var safeBottom: CGFloat
     @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
-    @AppStorage(ProPreview.key) private var isPro = true
 
     private var reveal: CGFloat { abs(position) }
     private var settledReveal: CGFloat { abs(settled) }
@@ -113,7 +112,7 @@ struct HomeHero: View {
                 .tracking(tracking)
                 // The last glyph keeps a tracking gap. Without this the title sits left of the subtitle.
                 .padding(.trailing, -tracking)
-            Text(portfolio.homeSubtitle(isPro: isPro))
+            Text(portfolio.homeSubtitle())
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
