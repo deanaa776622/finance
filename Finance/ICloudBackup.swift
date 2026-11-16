@@ -1,7 +1,7 @@
 import BackgroundTasks
 import Foundation
 
-/// One copy of the asset records in iCloud Drive. A daily slot, plus a manual copy.
+/// One copy of the asset records in a folder the user picked, usually on iCloud Drive.
 enum ICloudBackup {
     static let enabledKey = "icloudBackupOn"
     static let minutesKey = "icloudBackupMinutes"
@@ -9,9 +9,29 @@ enum ICloudBackup {
     private static let taskID = "com.deanaa776622.finance.backup"
     private static let lastKey = "icloudBackupLast"
     private static let dailyKey = "icloudBackupDay"
+    private static let bookmarkKey = "icloudBackupBookmark"
+    private static let folderKey = "icloudBackupFolder"
 
     enum Failure: Error {
-        case noAccount, empty, busy, failed
+        case noFolder, empty, busy, failed
+    }
+
+    static var hasFolder: Bool {
+        UserDefaults.standard.data(forKey: bookmarkKey) != nil
+    }
+
+    static var folderName: String {
+        UserDefaults.standard.string(forKey: folderKey) ?? "尚未選擇"
+    }
+
+    /// Keeps access to a folder from the document picker. No iCloud entitlement required.
+    static func remember(_ url: URL) -> Bool {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        guard let data = try? url.bookmarkData() else { return false }
+        UserDefaults.standard.set(data, forKey: bookmarkKey)
+        UserDefaults.standard.set(url.lastPathComponent, forKey: folderKey)
+        return true
     }
 
     static func register() {
@@ -85,13 +105,11 @@ enum ICloudBackup {
         defer { BackupGate.leave() }
         let source = Portfolio.recordsFile
         guard FileManager.default.fileExists(atPath: source.path) else { return .failure(.empty) }
-        guard let root = FileManager.default.url(forUbiquityContainerIdentifier: nil) else {
-            return .failure(.noAccount)
-        }
-        let folder = root.appendingPathComponent("Documents", isDirectory: true)
+        guard let folder = folderURL() else { return .failure(.noFolder) }
+        guard folder.startAccessingSecurityScopedResource() else { return .failure(.failed) }
+        defer { folder.stopAccessingSecurityScopedResource() }
         let dest = folder.appendingPathComponent("portfolio.json")
         do {
-            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             let data = try Data(contentsOf: source)
             try write(data, to: dest)
         } catch {
@@ -112,6 +130,18 @@ enum ICloudBackup {
         }
         if let coordination { throw coordination }
         if let writing { throw writing }
+    }
+
+    private static func folderURL() -> URL? {
+        guard let data = UserDefaults.standard.data(forKey: bookmarkKey) else { return nil }
+        var stale = false
+        guard let url = try? URL(resolvingBookmarkData: data, bookmarkDataIsStale: &stale) else {
+            return nil
+        }
+        if stale, let fresh = try? url.bookmarkData() {
+            UserDefaults.standard.set(fresh, forKey: bookmarkKey)
+        }
+        return url
     }
 
     private static func dayKey(_ date: Date) -> String {

@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Daily iCloud copy of the asset records, and a button to copy them now.
 struct BackupSettingsView: View {
@@ -8,6 +9,9 @@ struct BackupSettingsView: View {
     @AppStorage(ICloudBackup.minutesKey) private var minutes = ICloudBackup.defaultMinutes
     @State private var note = ""
     @State private var working = false
+    @State private var picking = false
+    @State private var pendingBackup = false
+    @State private var folderLabel = ICloudBackup.folderName
 
     var body: some View {
         NavigationStack {
@@ -16,8 +20,11 @@ struct BackupSettingsView: View {
                     Toggle("每天備份", isOn: $enabled)
                     DatePicker("時間", selection: clock, displayedComponents: .hourAndMinute)
                         .disabled(!enabled)
+                    Button { picking = true } label: {
+                        LabeledContent("備份位置", value: folderLabel)
+                    }
                 } footer: {
-                    Text("到了這個時間就把資產紀錄備份到 iCloud。App 開著會準時備份；沒開著時，系統會在之後找時間補上。")
+                    Text("選 iCloud 雲碟裡的一個資料夾。到了時間就把資產紀錄存進去。App 開著會準時備份；沒開著時，系統會在之後找時間補上。")
                 }
                 .listRowBackground(palette.panel)
                 Section {
@@ -42,8 +49,24 @@ struct BackupSettingsView: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .onAppear { note = lastLine }
-        .onChange(of: enabled) { _, _ in ICloudBackup.refreshSchedule() }
+        .onChange(of: enabled) { _, on in
+            if on, !ICloudBackup.hasFolder { picking = true }
+            ICloudBackup.refreshSchedule()
+        }
         .onChange(of: minutes) { _, _ in ICloudBackup.refreshSchedule() }
+        .fileImporter(isPresented: $picking, allowedContentTypes: [.folder]) { result in
+            guard case .success(let url) = result, ICloudBackup.remember(url) else {
+                if !ICloudBackup.hasFolder { enabled = false }
+                pendingBackup = false
+                return
+            }
+            folderLabel = ICloudBackup.folderName
+            ICloudBackup.refreshSchedule()
+            if pendingBackup {
+                pendingBackup = false
+                Task { await backup() }
+            }
+        }
     }
 
     private var clock: Binding<Date> {
@@ -69,13 +92,18 @@ struct BackupSettingsView: View {
     }
 
     private func backup() async {
+        guard ICloudBackup.hasFolder else {
+            pendingBackup = true
+            picking = true
+            return
+        }
         working = true
         defer { working = false }
         switch await ICloudBackup.backupNow() {
         case .success:
             note = lastLine
-        case .failure(.noAccount):
-            note = "這台裝置還沒登入 iCloud"
+        case .failure(.noFolder):
+            note = "先選一個 iCloud 雲碟資料夾"
         case .failure(.empty):
             note = "還沒有可備份的紀錄"
         case .failure(.busy):
