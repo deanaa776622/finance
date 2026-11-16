@@ -88,6 +88,15 @@ struct SavingsCurve: View {
                 }
             }
         }
+        .sensoryFeedback(.selection, trigger: selectedYear.map { plainYears($0) }) { _, year in
+            year != nil
+        }
+        .sensoryFeedback(.selection, trigger: fingerSpan.map { plainYears($0.start) }) { _, year in
+            year != nil
+        }
+        .sensoryFeedback(.selection, trigger: fingerSpan.map { plainYears($0.end) }) { _, year in
+            year != nil
+        }
         .padding(.top, 20)
         .overlay(alignment: .top) { yearLabel }
     }
