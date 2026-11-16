@@ -131,11 +131,7 @@ struct SavingsTunerView: View {
                 }
                 .foregroundStyle(palette.ink)
             } else {
-                SavingsPlanLocked(
-                    titleFrame: { planRail.title = $0 },
-                    rowBottom: { planRail.bottom = $0 },
-                    measureID: railEpoch
-                )
+                SavingsPlanLocked(titleFrame: { planRail.title = $0 })
             }
         }
     }
@@ -186,8 +182,8 @@ struct SavingsTunerView: View {
         .allowsHitTesting(false)
     }
 
-    /// Locked plan stays open. A collapsed group keeps only the title-height rail.
-    private var planRowsOpen: Bool { !isPro || planOpen }
+    /// Free plan stays shut. A collapsed group keeps only the title-height rail.
+    private var planRowsOpen: Bool { isPro && planOpen }
 
     private func toggle(_ open: Binding<Bool>, _ rail: Binding<Rail>) {
         let opening = !open.wrappedValue

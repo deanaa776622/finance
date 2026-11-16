@@ -84,11 +84,9 @@ struct GoalDistanceCopy: View {
     }
 }
 
-/// Plan, years, monthly amount, and the curve stay behind this row.
+/// Free plan stays on the title. It does not open into the years and monthly amount.
 struct SavingsPlanLocked: View {
     var titleFrame: ((CGRect) -> Void)? = nil
-    var rowBottom: ((CGFloat) -> Void)? = nil
-    var measureID = 0
     @Environment(Palette.self) private var palette
     @State private var showPaywall = false
     @ScaledMetric(relativeTo: .title3) private var titleSize: CGFloat = 20
@@ -108,14 +106,7 @@ struct SavingsPlanLocked: View {
             }
             .buttonStyle(.plain)
             .groupHeaderChrome()
-            Button { showPaywall = true } label: {
-                Text("解鎖後可看還要幾年、每月該存多少")
-                    .font(.footnote)
-                    .foregroundStyle(palette.quietInk)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .buttonStyle(.plain)
-            .groupCardRow(isFirst: true, isLast: true, measureID: measureID, reportBottom: rowBottom)
+            .accessibilityHint("未解鎖")
         }
         .foregroundStyle(palette.ink)
         .sheet(isPresented: $showPaywall) { PaywallView() }
