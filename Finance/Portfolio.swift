@@ -21,6 +21,9 @@ final class Portfolio {
             .appendingPathComponent("portfolio.json")
     }
 
+    /// The saved asset records. iCloud backup copies this file.
+    static var recordsFile: URL { fileURL }
+
     init(
         items: [AssetItem] = [],
         targets: TargetWeights? = nil,

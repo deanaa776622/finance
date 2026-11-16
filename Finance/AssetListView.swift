@@ -19,6 +19,7 @@ struct AssetListView: View {
     @State private var showQuoteLocked = false
     @State private var addKind: AssetKind = .original
     @State private var showColors = false
+    @State private var showBackup = false
     @State private var showBackfill = false
     @State private var isRefreshing = false
     @State private var refreshConfirmed = false
@@ -127,6 +128,9 @@ struct AssetListView: View {
         }
         .sheet(isPresented: $showColors) {
             ColorSettingsView()
+        }
+        .sheet(isPresented: $showBackup) {
+            BackupSettingsView()
         }
         .sheet(isPresented: $showBackfill) {
             MonthBackfillView()
@@ -402,6 +406,7 @@ struct AssetListView: View {
                 previewChoice("免費版", chosen: !isFresh && !isPro) { selectStored(pro: false) }
                 previewChoice("第一次使用", chosen: isFresh) { selectFirstUse() }
                 Button("顏色設定") { showColors = true }
+                Button("iCloud 備份") { showBackup = true }
                 Button("補登過去月份") { showBackfill = true }
             } label: {
                 Image(systemName: "gearshape")

@@ -27,6 +27,8 @@
 		D2B3F65064B840CEA5F455D6 /* SavingsMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AAE8E3DC34E89A9404102 /* SavingsMath.swift */; };
 		D4B02F8C5A3E49B1C7F26D95 /* AssetGrouping.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A91E7B4F2D48A0B6E15C84 /* AssetGrouping.swift */; };
 		D7F1B4E30A526CD9E618FB43 /* ColorSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6E0A3D29F415BC8D507EA32 /* ColorSettingsView.swift */; };
+		A8C3E1B74D2F48A69B0C5D11 /* ICloudBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9D4F2C85E3A49B70C1D6E22 /* ICloudBackup.swift */; };
+		C0E5A3D96F4B40C81D2E7F33 /* BackupSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1F6B4E07A5C41D92E3F8044 /* BackupSettingsView.swift */; };
 		E0571D47B35541BCBAEFC46B /* FinanceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF766442653C438293CC0C5D /* FinanceApp.swift */; };
 		E14C5B0C803D4BB4B2DDBDA6 /* SavingsTunerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41CEA44175B4D908817A5A0 /* SavingsTunerView.swift */; };
 		E2B3C4D55E6F47A8B9C01D22 /* ProPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C44D5E46F7A8B90C11 /* ProPreview.swift */; };
@@ -57,6 +59,8 @@
 		B8D4F02C5E3A49F7C2B16D84 /* AssetListMemory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetListMemory.swift; sourceTree = "<group>"; };
 		C3A91E7B4F2D48A0B6E15C84 /* AssetGrouping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetGrouping.swift; sourceTree = "<group>"; };
 		C6E0A3D29F415BC8D507EA32 /* ColorSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorSettingsView.swift; sourceTree = "<group>"; };
+		B9D4F2C85E3A49B70C1D6E22 /* ICloudBackup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICloudBackup.swift; sourceTree = "<group>"; };
+		D1F6B4E07A5C41D92E3F8044 /* BackupSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupSettingsView.swift; sourceTree = "<group>"; };
 		C99AAE8E3DC34E89A9404102 /* SavingsMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsMath.swift; sourceTree = "<group>"; };
 		D2E7F5A40B6C48D9E3F14A55 /* SavingsCurve.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsCurve.swift; sourceTree = "<group>"; };
 		D48F02C6AE514B75B60C287A /* GlowBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlowBackground.swift; sourceTree = "<group>"; };
@@ -93,6 +97,8 @@
 				D48F02C6AE514B75B60C287A /* GlowBackground.swift */,
 				A4C8E1B07D2F49A6B3E5C810 /* Palette.swift */,
 				C6E0A3D29F415BC8D507EA32 /* ColorSettingsView.swift */,
+				B9D4F2C85E3A49B70C1D6E22 /* ICloudBackup.swift */,
+				D1F6B4E07A5C41D92E3F8044 /* BackupSettingsView.swift */,
 				E8A2C4D15B6F47A091C3D2E4 /* ColorDraftPicker.swift */,
 				2D4C730906A644DC837867DB /* AssetListView.swift */,
 				C3A91E7B4F2D48A0B6E15C84 /* AssetGrouping.swift */,
@@ -210,6 +216,8 @@
 				C2E6A94371B84D3E8F71A5C6 /* GlowBackground.swift in Sources */,
 				B5D9F2C18E304AB7C4F6D921 /* Palette.swift in Sources */,
 				D7F1B4E30A526CD9E618FB43 /* ColorSettingsView.swift in Sources */,
+				A8C3E1B74D2F48A69B0C5D11 /* ICloudBackup.swift in Sources */,
+				C0E5A3D96F4B40C81D2E7F33 /* BackupSettingsView.swift in Sources */,
 				F9B3D5E26C7048B1A2D4E3F5 /* ColorDraftPicker.swift in Sources */,
 				F449C90D5036484FB22DD932 /* AssetListView.swift in Sources */,
 				D4B02F8C5A3E49B1C7F26D95 /* AssetGrouping.swift in Sources */,
@@ -290,10 +298,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_ENTITLEMENTS = Finance/Finance.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Finance/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Plumb;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -363,10 +373,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_ENTITLEMENTS = Finance/Finance.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Finance/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Plumb;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
