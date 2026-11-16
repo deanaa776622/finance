@@ -141,6 +141,10 @@ struct PaywallView: View {
                 .listRowBackground(palette.panel)
             }
             .tint(palette.ink)
+            .listStyle(.insetGrouped)
+            .listSectionSpacing(.default)
+            .contentMargins(.all, nil, for: .scrollContent)
+            .environment(\.defaultMinListHeaderHeight, 0)
             .palettePanel(palette)
             .navigationTitle("完整記錄")
             .navigationBarTitleDisplayMode(.inline)
