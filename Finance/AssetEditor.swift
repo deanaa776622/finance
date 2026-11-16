@@ -26,7 +26,7 @@ struct AssetEditor: View {
     @State private var confirmDelete = false
     /// "medium" or "large". Missing key stays full height.
     @AppStorage("assetSheetDetent") private var detentID = "large"
-    @AppStorage(ProPreview.key) private var isPro = true
+    @AppStorage(ProPreview.key) private var isPro = false
     private let existingID: UUID?
     var onSave: (AssetItem) -> Void
     var onDelete: (() -> Void)?

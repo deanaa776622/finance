@@ -60,6 +60,7 @@
 		C3A91E7B4F2D48A0B6E15C84 /* AssetGrouping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetGrouping.swift; sourceTree = "<group>"; };
 		C6E0A3D29F415BC8D507EA32 /* ColorSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorSettingsView.swift; sourceTree = "<group>"; };
 		B9D4F2C85E3A49B70C1D6E22 /* ICloudBackup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICloudBackup.swift; sourceTree = "<group>"; };
+		C6E1A8F52B7D43E0F9A45B11 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
 		D1F6B4E07A5C41D92E3F8044 /* BackupSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupSettingsView.swift; sourceTree = "<group>"; };
 		C99AAE8E3DC34E89A9404102 /* SavingsMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsMath.swift; sourceTree = "<group>"; };
 		D2E7F5A40B6C48D9E3F14A55 /* SavingsCurve.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavingsCurve.swift; sourceTree = "<group>"; };
@@ -98,6 +99,7 @@
 				A4C8E1B07D2F49A6B3E5C810 /* Palette.swift */,
 				C6E0A3D29F415BC8D507EA32 /* ColorSettingsView.swift */,
 				B9D4F2C85E3A49B70C1D6E22 /* ICloudBackup.swift */,
+				C6E1A8F52B7D43E0F9A45B11 /* Products.storekit */,
 				D1F6B4E07A5C41D92E3F8044 /* BackupSettingsView.swift */,
 				E8A2C4D15B6F47A091C3D2E4 /* ColorDraftPicker.swift */,
 				2D4C730906A644DC837867DB /* AssetListView.swift */,

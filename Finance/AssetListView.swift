@@ -11,7 +11,7 @@ struct AssetListView: View {
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
-    @AppStorage(ProPreview.key) private var isPro = true
+    @AppStorage(ProPreview.key) private var isPro = false
     @AppStorage(ProPreview.freshKey) private var isFresh = false
     @State private var editing: AssetItem?
     @State private var showAdd = false
@@ -20,6 +20,7 @@ struct AssetListView: View {
     @State private var addKind: AssetKind = .original
     @State private var showColors = false
     @State private var showBackup = false
+    @State private var showPaywall = false
     @State private var showBackfill = false
     @State private var isRefreshing = false
     @State private var refreshConfirmed = false
@@ -132,6 +133,9 @@ struct AssetListView: View {
         .sheet(isPresented: $showBackup) {
             BackupSettingsView()
         }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
         .sheet(isPresented: $showBackfill) {
             MonthBackfillView()
         }
@@ -150,11 +154,13 @@ struct AssetListView: View {
             Text("報價暫時取不到，請稍後再試。")
         }
         .alert("已記滿 \(ProPreview.freeAssetLimit) 筆", isPresented: $showAssetLimit) {
+            Button("解鎖") { showPaywall = true }
             Button("好", role: .cancel) {}
         } message: {
             Text("免費版最多記 \(ProPreview.freeAssetLimit) 筆。")
         }
         .alert("不支援股價自動更新", isPresented: $showQuoteLocked) {
+            Button("解鎖") { showPaywall = true }
             Button("好", role: .cancel) {}
         } message: {
             Text("免費版請手動填價格。")
@@ -405,6 +411,7 @@ struct AssetListView: View {
                 previewChoice("付費版", chosen: !isFresh && isPro) { selectStored(pro: true) }
                 previewChoice("免費版", chosen: !isFresh && !isPro) { selectStored(pro: false) }
                 previewChoice("第一次使用", chosen: isFresh) { selectFirstUse() }
+                Button("完整記錄") { showPaywall = true }
                 Button("顏色設定") { showColors = true }
                 Button("iCloud 備份") { showBackup = true }
                 Button("補登過去月份") { showBackfill = true }

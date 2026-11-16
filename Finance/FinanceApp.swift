@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 
 @main
@@ -5,6 +6,7 @@ struct FinanceApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @State private var portfolio: Portfolio
     @State private var palette: Palette
+    @State private var proStore = ProStore()
 
     init() {
         let portfolio = Portfolio.load()
@@ -22,7 +24,9 @@ struct FinanceApp: App {
             HomeView()
                 .environment(portfolio)
                 .environment(palette)
+                .environment(proStore)
                 .preferredColorScheme(palette.colorScheme)
+                .task { await proStore.listen() }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active { ICloudBackup.backupIfDue() }
                 }
@@ -35,5 +39,92 @@ struct FinanceApp: App {
                     }
                 }
         }
+    }
+}
+
+/// One-time unlock. The gear menu can still preview a tier without a purchase.
+@Observable
+final class ProStore {
+    static let productID = "com.deanaa776622.finance.pro"
+    private(set) var product: Product?
+    private(set) var note = ""
+    private(set) var buying = false
+
+    func listen() async {
+        await refreshEntitlement()
+        for await update in Transaction.updates {
+            guard let transaction = try? update.payloadValue else { continue }
+            await transaction.finish()
+            grant(transaction)
+        }
+    }
+
+    func load() async {
+        product = try? await Product.products(for: [Self.productID]).first
+        if product == nil { note = "讀不到價格" }
+    }
+
+    func buy() async -> Bool {
+        if product == nil { await load() }
+        guard let product else { return false }
+        buying = true
+        defer { buying = false }
+        do {
+            switch try await product.purchase() {
+            case .success(let verification):
+                guard let transaction = try? verification.payloadValue else { return false }
+                await transaction.finish()
+                grant(transaction)
+                note = ""
+                return true
+            case .pending:
+                note = "等待確認"
+                return false
+            case .userCancelled:
+                return false
+            @unknown default:
+                return false
+            }
+        } catch {
+            note = "這次沒有完成"
+            return false
+        }
+    }
+
+    func restore() async -> Bool {
+        buying = true
+        defer { buying = false }
+        do { try await AppStore.sync() } catch {
+            note = "沒有找到已購買的紀錄"
+            return false
+        }
+        let unlocked = await hasEntitlement()
+        if unlocked {
+            UserDefaults.standard.set(true, forKey: ProPreview.key)
+            note = ""
+        } else {
+            note = "沒有找到已購買的紀錄"
+        }
+        return unlocked
+    }
+
+    private func refreshEntitlement() async {
+        guard await hasEntitlement() else { return }
+        UserDefaults.standard.set(true, forKey: ProPreview.key)
+    }
+
+    private func hasEntitlement() async -> Bool {
+        for await result in Transaction.currentEntitlements {
+            guard let transaction = try? result.payloadValue else { continue }
+            if transaction.productID == Self.productID, transaction.revocationDate == nil {
+                return true
+            }
+        }
+        return false
+    }
+
+    private func grant(_ transaction: StoreKit.Transaction) {
+        guard transaction.productID == Self.productID, transaction.revocationDate == nil else { return }
+        UserDefaults.standard.set(true, forKey: ProPreview.key)
     }
 }

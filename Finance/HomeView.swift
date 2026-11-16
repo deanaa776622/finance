@@ -17,7 +17,7 @@ struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hideAmounts") private var hideAmounts = false
-    @AppStorage(ProPreview.key) private var isPro = true
+    @AppStorage(ProPreview.key) private var isPro = false
     /// -1 assets, 0 home, 1 savings. Animated, so it passes through values between pages.
     @State private var panel: CGFloat = 0
     /// The page the sheet is committed to. Stays on a detent, so a flick cannot park between pages and lock the list.

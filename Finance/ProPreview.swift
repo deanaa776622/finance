@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Simulator switch for the paid savings answer. Replace with StoreKit when charging is real.
+/// Free-tier limits. A purchase writes the same key StoreKit checks.
 enum ProPreview {
     static let key = "previewPro"
     static let freshKey = "previewFresh"
@@ -25,7 +25,7 @@ enum ProPreview {
 struct GoalDistanceCopy: View {
     let portfolio: Portfolio
     @AppStorage("hideAmounts") private var hideAmounts = false
-    @AppStorage(ProPreview.key) private var isPro = true
+    @AppStorage(ProPreview.key) private var isPro = false
 
     var body: some View {
         VStack(spacing: 6) {
@@ -90,25 +90,101 @@ struct SavingsPlanLocked: View {
     var rowBottom: ((CGFloat) -> Void)? = nil
     var measureID = 0
     @Environment(Palette.self) private var palette
+    @State private var showPaywall = false
     @ScaledMetric(relativeTo: .title3) private var titleSize: CGFloat = 20
 
     var body: some View {
         Section {
-            HStack {
-                Text("計畫")
-                    .font(.system(size: titleSize, weight: .semibold))
-                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { titleFrame?($0) }
-                Spacer()
-                Text("未解鎖")
-                    .font(.system(size: titleSize))
-                    .foregroundStyle(palette.quietInk)
+            Button { showPaywall = true } label: {
+                HStack {
+                    Text("計畫")
+                        .font(.system(size: titleSize, weight: .semibold))
+                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { titleFrame?($0) }
+                    Spacer()
+                    Text("未解鎖")
+                        .font(.system(size: titleSize))
+                        .foregroundStyle(palette.quietInk)
+                }
             }
+            .buttonStyle(.plain)
             .groupHeaderChrome()
-            Text("解鎖後可看還要幾年、每月該存多少")
-                .font(.footnote)
-                .foregroundStyle(palette.quietInk)
-                .groupCardRow(isFirst: true, isLast: true, measureID: measureID, reportBottom: rowBottom)
+            Button { showPaywall = true } label: {
+                Text("解鎖後可看還要幾年、每月該存多少")
+                    .font(.footnote)
+                    .foregroundStyle(palette.quietInk)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+            .groupCardRow(isFirst: true, isLast: true, measureID: measureID, reportBottom: rowBottom)
         }
         .foregroundStyle(palette.ink)
+        .sheet(isPresented: $showPaywall) { PaywallView() }
+    }
+}
+
+/// One-time purchase of the full record: unlimited assets, quotes, and the savings plan.
+struct PaywallView: View {
+    @Environment(Palette.self) private var palette
+    @Environment(ProStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage(ProPreview.key) private var isPro = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    labeled("不限筆數", "免費版最多 \(ProPreview.freeAssetLimit) 筆")
+                    labeled("自動更新股價", "不用每次手動填價格")
+                    labeled("距離目標", "看還要幾年、每月該存多少")
+                }
+                .listRowBackground(palette.panel)
+                Section {
+                    Button(buyTitle) { Task { await buy() } }
+                        .disabled(store.buying || isPro)
+                    Button("恢復購買") { Task { await restore() } }
+                        .disabled(store.buying)
+                } footer: {
+                    Text(store.note.isEmpty ? "一次買斷，沒有每月扣款。" : store.note)
+                }
+                .listRowBackground(palette.panel)
+            }
+            .tint(palette.ink)
+            .palettePanel(palette)
+            .navigationTitle("完整記錄")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("完成") { dismiss() }
+                }
+            }
+        }
+        .presentationBackground(palette.panel)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .task { await store.load() }
+    }
+
+    private var buyTitle: String {
+        if isPro { return "已解鎖" }
+        if let product = store.product { return "以 \(product.displayPrice) 買斷" }
+        return "讀取價格"
+    }
+
+    private func labeled(_ title: String, _ detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+            Text(detail)
+                .font(.footnote)
+                .foregroundStyle(palette.quietInk)
+        }
+    }
+
+    private func buy() async {
+        if store.product == nil { await store.load() }
+        if await store.buy() { dismiss() }
+    }
+
+    private func restore() async {
+        if await store.restore() { dismiss() }
     }
 }

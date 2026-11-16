@@ -4,7 +4,7 @@ struct SavingsTunerView: View {
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
-    @AppStorage(ProPreview.key) private var isPro = true
+    @AppStorage(ProPreview.key) private var isPro = false
     @AppStorage(ProPreview.freshKey) private var isFresh = false
     @FocusState private var field: Field?
     @State private var costText = ""

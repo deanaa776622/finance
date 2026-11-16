@@ -49,6 +49,9 @@
             ReferencedContainer = "container:Finance.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <StoreKitConfigurationFileReference
+         identifier = "C6E1A8F52B7D43E0F9A45B11">
+      </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
