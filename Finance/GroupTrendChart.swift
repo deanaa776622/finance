@@ -106,6 +106,9 @@ struct GroupTrendChart: View, Equatable {
                 }
             }
         }
+        .sensoryFeedback(.selection, trigger: selected) { _, month in
+            month != nil
+        }
     }
 
     private var visibleLines: [DrawnLine] {
