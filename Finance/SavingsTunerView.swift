@@ -97,7 +97,7 @@ struct SavingsTunerView: View {
             if goalOpen {
                 moneyRow("年花費", text: $costText, field: .cost)
                     .groupCardRow(isFirst: true, isLast: false)
-                percentRow("提領率", text: $withdrawText, focus: .withdraw, prompt: "0")
+                percentRow("提領率", text: $withdrawText, focus: .withdraw)
                     .groupCardRow(isFirst: false, isLast: true, measureID: railEpoch) { goalRail.bottom = $0 }
             }
         }
@@ -280,16 +280,11 @@ struct SavingsTunerView: View {
         .foregroundStyle(palette.ink)
     }
 
-    private func percentRow(
-        _ title: String,
-        text: Binding<String>,
-        focus: Field,
-        prompt: String = "％"
-    ) -> some View {
+    private func percentRow(_ title: String, text: Binding<String>, focus: Field) -> some View {
         HStack {
             Text(title)
             Spacer()
-            TextField(prompt, text: text)
+            TextField("0", text: text)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .focused($field, equals: focus)
