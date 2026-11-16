@@ -109,6 +109,12 @@ struct GroupTrendChart: View, Equatable {
         .sensoryFeedback(.selection, trigger: selected) { _, month in
             month != nil
         }
+        .sensoryFeedback(.selection, trigger: fingerSpan?.start) { _, month in
+            month != nil
+        }
+        .sensoryFeedback(.selection, trigger: fingerSpan?.end) { _, month in
+            month != nil
+        }
     }
 
     private var visibleLines: [DrawnLine] {
