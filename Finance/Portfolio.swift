@@ -227,9 +227,9 @@ final class Portfolio {
         return isBalanced ? "平衡" : "留意配置"
     }
 
-    /// Home footnote. Allocation only; the savings goal is not required to read the home screen.
+    /// Home footnote. Allocation only; property and debt are not a mix.
     func homeSubtitle() -> String {
-        if items.isEmpty { return "下滑新增流動資產" }
+        if allocableTotal <= 0 { return "下滑新增流動資產" }
         if isBalanced { return "配置大致平衡" }
         return String(format: "與目標最多偏離約 %.0f%%", maxAllocationDrift)
     }
