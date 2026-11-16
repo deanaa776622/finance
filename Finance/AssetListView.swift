@@ -17,6 +17,7 @@ struct AssetListView: View {
     @State private var showAdd = false
     @State private var showAssetLimit = false
     @State private var showQuoteLocked = false
+    @State private var showBackfillLocked = false
     @State private var addKind: AssetKind = .original
     @State private var showColors = false
     @State private var showBackup = false
@@ -164,6 +165,12 @@ struct AssetListView: View {
             Button("好", role: .cancel) {}
         } message: {
             Text("免費版請手動填價格。")
+        }
+        .alert("不支援補登過去月份", isPresented: $showBackfillLocked) {
+            Button("解鎖") { showPaywall = true }
+            Button("好", role: .cancel) {}
+        } message: {
+            Text("免費版不能補上過去的月份。")
         }
         .onDisappear(perform: persistGroups)
     }
@@ -414,7 +421,13 @@ struct AssetListView: View {
                 Button("完整記錄") { showPaywall = true }
                 Button("顏色設定") { showColors = true }
                 Button("iCloud 備份") { showBackup = true }
-                Button("補登過去月份") { showBackfill = true }
+                Button("補登過去月份") {
+                    guard isPro else {
+                        showBackfillLocked = true
+                        return
+                    }
+                    showBackfill = true
+                }
             } label: {
                 Image(systemName: "gearshape")
             }

@@ -127,6 +127,7 @@ struct PaywallView: View {
                     labeled("不限筆數", "免費版最多 \(ProPreview.freeAssetLimit) 筆")
                     labeled("自動更新股價", "不用每次手動填價格")
                     labeled("距離目標", "看還要幾年、每月該存多少")
+                    labeled("補登過去月份", "把更早的資產補進趨勢")
                 }
                 .listRowBackground(palette.panel)
                 Section {
