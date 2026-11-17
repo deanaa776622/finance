@@ -33,6 +33,8 @@ struct HomeView: View {
     @State private var dotToken = 0
     @State private var safeTop: CGFloat = 0
     @State private var safeBottom: CGFloat = 0
+    @State private var safeLeft: CGFloat = 0
+    @State private var safeRight: CGFloat = 0
     /// 總淨值 and 總曝險 keep their own grouping. The home screen owns both, so closing the page does not drop them.
     @State private var netGroups = AssetGroups()
     @State private var exposureGroups = AssetGroups()
@@ -71,6 +73,8 @@ struct HomeView: View {
                             exposureOnly: exposureList,
                             groups: exposureList ? exposureGroups : netGroups
                         )
+                        .padding(.leading, safeLeft)
+                        .padding(.trailing, safeRight)
                         .ignoresSafeArea(edges: .bottom)
                         .mask {
                             VStack(spacing: 0) {
@@ -101,7 +105,8 @@ struct HomeView: View {
                                 .allowsHitTesting(false)
                         }
                         .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
-                        .padding(.horizontal, 16 * reveal)
+                        .padding(.leading, (safeLeft + 16) * reveal)
+                        .padding(.trailing, (safeRight + 16) * reveal)
                         .shadow(color: .black.opacity(0.35 * reveal), radius: 20 * reveal, y: 8 * reveal)
                         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { heroFrame = $0 }
                         .onTapGesture { if panel != 0 { snap(0) } }
@@ -116,6 +121,8 @@ struct HomeView: View {
 
                     shellSlot(height: savingsHeight) {
                         SavingsTunerView()
+                            .padding(.leading, safeLeft)
+                            .padding(.trailing, safeRight)
                             .ignoresSafeArea(edges: .top)
                             .opacity(position > 0 ? position : 0)
                             .allowsHitTesting(position > 0.85)
@@ -131,8 +138,10 @@ struct HomeView: View {
                 Color.clear
                     .onGeometryChange(for: CGFloat.self) { _ in Self.windowSafeArea.top } action: { safeTop = $0 }
                     .onGeometryChange(for: CGFloat.self) { _ in Self.windowSafeArea.bottom } action: { safeBottom = $0 }
+                    .onGeometryChange(for: CGFloat.self) { _ in Self.windowSafeArea.left } action: { safeLeft = $0 }
+                    .onGeometryChange(for: CGFloat.self) { _ in Self.windowSafeArea.right } action: { safeRight = $0 }
             }
-            .ignoresSafeArea(edges: [.top, .bottom])
+            .ignoresSafeArea()
             .background(palette.ground.ignoresSafeArea())
             .preferredColorScheme(palette.colorScheme)
             .toolbar(.hidden, for: .navigationBar)
