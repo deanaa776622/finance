@@ -4,6 +4,8 @@ struct AssetListView: View {
     /// Pulls the chart up into the lower edge of the 40pt top fade.
     static let restingTopInset: CGFloat = 32
     var showsChrome = true
+    /// Side status column, as on iPhone Duo. The settings menu joins that column.
+    var sideColumn = false
     var topInset = restingTopInset
     /// Exposure lens keeps 原／槓／現. Net worth lists every kind.
     var exposureOnly = false
@@ -55,11 +57,13 @@ struct AssetListView: View {
 
     init(
         showsChrome: Bool = true,
+        sideColumn: Bool = false,
         topInset: CGFloat = restingTopInset,
         exposureOnly: Bool = false,
         groups: AssetGroups = AssetGroups()
     ) {
         self.showsChrome = showsChrome
+        self.sideColumn = sideColumn
         self.topInset = topInset
         self.exposureOnly = exposureOnly
         self.groups = groups
@@ -105,7 +109,7 @@ struct AssetListView: View {
         .scrollContentBackground(.hidden)
         .background(palette.ground)
         .contentMargins(.top, topInset, for: .scrollContent)
-        .contentMargins(.bottom, showsChrome ? 64 : 0, for: .scrollContent)
+        .contentMargins(.bottom, showsChrome && !sideColumn ? 64 : 0, for: .scrollContent)
         .onGeometryChange(for: CGPoint.self) {
             let frame = $0.frame(in: .global)
             return CGPoint(x: frame.minX, y: frame.minY)
@@ -116,10 +120,20 @@ struct AssetListView: View {
         .sensoryFeedback(.impact(flexibility: .soft), trigger: groups.liquidMerged)
         .sensoryFeedback(.impact(flexibility: .soft), trigger: groups.assetMerged)
         .sensoryFeedback(.impact(flexibility: .soft), trigger: groups.netMerged)
-        .navigationTitle(showsChrome ? "資產" : "")
+        .navigationTitle(showsChrome && !sideColumn ? "資產" : "")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.hidden, for: .navigationBar)
-        .modifier(AssetMenuBar(isShown: showsChrome) { menuBar })
+        .toolbar(showsChrome && sideColumn ? .visible : .hidden, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            if showsChrome, sideColumn {
+                ToolbarItem(placement: .topBarTrailing) { hideControl }.preferSideColumn()
+                ToolbarItem(placement: .topBarTrailing) { sortControl }.preferSideColumn()
+                ToolbarItem(placement: .topBarTrailing) { refreshControl }.preferSideColumn()
+                ToolbarItem(placement: .topBarTrailing) { addControl }.preferSideColumn()
+                ToolbarItem(placement: .topBarTrailing) { settingsMenu }.preferSideColumn()
+            }
+        }
+        .modifier(AssetMenuBar(isShown: showsChrome && !sideColumn) { menuBar })
         .sheet(isPresented: $showAdd) {
             AssetEditor(item: nil, defaultKind: addKind, onSave: saveItem)
         }
@@ -374,69 +388,81 @@ struct AssetListView: View {
     }
 
     private var hideButton: some View {
+        hideControl.modifier(CircleGlass())
+    }
+
+    private var hideControl: some View {
         Button {
             hideAmounts.toggle()
         } label: {
             Image(systemName: hideAmounts ? "eye.slash" : "eye")
         }
         .accessibilityLabel(hideAmounts ? "顯示金額" : "隱藏金額")
-        .modifier(CircleGlass())
     }
 
     private var trailingCluster: some View {
         HStack(spacing: 0) {
-            sortMenu
-            Button {
-                guard isPro else {
-                    showQuoteLocked = true
-                    return
-                }
-                Task { await refreshQuotes() }
-            } label: {
-                Image(systemName: isRefreshing || !refreshConfirmed ? "arrow.clockwise" : "checkmark")
-                    .foregroundStyle(isPro ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
-                    .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
-                    .symbolEffect(.rotate, options: .repeating, isActive: isRefreshing && !reduceMotion)
-            }
-            .disabled(isPro && (isRefreshing || refreshConfirmed))
-            .accessibilityLabel(isPro ? (isRefreshing ? "更新中" : refreshConfirmed ? "已更新" : "更新現值") : "不支援股價自動更新")
-            .frame(width: 44, height: 44)
-            Button {
-                if canAddAsset {
-                    addKind = .original
-                    showAdd = true
-                } else {
-                    showAssetLimit = true
-                }
-            } label: {
-                Image(systemName: "plus")
-                    .foregroundStyle(canAddAsset ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
-            }
-            .accessibilityLabel(canAddAsset ? "新增資產與負債" : "已記滿 \(ProPreview.freeAssetLimit) 筆")
-            .frame(width: 44, height: 44)
-            Menu {
-                previewChoice("付費版", chosen: !isFresh && isPro) { selectStored(pro: true) }
-                previewChoice("免費版", chosen: !isFresh && !isPro) { selectStored(pro: false) }
-                previewChoice("第一次使用", chosen: isFresh) { selectFirstUse() }
-                Button("完整記錄") { showPaywall = true }
-                Button("顏色設定") { showColors = true }
-                Button("iCloud 備份") { showBackup = true }
-                Button("補登過去月份") {
-                    guard isPro else {
-                        showBackfillLocked = true
-                        return
-                    }
-                    showBackfill = true
-                }
-            } label: {
-                Image(systemName: "gearshape")
-            }
-            .accessibilityLabel("設定")
-            .frame(width: 44, height: 44)
+            sortControl.frame(width: 44, height: 44)
+            refreshControl.frame(width: 44, height: 44)
+            addControl.frame(width: 44, height: 44)
+            settingsMenu.frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 4)
         .modifier(CapsuleGlass())
+    }
+
+    private var refreshControl: some View {
+        Button {
+            guard isPro else {
+                showQuoteLocked = true
+                return
+            }
+            Task { await refreshQuotes() }
+        } label: {
+            Image(systemName: isRefreshing || !refreshConfirmed ? "arrow.clockwise" : "checkmark")
+                .foregroundStyle(isPro ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
+                .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
+                .symbolEffect(.rotate, options: .repeating, isActive: isRefreshing && !reduceMotion)
+        }
+        .disabled(isPro && (isRefreshing || refreshConfirmed))
+        .accessibilityLabel(isPro ? (isRefreshing ? "更新中" : refreshConfirmed ? "已更新" : "更新現值") : "不支援股價自動更新")
+    }
+
+    private var addControl: some View {
+        Button {
+            if canAddAsset {
+                addKind = .original
+                showAdd = true
+            } else {
+                showAssetLimit = true
+            }
+        } label: {
+            Image(systemName: "plus")
+                .foregroundStyle(canAddAsset ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
+        }
+        .accessibilityLabel(canAddAsset ? "新增資產與負債" : "已記滿 \(ProPreview.freeAssetLimit) 筆")
+    }
+
+    private var settingsMenu: some View {
+        Menu {
+            previewChoice("付費版", chosen: !isFresh && isPro) { selectStored(pro: true) }
+            previewChoice("免費版", chosen: !isFresh && !isPro) { selectStored(pro: false) }
+            previewChoice("第一次使用", chosen: isFresh) { selectFirstUse() }
+            Button("完整記錄") { showPaywall = true }
+            Button("顏色設定") { showColors = true }
+            Button("iCloud 備份") { showBackup = true }
+            Button("補登過去月份") {
+                guard isPro else {
+                    showBackfillLocked = true
+                    return
+                }
+                showBackfill = true
+            }
+        } label: {
+            Image(systemName: "gearshape")
+        }
+        .accessibilityLabel("設定")
     }
 
     private func previewChoice(_ title: String, chosen: Bool, action: @escaping () -> Void) -> some View {
@@ -466,7 +492,7 @@ struct AssetListView: View {
         isFresh = true
     }
 
-    private var sortMenu: some View {
+    private var sortControl: some View {
         Menu {
             Picker("依據", selection: $sortKey) {
                 Text("佔比").tag("share")
@@ -482,7 +508,6 @@ struct AssetListView: View {
             Image(systemName: "arrow.up.arrow.down")
         }
         .accessibilityLabel("排序")
-        .frame(width: 44, height: 44)
     }
 
     private func persistGroups() {
@@ -1251,6 +1276,17 @@ private struct CapsuleGlass: ViewModifier {
             content.glassEffect(.regular.interactive(), in: Capsule())
         } else {
             content.background(.ultraThinMaterial, in: Capsule())
+        }
+    }
+}
+
+private extension ToolbarContent {
+    @ToolbarContentBuilder
+    func preferSideColumn() -> some ToolbarContent {
+        if #available(iOS 27.1, *) {
+            self.axisBehavior(.verticalPreferred)
+        } else {
+            self
         }
     }
 }

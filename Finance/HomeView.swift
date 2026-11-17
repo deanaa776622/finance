@@ -69,6 +69,7 @@ struct HomeView: View {
                     shellSlot(height: assetHeight) {
                         AssetListView(
                             showsChrome: position < -0.5,
+                            sideColumn: safeRight > 20,
                             topInset: AssetListView.restingTopInset * drop,
                             exposureOnly: exposureList,
                             groups: exposureList ? exposureGroups : netGroups
@@ -144,7 +145,7 @@ struct HomeView: View {
             .ignoresSafeArea()
             .background(palette.ground.ignoresSafeArea())
             .preferredColorScheme(palette.colorScheme)
-            .toolbar(.hidden, for: .navigationBar)
+            .toolbar(safeRight > 20 && panel + drag < -0.5 ? .visible : .hidden, for: .navigationBar)
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase != .active else { return }
