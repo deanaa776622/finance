@@ -127,6 +127,9 @@ struct AssetListView: View {
         .toolbar {
             if showsChrome, sideColumn {
                 ToolbarItem(placement: .topBarTrailing) { hideControl }.preferSideColumn()
+                if #available(iOS 26.0, *) {
+                    ToolbarSpacer(.fixed, placement: .topBarTrailing).preferSideColumn()
+                }
                 ToolbarItem(placement: .topBarTrailing) { sortControl }.preferSideColumn()
                 ToolbarItem(placement: .topBarTrailing) { refreshControl }.preferSideColumn()
                 ToolbarItem(placement: .topBarTrailing) { addControl }.preferSideColumn()
