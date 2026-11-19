@@ -18,6 +18,7 @@ struct BackupSettingsView: View {
             Form {
                 Section {
                     Toggle("每天備份", isOn: $enabled)
+                        .tint(Color("AccentColor"))
                     DatePicker("時間", selection: clock, displayedComponents: .hourAndMinute)
                         .disabled(!enabled)
                     Button { picking = true } label: {
