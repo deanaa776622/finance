@@ -150,8 +150,10 @@ struct PaywallView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { dismiss() }
+                    Button("完成", systemImage: "checkmark") { dismiss() }
+                        .labelStyle(.iconOnly)
                 }
+                .preferSideColumn()
             }
         }
         .presentationBackground(palette.panel)

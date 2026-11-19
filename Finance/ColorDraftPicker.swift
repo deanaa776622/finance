@@ -85,13 +85,19 @@ struct ColorDraftPresenter: UIViewControllerRepresentable {
                 action: #selector(cancel)
             )
             close.accessibilityLabel = "關閉"
-            wheel.navigationItem.leftBarButtonItem = close
-            wheel.navigationItem.rightBarButtonItem = UIBarButtonItem(
-                title: "確認",
+            let confirm = UIBarButtonItem(
+                image: UIImage(systemName: "checkmark"),
                 style: .done,
                 target: self,
                 action: #selector(confirm)
             )
+            confirm.accessibilityLabel = "確認"
+            if #available(iOS 27.1, *) {
+                close.axisBehavior = .verticalPreferred
+                confirm.axisBehavior = .verticalPreferred
+            }
+            wheel.navigationItem.leftBarButtonItem = close
+            wheel.navigationItem.rightBarButtonItem = confirm
             picker = wheel
             let nav = UINavigationController(rootViewController: wheel)
             self.nav = nav

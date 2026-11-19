@@ -74,12 +74,16 @@ struct MonthBackfillView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
+                    Button("取消", systemImage: "xmark") { dismiss() }
+                        .labelStyle(.iconOnly)
                 }
+                .preferSideColumn()
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("儲存") { save() }
+                    Button("儲存", systemImage: "checkmark") { save() }
+                        .labelStyle(.iconOnly)
                         .disabled(!canSave)
                 }
+                .preferSideColumn()
             }
         }
         .presentationBackground(palette.panel)

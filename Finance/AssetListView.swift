@@ -1283,7 +1283,7 @@ private struct CapsuleGlass: ViewModifier {
     }
 }
 
-private extension ToolbarContent {
+extension ToolbarContent {
     @ToolbarContentBuilder
     func preferSideColumn() -> some ToolbarContent {
         if #available(iOS 27.1, *) {
