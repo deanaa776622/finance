@@ -1,6 +1,10 @@
 import SwiftUI
 
 struct SavingsTunerView: View {
+    var showsChrome = false
+    var sideColumn = false
+    var exposureOnly = false
+    var assetGroups = AssetGroups()
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
@@ -29,6 +33,14 @@ struct SavingsTunerView: View {
 
     var body: some View {
         groups
+            .modifier(PortfolioMenu(
+                showsChrome: showsChrome,
+                sideColumn: sideColumn,
+                bottomBar: false,
+                showsSort: false,
+                groups: assetGroups,
+                exposureOnly: exposureOnly
+            ))
             .onAppear(perform: load)
             .onChange(of: isFresh) { _, _ in load() }
             .onChange(of: costText) { _, _ in followInputs() }

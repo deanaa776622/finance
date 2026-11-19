@@ -124,7 +124,12 @@ struct HomeView: View {
                         .accessibilityLabel(heroLabel(panel))
 
                     shellSlot(height: savingsHeight) {
-                        SavingsTunerView()
+                        SavingsTunerView(
+                            showsChrome: position > 0.5,
+                            sideColumn: safeRight > 20,
+                            exposureOnly: exposureList,
+                            assetGroups: exposureList ? exposureGroups : netGroups
+                        )
                             .padding(.leading, safeLeft)
                             .padding(.trailing, safeRight)
                             .ignoresSafeArea(edges: .top)
@@ -148,7 +153,7 @@ struct HomeView: View {
             .ignoresSafeArea()
             .background(palette.ground.ignoresSafeArea())
             .preferredColorScheme(palette.colorScheme)
-            .toolbar(safeRight > 20 && panel + drag < -0.5 ? .visible : .hidden, for: .navigationBar)
+            .toolbar(safeRight > 20 && abs(panel + drag) > 0.5 ? .visible : .hidden, for: .navigationBar)
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase != .active else { return }
