@@ -98,6 +98,11 @@ struct ColorDraftPresenter: UIViewControllerRepresentable {
             }
             wheel.navigationItem.leftBarButtonItem = close
             wheel.navigationItem.rightBarButtonItem = confirm
+            if #available(iOS 27.0, *) {
+                var bar = wheel.navigationItem.navigationBarMinimization
+                bar.minimizationBehavior = .never
+                wheel.navigationItem.navigationBarMinimization = bar
+            }
             picker = wheel
             let nav = UINavigationController(rootViewController: wheel)
             self.nav = nav

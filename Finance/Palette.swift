@@ -220,12 +220,27 @@ struct PaletteTheme: Identifiable, Codable {
 extension View {
     /// Sheet chrome and rows, one step lighter than the page.
     func palettePanel(_ palette: Palette) -> some View {
-        scrollContentBackground(.hidden)
+        modifier(PalettePanel(palette: palette))
+    }
+}
+
+/// Sheet fill, plus a title bar that stays put while the form is dragged.
+private struct PalettePanel: ViewModifier {
+    var palette: Palette
+
+    func body(content: Content) -> some View {
+        let chrome = content
+            .scrollContentBackground(.hidden)
             .background(palette.panel)
             .listRowBackground(palette.panel)
             .toolbarBackground(palette.panel, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .presentationBackground(palette.panel)
+        if #available(iOS 27.0, *) {
+            chrome.toolbarMinimizationBehavior(.never, for: .navigationBar)
+        } else {
+            chrome
+        }
     }
 }
 
