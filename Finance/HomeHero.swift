@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct HomeHero: View {
     let portfolio: Portfolio
@@ -10,8 +11,29 @@ struct HomeHero: View {
     var screen: CGSize
     var safeTop: CGFloat
     var safeBottom: CGFloat
+    var safeLeft: CGFloat = 0
+    var safeRight: CGFloat = 0
+    /// Window is taller than wide: the screen opens top to bottom.
+    var opensVertically = false
     @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
+    /// Unfolded Duo. A normal iPhone has no hinge, so portrait stays under the island.
+    @State private var unfolded = false
+
+    /// Same distance from the screen edge as the up chevron.
+    private var edgeInset: CGFloat { safeBottom + 8 }
+
+    /// 直立且展開時，上方安全區是空的，下箭頭跟上箭頭同一個邊緣距離。
+    /// 一般 iPhone 直立有靈動島，維持在安全區下方。橫放有側欄時再往下對齊。
+    private var downChevronTop: CGFloat {
+        if opensVertically, unfolded {
+            return edgeInset
+        }
+        if safeLeft > 20 || safeRight > 20 {
+            return max(safeTop, edgeInset)
+        }
+        return safeTop + 8
+    }
 
     private var reveal: CGFloat { abs(position) }
     private var settledReveal: CGFloat { abs(settled) }
@@ -20,6 +42,7 @@ struct HomeHero: View {
 
     var body: some View {
         ZStack {
+            UnfoldedHinge(isUnfolded: $unfolded)
             GlowBackground(orbs: GlowOrb.orbs(for: portfolio, palette: palette), screen: screen)
 
             ZStack {
@@ -32,14 +55,14 @@ struct HomeHero: View {
                     .font(.title)
                     .foregroundStyle(.tertiary)
                     .opacity(1 - reveal)
-                    .padding(.top, safeTop + 8)
+                    .padding(.top, downChevronTop)
                     .accessibilityHidden(true)
                 Spacer()
                 Image(systemName: "chevron.compact.up")
                     .font(.title)
                     .foregroundStyle(.tertiary)
                     .opacity(1 - reveal)
-                    .padding(.bottom, safeBottom + 8)
+                    .padding(.bottom, edgeInset)
                     .accessibilityHidden(true)
             }
             .allowsHitTesting(false)
@@ -102,6 +125,39 @@ struct HomeHero: View {
 
     private func dotOn(_ index: Int) -> Bool {
         (lens < 0.5 ? 0 : 1) == index
+    }
+
+    /// Reads the fold. Nil on a normal iPhone.
+    private struct UnfoldedHinge: UIViewRepresentable {
+        @Binding var isUnfolded: Bool
+
+        func makeUIView(context: Context) -> UIView {
+            let view = UIView()
+            view.isUserInteractionEnabled = false
+            view.backgroundColor = .clear
+            guard #available(iOS 27.1, *) else { return view }
+            view.addInteraction(UIHingeInteraction { _, update in
+                let open = update.hinge?.status == .fullyOpen || update.hinge?.status == .partiallyOpen
+                DispatchQueue.main.async {
+                    let binding = context.coordinator.isUnfolded
+                    if binding.wrappedValue != open { binding.wrappedValue = open }
+                }
+            })
+            return view
+        }
+
+        func updateUIView(_ uiView: UIView, context: Context) {
+            context.coordinator.isUnfolded = $isUnfolded
+        }
+
+        func makeCoordinator() -> Coordinator {
+            Coordinator(isUnfolded: $isUnfolded)
+        }
+
+        final class Coordinator {
+            var isUnfolded: Binding<Bool>
+            init(isUnfolded: Binding<Bool>) { self.isUnfolded = isUnfolded }
+        }
     }
 
     private var statusCopy: some View {

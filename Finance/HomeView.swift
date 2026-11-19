@@ -96,7 +96,10 @@ struct HomeView: View {
                         showsDots: showDots,
                         screen: geo.size,
                         safeTop: safeTop,
-                        safeBottom: safeBottom
+                        safeBottom: safeBottom,
+                        safeLeft: safeLeft,
+                        safeRight: safeRight,
+                        opensVertically: Self.windowBounds.width < Self.windowBounds.height
                     )
                         .frame(height: geo.size.height - range * reveal)
                         .overlay(alignment: .bottom) {
@@ -155,6 +158,14 @@ struct HomeView: View {
     }
 
     private static let dockedCard: CGFloat = 168
+
+    private static var windowBounds: CGRect {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .map(\.bounds)
+            .max { $0.width * $0.height < $1.width * $1.height } ?? .zero
+    }
 
     private static var windowSafeArea: UIEdgeInsets {
         UIApplication.shared.connectedScenes
