@@ -304,7 +304,6 @@ struct AssetEditor: View {
                     Button("儲存", systemImage: "checkmark") { save() }
                         .labelStyle(.iconOnly)
                         .disabled(!canSave)
-                        .tint(canSave ? kindTint : .primary)
                 }
                 .preferSideColumn()
                 ToolbarItemGroup(placement: .keyboard) {
