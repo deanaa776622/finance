@@ -15,10 +15,10 @@ struct HomeHero: View {
     var safeRight: CGFloat = 0
     /// Window is taller than wide: the screen opens top to bottom.
     var opensVertically = false
+    /// Unfolded Duo. A normal iPhone has no hinge, so portrait stays under the island.
+    var unfolded = false
     @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
-    /// Unfolded Duo. A normal iPhone has no hinge, so portrait stays under the island.
-    @State private var unfolded = false
 
     /// Same distance from the screen edge as the up chevron.
     private var edgeInset: CGFloat { safeBottom + 8 }
@@ -42,7 +42,6 @@ struct HomeHero: View {
 
     var body: some View {
         ZStack {
-            UnfoldedHinge(isUnfolded: $unfolded)
             GlowBackground(orbs: GlowOrb.orbs(for: portfolio, palette: palette), screen: screen)
 
             ZStack {
@@ -127,39 +126,6 @@ struct HomeHero: View {
         (lens < 0.5 ? 0 : 1) == index
     }
 
-    /// Reads the fold. Nil on a normal iPhone.
-    private struct UnfoldedHinge: UIViewRepresentable {
-        @Binding var isUnfolded: Bool
-
-        func makeUIView(context: Context) -> UIView {
-            let view = UIView()
-            view.isUserInteractionEnabled = false
-            view.backgroundColor = .clear
-            guard #available(iOS 27.1, *) else { return view }
-            view.addInteraction(UIHingeInteraction { _, update in
-                let open = update.hinge?.status == .fullyOpen || update.hinge?.status == .partiallyOpen
-                DispatchQueue.main.async {
-                    let binding = context.coordinator.isUnfolded
-                    if binding.wrappedValue != open { binding.wrappedValue = open }
-                }
-            })
-            return view
-        }
-
-        func updateUIView(_ uiView: UIView, context: Context) {
-            context.coordinator.isUnfolded = $isUnfolded
-        }
-
-        func makeCoordinator() -> Coordinator {
-            Coordinator(isUnfolded: $isUnfolded)
-        }
-
-        final class Coordinator {
-            var isUnfolded: Binding<Bool>
-            init(isUnfolded: Binding<Bool>) { self.isUnfolded = isUnfolded }
-        }
-    }
-
     private var statusCopy: some View {
         let tracking: CGFloat = 6
         return VStack(spacing: 14) {
@@ -176,4 +142,37 @@ struct HomeHero: View {
         }
     }
 
+}
+
+/// Reads the fold. Nil on a normal iPhone.
+struct UnfoldedHinge: UIViewRepresentable {
+    @Binding var isUnfolded: Bool
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.isUserInteractionEnabled = false
+        view.backgroundColor = .clear
+        guard #available(iOS 27.1, *) else { return view }
+        view.addInteraction(UIHingeInteraction { _, update in
+            let open = update.hinge?.status == .fullyOpen || update.hinge?.status == .partiallyOpen
+            DispatchQueue.main.async {
+                let binding = context.coordinator.isUnfolded
+                if binding.wrappedValue != open { binding.wrappedValue = open }
+            }
+        })
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.isUnfolded = $isUnfolded
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(isUnfolded: $isUnfolded)
+    }
+
+    final class Coordinator {
+        var isUnfolded: Binding<Bool>
+        init(isUnfolded: Binding<Bool>) { self.isUnfolded = isUnfolded }
+    }
 }

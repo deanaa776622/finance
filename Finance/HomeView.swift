@@ -35,6 +35,8 @@ struct HomeView: View {
     @State private var safeBottom: CGFloat = 0
     @State private var safeLeft: CGFloat = 0
     @State private var safeRight: CGFloat = 0
+    /// Unfolded Duo. Portrait then keeps the menu in the top safe area, not the phone's bottom bar.
+    @State private var unfolded = false
     /// 總淨值 and 總曝險 keep their own grouping. The home screen owns both, so closing the page does not drop them.
     @State private var netGroups = AssetGroups()
     @State private var exposureGroups = AssetGroups()
@@ -70,6 +72,7 @@ struct HomeView: View {
                         AssetListView(
                             showsChrome: position < -0.5,
                             sideColumn: safeRight > 20,
+                            topColumn: topColumn,
                             topInset: AssetListView.restingTopInset * drop,
                             exposureOnly: exposureList,
                             groups: exposureList ? exposureGroups : netGroups
@@ -99,7 +102,8 @@ struct HomeView: View {
                         safeBottom: safeBottom,
                         safeLeft: safeLeft,
                         safeRight: safeRight,
-                        opensVertically: Self.windowBounds.width < Self.windowBounds.height
+                        opensVertically: Self.windowBounds.width < Self.windowBounds.height,
+                        unfolded: unfolded
                     )
                         .frame(height: geo.size.height - range * reveal)
                         .overlay(alignment: .bottom) {
@@ -127,6 +131,7 @@ struct HomeView: View {
                         SavingsTunerView(
                             showsChrome: position > 0.5,
                             sideColumn: safeRight > 20,
+                            topColumn: topColumn,
                             exposureOnly: exposureList,
                             assetGroups: exposureList ? exposureGroups : netGroups
                         )
@@ -144,6 +149,7 @@ struct HomeView: View {
                 .simultaneousGesture(panelDrag(screen: geo.size.height))
             }
             .background {
+                UnfoldedHinge(isUnfolded: $unfolded)
                 Color.clear
                     .onGeometryChange(for: CGFloat.self) { _ in Self.windowSafeArea.top } action: { safeTop = $0 }
                     .onGeometryChange(for: CGFloat.self) { _ in Self.windowSafeArea.bottom } action: { safeBottom = $0 }
@@ -153,7 +159,7 @@ struct HomeView: View {
             .ignoresSafeArea()
             .background(palette.ground.ignoresSafeArea())
             .preferredColorScheme(palette.colorScheme)
-            .toolbar(safeRight > 20 && abs(panel + drag) > 0.5 ? .visible : .hidden, for: .navigationBar)
+            .toolbar((safeRight > 20 || topColumn) && abs(panel + drag) > 0.5 ? .visible : .hidden, for: .navigationBar)
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase != .active else { return }
@@ -163,6 +169,11 @@ struct HomeView: View {
     }
 
     private static let dockedCard: CGFloat = 168
+
+    /// Unfolded Duo, taller than wide: the status column is the top safe area.
+    private var topColumn: Bool {
+        unfolded && Self.windowBounds.width < Self.windowBounds.height
+    }
 
     private static var windowBounds: CGRect {
         UIApplication.shared.connectedScenes

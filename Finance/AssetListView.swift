@@ -6,6 +6,8 @@ struct AssetListView: View {
     var showsChrome = true
     /// Side status column, as on iPhone Duo. The settings menu joins that column.
     var sideColumn = false
+    /// Unfolded Duo portrait. The same menu sits in the top safe area.
+    var topColumn = false
     var topInset = restingTopInset
     /// Exposure lens keeps 原／槓／現. Net worth lists every kind.
     var exposureOnly = false
@@ -45,12 +47,14 @@ struct AssetListView: View {
     init(
         showsChrome: Bool = true,
         sideColumn: Bool = false,
+        topColumn: Bool = false,
         topInset: CGFloat = restingTopInset,
         exposureOnly: Bool = false,
         groups: AssetGroups = AssetGroups()
     ) {
         self.showsChrome = showsChrome
         self.sideColumn = sideColumn
+        self.topColumn = topColumn
         self.topInset = topInset
         self.exposureOnly = exposureOnly
         self.groups = groups
@@ -96,7 +100,7 @@ struct AssetListView: View {
         .scrollContentBackground(.hidden)
         .background(palette.ground)
         .contentMargins(.top, topInset, for: .scrollContent)
-        .contentMargins(.bottom, showsChrome && !sideColumn ? 64 : 0, for: .scrollContent)
+        .contentMargins(.bottom, showsChrome && !statusColumn ? 64 : 0, for: .scrollContent)
         .onGeometryChange(for: CGPoint.self) {
             let frame = $0.frame(in: .global)
             return CGPoint(x: frame.minX, y: frame.minY)
@@ -107,17 +111,18 @@ struct AssetListView: View {
         .sensoryFeedback(.impact(flexibility: .soft), trigger: groups.liquidMerged)
         .sensoryFeedback(.impact(flexibility: .soft), trigger: groups.assetMerged)
         .sensoryFeedback(.impact(flexibility: .soft), trigger: groups.netMerged)
-        .navigationTitle(showsChrome && !sideColumn ? "資產" : "")
+        .navigationTitle(showsChrome && !statusColumn ? "資產" : "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .background {
-            if !sideColumn {
+            if !statusColumn {
                 Color.clear.toolbar(.hidden, for: .navigationBar)
             }
         }
         .modifier(PortfolioMenu(
             showsChrome: showsChrome,
             sideColumn: sideColumn,
+            topColumn: topColumn,
             bottomBar: true,
             showsSort: true,
             groups: groups,
@@ -139,6 +144,8 @@ struct AssetListView: View {
         }
         .onDisappear(perform: persistGroups)
     }
+
+    private var statusColumn: Bool { sideColumn || topColumn }
 
     private var showDeleteConfirm: Binding<Bool> {
         Binding(

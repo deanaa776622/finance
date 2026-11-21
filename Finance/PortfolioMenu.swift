@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// Bottom bar on a phone, and the same controls in the Duo side column.
+/// Bottom bar on a phone. On an unfolded Duo the same controls follow the status column: the side when wide, the top safe area when tall.
 struct PortfolioMenu: ViewModifier {
     var showsChrome: Bool
     var sideColumn: Bool
+    var topColumn: Bool
     var bottomBar: Bool
     var showsSort: Bool
     var groups: AssetGroups
@@ -31,20 +32,20 @@ struct PortfolioMenu: ViewModifier {
     func body(content: Content) -> some View {
         content
             .toolbar {
-                if showsChrome, sideColumn {
-                    ToolbarItem(placement: .topBarTrailing) { hideControl }.preferSideColumn()
+                if showsChrome, sideColumn || topColumn {
+                    ToolbarItem(placement: .topBarTrailing) { hideControl }.preferStatusColumn(vertical: sideColumn)
                     if #available(iOS 26.0, *) {
-                        ToolbarSpacer(.fixed, placement: .topBarTrailing).preferSideColumn()
+                        ToolbarSpacer(.fixed, placement: .topBarTrailing).preferStatusColumn(vertical: sideColumn)
                     }
                     if showsSort {
-                        ToolbarItem(placement: .topBarTrailing) { sortControl }.preferSideColumn()
+                        ToolbarItem(placement: .topBarTrailing) { sortControl }.preferStatusColumn(vertical: sideColumn)
                     }
-                    ToolbarItem(placement: .topBarTrailing) { refreshControl }.preferSideColumn()
-                    ToolbarItem(placement: .topBarTrailing) { addControl }.preferSideColumn()
-                    ToolbarItem(placement: .topBarTrailing) { settingsMenu }.preferSideColumn()
+                    ToolbarItem(placement: .topBarTrailing) { refreshControl }.preferStatusColumn(vertical: sideColumn)
+                    ToolbarItem(placement: .topBarTrailing) { addControl }.preferStatusColumn(vertical: sideColumn)
+                    ToolbarItem(placement: .topBarTrailing) { settingsMenu }.preferStatusColumn(vertical: sideColumn)
                 }
             }
-            .modifier(AssetMenuBar(isShown: showsChrome && bottomBar && !sideColumn) { menuBar })
+            .modifier(AssetMenuBar(isShown: showsChrome && bottomBar && !sideColumn && !topColumn) { menuBar })
             .sheet(isPresented: $showAdd) {
                 AssetEditor(item: nil, defaultKind: .original, onSave: save)
             }
@@ -292,8 +293,14 @@ private struct CapsuleGlass: ViewModifier {
 extension ToolbarContent {
     @ToolbarContentBuilder
     func preferSideColumn() -> some ToolbarContent {
+        preferStatusColumn(vertical: true)
+    }
+
+    /// Side column is vertical. The portrait status column is the top safe area, so stay horizontal.
+    @ToolbarContentBuilder
+    func preferStatusColumn(vertical: Bool) -> some ToolbarContent {
         if #available(iOS 27.1, *) {
-            self.axisBehavior(.verticalPreferred)
+            self.axisBehavior(vertical ? .verticalPreferred : .horizontalOnly)
         } else {
             self
         }
