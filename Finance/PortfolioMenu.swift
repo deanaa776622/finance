@@ -17,6 +17,7 @@ struct PortfolioMenu: ViewModifier {
     @AppStorage("assetSortKey") private var sortKey = "stored"
     @AppStorage("assetSortAscending") private var sortAscending = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.standDisplay) private var standDisplay
     @State private var showAdd = false
     @State private var showAssetLimit = false
     @State private var showQuoteLocked = false
@@ -31,6 +32,18 @@ struct PortfolioMenu: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            .onChange(of: standDisplay) { _, on in
+                guard on else { return }
+                showAdd = false
+                showColors = false
+                showBackup = false
+                showPaywall = false
+                showBackfill = false
+                showQuoteError = false
+                showAssetLimit = false
+                showQuoteLocked = false
+                showBackfillLocked = false
+            }
             .toolbar {
                 if showsChrome, sideColumn || topColumn {
                     ToolbarItem(placement: .topBarTrailing) { hideControl }.preferStatusColumn(vertical: sideColumn)

@@ -13,6 +13,7 @@ struct GroupTrendChart: View, Equatable {
     @Environment(Palette.self) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.standDisplay) private var standDisplay
     @AppStorage("hideAmounts") private var hideAmounts = false
     @State private var selected: String?
     /// Screen positions, 0 = bottom of the plot and 1 = top. Animating these moves the strokes.
@@ -52,6 +53,9 @@ struct GroupTrendChart: View, Equatable {
                 selected = nil
                 fingerSpan = nil
             }
+        }
+        .onChange(of: standDisplay) { _, on in
+            if on { showCustom = false }
         }
         .sheet(isPresented: $showCustom) {
             ChartSpanEditor(start: $customStart, end: $customEnd)

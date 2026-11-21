@@ -88,6 +88,7 @@ struct GoalDistanceCopy: View {
 struct SavingsPlanLocked: View {
     var titleFrame: ((CGRect) -> Void)? = nil
     @Environment(Palette.self) private var palette
+    @Environment(\.standDisplay) private var standDisplay
     @State private var showPaywall = false
     @ScaledMetric(relativeTo: .title3) private var titleSize: CGFloat = 20
 
@@ -109,6 +110,9 @@ struct SavingsPlanLocked: View {
             .accessibilityHint("未解鎖")
         }
         .foregroundStyle(palette.ink)
+        .onChange(of: standDisplay) { _, on in
+            if on { showPaywall = false }
+        }
         .sheet(isPresented: $showPaywall) { PaywallView() }
     }
 }

@@ -39,6 +39,8 @@ struct HomeView: View {
     @State private var safeRight = Self.windowSafeArea.right
     /// Unfolded Duo. Portrait then keeps the menu in the top safe area, not the phone's bottom bar.
     @State private var unfolded = false
+    /// Folded, hinge up. Home only, no touches, screen stays on.
+    @State private var exhibit = false
     /// 總淨值 and 總曝險 keep their own grouping. The home screen owns both, so closing the page does not drop them.
     @State private var netGroups = AssetGroups()
     @State private var exposureGroups = AssetGroups()
@@ -105,7 +107,8 @@ struct HomeView: View {
                         safeLeft: safeLeft,
                         safeRight: safeRight,
                         opensVertically: windowSize.width < windowSize.height,
-                        unfolded: unfolded
+                        unfolded: unfolded,
+                        exhibit: exhibit
                     )
                         .frame(height: geo.size.height - range * reveal)
                         .overlay(alignment: .bottom) {
@@ -151,15 +154,21 @@ struct HomeView: View {
                 .simultaneousGesture(panelDrag(screen: geo.size.height))
             }
             .background {
-                UnfoldedHinge(isUnfolded: $unfolded, onChrome: applyChrome)
+                UnfoldedHinge(isUnfolded: $unfolded, onChrome: applyChrome, onExhibit: setExhibit)
             }
             .ignoresSafeArea()
             .background(palette.ground.ignoresSafeArea())
             .preferredColorScheme(palette.colorScheme)
             .toolbar((safeRight > 20 || topColumn) && abs(panel + drag) > 0.5 ? .visible : .hidden, for: .navigationBar)
         }
+        .environment(\.standDisplay, exhibit)
+        .allowsHitTesting(!exhibit)
         .onChange(of: scenePhase) { _, phase in
             guard phase != .active else { return }
+            if exhibit {
+                clearDrag()
+                return
+            }
             releaseDrag()
         }
         .onAppear(perform: GestureReset.arm)
@@ -170,6 +179,14 @@ struct HomeView: View {
     /// Unfolded Duo, taller than wide: the status column is the top safe area.
     private var topColumn: Bool {
         unfolded && windowSize.width < windowSize.height
+    }
+
+    private func setExhibit(_ on: Bool) {
+        guard exhibit != on else { return }
+        exhibit = on
+        UIApplication.shared.isIdleTimerDisabled = on
+        guard on else { return }
+        snap(0)
     }
 
     private func applyChrome(_ size: CGSize, _ insets: UIEdgeInsets) {
@@ -227,6 +244,7 @@ struct HomeView: View {
         // movement to that page's scroll; a zero-distance drag here keeps the list from ever moving.
         DragGesture(minimumDistance: dock == 0 ? 0 : 18, coordinateSpace: .global)
             .onChanged { value in
+                if exhibit { return }
                 // A chart scrub can end without onEnded. The next finger-down must not inherit "ignore".
                 if dragSession.start != value.startLocation {
                     dragSession.start = value.startLocation
@@ -251,6 +269,10 @@ struct HomeView: View {
                 applyDrag(moved, axis: dragSession.axis ?? .vertical, screen: screen)
             }
             .onEnded { value in
+                if exhibit {
+                    clearDrag()
+                    return
+                }
                 let axis = dragSession.axis
                 let moved = dragSession.anchor.map {
                     CGSize(width: value.location.x - $0.x, height: value.location.y - $0.y)
@@ -383,6 +405,7 @@ struct HomeView: View {
 
     private func snap(_ to: CGFloat) {
         let detent: CGFloat = to > 0.5 ? 1 : (to < -0.5 ? -1 : 0)
+        if exhibit, detent != 0 { return }
         let current = min(1, max(-1, panel + drag))
         panel = current
         drag = 0
@@ -424,6 +447,18 @@ struct HomeView: View {
             return "總淨值 \(MoneyFormat.string(portfolio.netWorth))"
         }
         return "\(portfolio.statusTitle)。\(portfolio.homeSubtitle())"
+    }
+}
+
+/// Folded Duo with the hinge up. Sheets and alerts close so the home screen is all that's left.
+private struct StandDisplayKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var standDisplay: Bool {
+        get { self[StandDisplayKey.self] }
+        set { self[StandDisplayKey.self] = newValue }
     }
 }
 

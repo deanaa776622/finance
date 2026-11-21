@@ -43,6 +43,7 @@ struct AssetListView: View {
     @AppStorage("assetSortKey") private var sortKey = "stored"
     @AppStorage("assetSortAscending") private var sortAscending = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.standDisplay) private var standDisplay
 
     init(
         showsChrome: Bool = true,
@@ -143,6 +144,11 @@ struct AssetListView: View {
             Text("刪除後會從清單移除。")
         }
         .onDisappear(perform: persistGroups)
+        .onChange(of: standDisplay) { _, on in
+            guard on else { return }
+            editing = nil
+            pendingDelete = []
+        }
     }
 
     private var statusColumn: Bool { sideColumn || topColumn }

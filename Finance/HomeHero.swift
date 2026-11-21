@@ -17,6 +17,8 @@ struct HomeHero: View {
     var opensVertically = false
     /// Unfolded Duo. A normal iPhone has no hinge, so portrait stays under the island.
     var unfolded = false
+    /// Folded Duo, hinge up. Chevrons stay off; the screen is only for looking.
+    var exhibit = false
     @Environment(Palette.self) private var palette
     @AppStorage("hideAmounts") private var hideAmounts = false
 
@@ -53,14 +55,14 @@ struct HomeHero: View {
                 Image(systemName: "chevron.compact.down")
                     .font(.title)
                     .foregroundStyle(.tertiary)
-                    .opacity(1 - reveal)
+                    .opacity(exhibit ? 0 : 1 - reveal)
                     .padding(.top, downChevronTop)
                     .accessibilityHidden(true)
                 Spacer()
                 Image(systemName: "chevron.compact.up")
                     .font(.title)
                     .foregroundStyle(.tertiary)
-                    .opacity(1 - reveal)
+                    .opacity(exhibit ? 0 : 1 - reveal)
                     .padding(.bottom, edgeInset)
                     .accessibilityHidden(true)
             }
@@ -148,16 +150,19 @@ struct HomeHero: View {
 struct UnfoldedHinge: UIViewControllerRepresentable {
     @Binding var isUnfolded: Bool
     var onChrome: (CGSize, UIEdgeInsets) -> Void
+    var onExhibit: (Bool) -> Void
 
     func makeUIViewController(context: Context) -> Controller {
         let controller = Controller()
         controller.onChrome = onChrome
+        controller.onExhibit = onExhibit
         controller.fold = context.coordinator
         return controller
     }
 
     func updateUIViewController(_ controller: Controller, context: Context) {
         controller.onChrome = onChrome
+        controller.onExhibit = onExhibit
         context.coordinator.isUnfolded = $isUnfolded
     }
 
@@ -172,28 +177,53 @@ struct UnfoldedHinge: UIViewControllerRepresentable {
 
     final class Controller: UIViewController {
         var onChrome: ((CGSize, UIEdgeInsets) -> Void)?
+        var onExhibit: ((Bool) -> Void)?
         var fold: Coordinator?
         private var boundsToken: NSKeyValueObservation?
+        private var turnObserver: NSObjectProtocol?
         private var applied: (CGSize, UIEdgeInsets)?
+        /// Hinge reports closed. A phone with no hinge stays false.
+        private var folded = false
+        private var exhibit = false
+        private var watchingTurns = false
+
+        override var supportedInterfaceOrientations: UIInterfaceOrientationMask { InterfaceLock.mask }
 
         override func viewDidLoad() {
             super.viewDidLoad()
             view.isUserInteractionEnabled = false
             view.backgroundColor = .clear
             guard #available(iOS 27.1, *), let fold else { return }
-            view.addInteraction(UIHingeInteraction { _, update in
-                let open = update.hinge?.status == .fullyOpen || update.hinge?.status == .partiallyOpen
+            view.addInteraction(UIHingeInteraction { [weak self] _, update in
+                let status = update.hinge?.status
+                let open = status == .fullyOpen || status == .partiallyOpen
                 DispatchQueue.main.async {
-                    guard fold.isUnfolded.wrappedValue != open else { return }
-                    fold.isUnfolded.wrappedValue = open
+                    guard let self else { return }
+                    self.folded = status == .closed
+                    if fold.isUnfolded.wrappedValue != open { fold.isUnfolded.wrappedValue = open }
+                    self.syncExhibit()
                 }
             })
         }
 
         override func viewDidAppear(_ animated: Bool) {
             super.viewDidAppear(animated)
+            if !watchingTurns {
+                UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+                watchingTurns = true
+            }
+            if turnObserver == nil {
+                turnObserver = NotificationCenter.default.addObserver(
+                    forName: UIDevice.orientationDidChangeNotification,
+                    object: nil,
+                    queue: .main
+                ) { [weak self] _ in
+                    self?.syncExhibit()
+                }
+            }
             watchWindow()
             publish()
+            syncExhibit()
         }
 
         override func viewDidLayoutSubviews() {
@@ -220,7 +250,26 @@ struct UnfoldedHinge: UIViewControllerRepresentable {
             }
         }
 
-        deinit { boundsToken?.invalidate() }
+        deinit {
+            boundsToken?.invalidate()
+            if let turnObserver { NotificationCenter.default.removeObserver(turnObserver) }
+            if watchingTurns {
+                UIDevice.current.endGeneratingDeviceOrientationNotifications()
+            }
+        }
+
+        /// Clockwise 90° from portrait: power button down, hinge up.
+        /// That device orientation is landscapeRight; the interface that keeps the hinge at the top is landscapeLeft.
+        private func syncExhibit() {
+            let orientation = UIDevice.current.orientation
+            guard orientation != .faceUp, orientation != .faceDown, orientation != .unknown else { return }
+            let next = folded && orientation == .landscapeRight
+            guard next != exhibit else { return }
+            exhibit = next
+            setNeedsUpdateOfSupportedInterfaceOrientations()
+            onExhibit?(next)
+            InterfaceLock.apply(next ? .landscapeLeft : .portrait)
+        }
 
         private func watchWindow() {
             guard boundsToken == nil, let window = view.window else { return }

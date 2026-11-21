@@ -1,8 +1,10 @@
 import StoreKit
 import SwiftUI
+import UIKit
 
 @main
 struct FinanceApp: App {
+    @UIApplicationDelegateAdaptor(FinanceAppDelegate.self) private var appDelegate
     @Environment(\.scenePhase) private var scenePhase
     @State private var portfolio: Portfolio
     @State private var palette: Palette
@@ -39,6 +41,31 @@ struct FinanceApp: App {
                     }
                 }
         }
+    }
+}
+
+/// Portrait, except the folded Duo exhibit pose, which is landscape with the hinge up.
+enum InterfaceLock {
+    static var mask: UIInterfaceOrientationMask = .portrait
+
+    static func apply(_ mask: UIInterfaceOrientationMask) {
+        guard self.mask != mask else { return }
+        self.mask = mask
+        for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
+            for window in scene.windows {
+                window.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+            }
+            scene.requestGeometryUpdate(.iOS(interfaceOrientations: mask)) { _ in }
+        }
+    }
+}
+
+final class FinanceAppDelegate: NSObject, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        supportedInterfaceOrientationsFor window: UIWindow?
+    ) -> UIInterfaceOrientationMask {
+        InterfaceLock.mask
     }
 }
 
