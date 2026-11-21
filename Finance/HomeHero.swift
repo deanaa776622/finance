@@ -144,26 +144,20 @@ struct HomeHero: View {
 
 }
 
-/// Reads the fold. Nil on a normal iPhone.
-struct UnfoldedHinge: UIViewRepresentable {
+/// Fold, plus the window after rotation commits. A geometry callback reads the old orientation.
+struct UnfoldedHinge: UIViewControllerRepresentable {
     @Binding var isUnfolded: Bool
+    var onChrome: (CGSize, UIEdgeInsets) -> Void
 
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView()
-        view.isUserInteractionEnabled = false
-        view.backgroundColor = .clear
-        guard #available(iOS 27.1, *) else { return view }
-        view.addInteraction(UIHingeInteraction { _, update in
-            let open = update.hinge?.status == .fullyOpen || update.hinge?.status == .partiallyOpen
-            DispatchQueue.main.async {
-                let binding = context.coordinator.isUnfolded
-                if binding.wrappedValue != open { binding.wrappedValue = open }
-            }
-        })
-        return view
+    func makeUIViewController(context: Context) -> Controller {
+        let controller = Controller()
+        controller.onChrome = onChrome
+        controller.fold = context.coordinator
+        return controller
     }
 
-    func updateUIView(_ uiView: UIView, context: Context) {
+    func updateUIViewController(_ controller: Controller, context: Context) {
+        controller.onChrome = onChrome
         context.coordinator.isUnfolded = $isUnfolded
     }
 
@@ -174,5 +168,78 @@ struct UnfoldedHinge: UIViewRepresentable {
     final class Coordinator {
         var isUnfolded: Binding<Bool>
         init(isUnfolded: Binding<Bool>) { self.isUnfolded = isUnfolded }
+    }
+
+    final class Controller: UIViewController {
+        var onChrome: ((CGSize, UIEdgeInsets) -> Void)?
+        var fold: Coordinator?
+        private var boundsToken: NSKeyValueObservation?
+        private var applied: (CGSize, UIEdgeInsets)?
+
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            view.isUserInteractionEnabled = false
+            view.backgroundColor = .clear
+            guard #available(iOS 27.1, *), let fold else { return }
+            view.addInteraction(UIHingeInteraction { _, update in
+                let open = update.hinge?.status == .fullyOpen || update.hinge?.status == .partiallyOpen
+                DispatchQueue.main.async {
+                    guard fold.isUnfolded.wrappedValue != open else { return }
+                    fold.isUnfolded.wrappedValue = open
+                }
+            })
+        }
+
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            watchWindow()
+            publish()
+        }
+
+        override func viewDidLayoutSubviews() {
+            super.viewDidLayoutSubviews()
+            if boundsToken == nil { watchWindow() }
+            // Skip when this pass still shows the orientation we already applied.
+            guard let window = view.window else { return }
+            let size = window.bounds.size
+            let insets = window.safeAreaInsets
+            guard applied?.0 != size || applied?.1 != insets else { return }
+            publish()
+        }
+
+        override func viewSafeAreaInsetsDidChange() {
+            super.viewSafeAreaInsetsDidChange()
+            publish()
+        }
+
+        override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+            super.viewWillTransition(to: size, with: coordinator)
+            coordinator.animate(alongsideTransition: nil) { _ in
+                self.publish()
+                DispatchQueue.main.async { self.publish() }
+            }
+        }
+
+        deinit { boundsToken?.invalidate() }
+
+        private func watchWindow() {
+            guard boundsToken == nil, let window = view.window else { return }
+            boundsToken = window.layer.observe(\.bounds) { [weak self] _, _ in
+                self?.publish()
+            }
+        }
+
+        /// Next turn: bounds KVO can run before the safe area matches the new size.
+        private func publish() {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, let window = self.view.window else { return }
+                let size = window.bounds.size
+                let insets = window.safeAreaInsets
+                guard size.width > 1, size.height > 1 else { return }
+                guard self.applied?.0 != size || self.applied?.1 != insets else { return }
+                self.applied = (size, insets)
+                self.onChrome?(size, insets)
+            }
+        }
     }
 }

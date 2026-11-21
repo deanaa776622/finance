@@ -31,10 +31,12 @@ struct HomeView: View {
     @State private var heroFrame: CGRect = .zero
     @State private var dragSession = DragSession()
     @State private var dotToken = 0
-    @State private var safeTop: CGFloat = 0
-    @State private var safeBottom: CGFloat = 0
-    @State private var safeLeft: CGFloat = 0
-    @State private var safeRight: CGFloat = 0
+    /// Settled window. A rotation layout pass still sees the previous orientation until UIKit commits it.
+    @State private var windowSize = Self.windowBounds.size
+    @State private var safeTop = Self.windowSafeArea.top
+    @State private var safeBottom = Self.windowSafeArea.bottom
+    @State private var safeLeft = Self.windowSafeArea.left
+    @State private var safeRight = Self.windowSafeArea.right
     /// Unfolded Duo. Portrait then keeps the menu in the top safe area, not the phone's bottom bar.
     @State private var unfolded = false
     /// 總淨值 and 總曝險 keep their own grouping. The home screen owns both, so closing the page does not drop them.
@@ -102,7 +104,7 @@ struct HomeView: View {
                         safeBottom: safeBottom,
                         safeLeft: safeLeft,
                         safeRight: safeRight,
-                        opensVertically: Self.windowBounds.width < Self.windowBounds.height,
+                        opensVertically: windowSize.width < windowSize.height,
                         unfolded: unfolded
                     )
                         .frame(height: geo.size.height - range * reveal)
@@ -149,12 +151,7 @@ struct HomeView: View {
                 .simultaneousGesture(panelDrag(screen: geo.size.height))
             }
             .background {
-                UnfoldedHinge(isUnfolded: $unfolded)
-                Color.clear
-                    .onGeometryChange(for: CGFloat.self) { _ in Self.windowSafeArea.top } action: { safeTop = $0 }
-                    .onGeometryChange(for: CGFloat.self) { _ in Self.windowSafeArea.bottom } action: { safeBottom = $0 }
-                    .onGeometryChange(for: CGFloat.self) { _ in Self.windowSafeArea.left } action: { safeLeft = $0 }
-                    .onGeometryChange(for: CGFloat.self) { _ in Self.windowSafeArea.right } action: { safeRight = $0 }
+                UnfoldedHinge(isUnfolded: $unfolded, onChrome: applyChrome)
             }
             .ignoresSafeArea()
             .background(palette.ground.ignoresSafeArea())
@@ -172,7 +169,19 @@ struct HomeView: View {
 
     /// Unfolded Duo, taller than wide: the status column is the top safe area.
     private var topColumn: Bool {
-        unfolded && Self.windowBounds.width < Self.windowBounds.height
+        unfolded && windowSize.width < windowSize.height
+    }
+
+    private func applyChrome(_ size: CGSize, _ insets: UIEdgeInsets) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            if windowSize != size { windowSize = size }
+            if safeTop != insets.top { safeTop = insets.top }
+            if safeBottom != insets.bottom { safeBottom = insets.bottom }
+            if safeLeft != insets.left { safeLeft = insets.left }
+            if safeRight != insets.right { safeRight = insets.right }
+        }
     }
 
     private static var windowBounds: CGRect {
