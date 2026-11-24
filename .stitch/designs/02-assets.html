@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Assets — Calm Ledger</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 48px 24px;
+    }
+
+    .layout {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--deep-ledger);
+    }
+
+    .hero-card {
+      margin: 58px 16px 0;
+      height: 148px;
+      border-radius: 28px;
+      position: relative;
+      overflow: hidden;
+      background: #10131a;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      flex-shrink: 0;
+    }
+
+    .hero-card .mist {
+      position: absolute;
+      inset: 0;
+    }
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(48px);
+      opacity: 0.45;
+    }
+    .orb.a { width: 140px; height: 140px; background: var(--mist-teal); top: -20%; left: 10%; }
+    .orb.b { width: 120px; height: 120px; background: var(--mist-sage); bottom: -30%; right: 8%; opacity: 0.35; }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .hero-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      color: var(--quiet);
+    }
+
+    .hero-value {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-family: "SF Pro Rounded", "SF Pro Display", "PingFang TC", sans-serif;
+    }
+
+    .dots {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 7px;
+      z-index: 2;
+    }
+    .dots i {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: rgba(244, 241, 236, 0.3);
+      display: block;
+    }
+    .dots i.on { background: rgba(244, 241, 236, 0.95); transform: scale(1.15); }
+
+    .sheet {
+      flex: 1;
+      margin-top: 8px;
+      padding: 8px 16px 40px;
+      overflow: hidden;
+    }
+
+    .chart-plate {
+      background: var(--lifted);
+      border-radius: 20px;
+      padding: 16px 16px 12px;
+      margin-bottom: 18px;
+    }
+
+    .chart-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+    .chart-meta .range {
+      font-size: 12px;
+      color: var(--quiet);
+      letter-spacing: 0.06em;
+    }
+    .chart-meta .delta {
+      font-size: 12px;
+      color: var(--mist-sage);
+    }
+
+    .chart {
+      height: 88px;
+      width: 100%;
+    }
+
+    .section-h {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 10px 4px 8px;
+    }
+    .section-h .kind {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--quiet);
+    }
+    .section-h .sum {
+      font-size: 13px;
+      color: var(--quiet);
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 4px;
+      border-top: 1px solid var(--whisper);
+    }
+    .row .name {
+      font-size: 16px;
+      font-weight: 500;
+    }
+    .row .amt {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .row .sub {
+      font-size: 12px;
+      color: var(--quiet);
+      margin-top: 3px;
+    }
+
+    .swatch {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+      vertical-align: 1px;
+    }
+    .swatch.teal { background: var(--mist-teal); }
+    .swatch.sage { background: var(--mist-sage); }
+    .swatch.sand { background: var(--warm-sand); }
+
+    .cue {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(91, 154, 168, 0.08);
+      border: 1px solid rgba(91, 154, 168, 0.16);
+      font-size: 13px;
+      line-height: 1.45;
+      color: rgba(244, 241, 236, 0.72);
+    }
+  </style>
+</head>
+<body>
+  <div class="phone" data-screen="assets">
+    <div class="screen">
+      <div class="layout">
+        <div class="status-bar">
+          <span>9:41</span>
+          <span class="icons">
+            <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="4.5" y="5" width="3" height="7" rx="0.5"/><rect x="9" y="2" width="3" height="10" rx="0.5"/><rect x="13.5" y="0" width="3" height="12" rx="0.5"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 3.2c1.8 0 3.4.7 4.6 1.9l1.1-1.1A8.1 8.1 0 0 0 8 1.2 8.1 8.1 0 0 0 2.3 4l1.1 1.1A6.5 6.5 0 0 1 8 3.2zm0 3.2c1 0 1.9.4 2.6 1l1.1-1.1A5 5 0 0 0 8 4.8a5 5 0 0 0-3.7 1.5l1.1 1.1A3.6 3.6 0 0 1 8 6.4zm0 3.1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/></svg>
+            <svg width="27" height="12" viewBox="0 0 27 12" fill="currentColor"><rect x="0" y="1" width="22" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="1.5" y="2.5" width="16" height="7" rx="1.2"/><rect x="23.2" y="4" width="2" height="4" rx="0.6"/></svg>
+          </span>
+        </div>
+
+        <div class="hero-card">
+          <div class="mist" aria-hidden="true">
+            <div class="orb a"></div>
+            <div class="orb b"></div>
+          </div>
+          <div class="hero-inner">
+            <div class="hero-label">總淨值</div>
+            <div class="hero-value mono">NT$ 2,000,000</div>
+          </div>
+          <div class="dots"><i class="on"></i><i></i></div>
+        </div>
+
+        <div class="sheet">
+          <div class="chart-plate">
+            <div class="chart-meta">
+              <span class="range">近 5 年</span>
+              <span class="delta mono">趨勢平穩上升</span>
+            </div>
+            <svg class="chart" viewBox="0 0 320 88" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#5B9AA8" stop-opacity="0.28"/>
+                  <stop offset="100%" stop-color="#5B9AA8" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,70 C40,68 55,62 80,58 C110,52 130,55 160,42 C190,30 210,36 240,28 C270,20 290,24 320,18 L320,88 L0,88 Z" fill="url(#area)"/>
+              <path d="M0,70 C40,68 55,62 80,58 C110,52 130,55 160,42 C190,30 210,36 240,28 C270,20 290,24 320,18" fill="none" stroke="#5B9AA8" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <div class="section-h">
+            <span class="kind"><span class="swatch teal"></span>原型</span>
+            <span class="sum mono">NT$ 1,000,000</span>
+          </div>
+          <div class="row">
+            <div>
+              <div class="name">全球股票 ETF</div>
+              <div class="sub">原幣 USD</div>
+            </div>
+            <div class="amt mono">1,000,000</div>
+          </div>
+
+          <div class="section-h">
+            <span class="kind"><span class="swatch sage"></span>槓桿</span>
+            <span class="sum mono">NT$ 600,000</span>
+          </div>
+          <div class="row">
+            <div>
+              <div class="name">2x 槓桿 ETF</div>
+              <div class="sub">倍數 ×2</div>
+            </div>
+            <div class="amt mono">600,000</div>
+          </div>
+
+          <div class="section-h">
+            <span class="kind"><span class="swatch sand"></span>現金</span>
+            <span class="sum mono">NT$ 400,000</span>
+          </div>
+          <div class="row">
+            <div>
+              <div class="name">活存</div>
+              <div class="sub">流動</div>
+            </div>
+            <div class="amt mono">400,000</div>
+          </div>
+
+          <div class="cue">
+            配置大致平衡 — 目前無需再平衡。
+          </div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+</body>
+</html>
