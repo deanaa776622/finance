@@ -61,8 +61,8 @@ struct GroupCardBackground: View {
 }
 
 extension View {
-    func groupHeaderChrome() -> some View {
-        modifier(GroupHeaderChrome())
+    func groupHeaderChrome(top: CGFloat = 18, bottom: CGFloat = 8) -> some View {
+        modifier(GroupHeaderChrome(top: top, bottom: bottom))
     }
 
     func groupCardRow(
@@ -80,11 +80,13 @@ extension View {
 }
 
 private struct GroupHeaderChrome: ViewModifier {
+    var top: CGFloat = 18
+    var bottom: CGFloat = 8
     @Environment(Palette.self) private var palette
 
     func body(content: Content) -> some View {
         content
-            .listRowInsets(EdgeInsets(top: 18, leading: 32, bottom: 8, trailing: 32))
+            .listRowInsets(EdgeInsets(top: top, leading: 32, bottom: bottom, trailing: 32))
             .listRowSeparator(.hidden)
             .listRowBackground(palette.ground)
             .textCase(nil)

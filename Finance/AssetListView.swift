@@ -13,6 +13,8 @@ struct AssetListView: View {
     var topInset = restingTopInset
     /// Exposure lens keeps 原／槓／現. Net worth lists every kind.
     var exposureOnly = false
+    /// Folded cover. Title rows give up 10pt so the fifth title stays above the card.
+    var cover = false
     var groups = AssetGroups()
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
@@ -53,6 +55,7 @@ struct AssetListView: View {
         topColumn: Bool = false,
         topInset: CGFloat = restingTopInset,
         exposureOnly: Bool = false,
+        cover: Bool = false,
         groups: AssetGroups = AssetGroups()
     ) {
         self.showsChrome = showsChrome
@@ -60,6 +63,7 @@ struct AssetListView: View {
         self.topColumn = topColumn
         self.topInset = topInset
         self.exposureOnly = exposureOnly
+        self.cover = cover
         self.groups = groups
     }
 
@@ -72,7 +76,7 @@ struct AssetListView: View {
                     .listRowSeparator(.hidden)
                     .listRowBackground(palette.ground)
             } else {
-                GroupTrendChart(buckets: shownBuckets, historyKey: portfolio.historyKey)
+                GroupTrendChart(buckets: shownBuckets, cover: cover, historyKey: portfolio.historyKey)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
                     .background {
@@ -215,6 +219,10 @@ struct AssetListView: View {
         netJoinRange(baseBuckets) != nil
     }
 
+    /// Cover rows are 10pt shorter. Phone stays 18 / 8.
+    private var headerTop: CGFloat { cover ? 10 : 18 }
+    private var headerBottom: CGFloat { cover ? 6 : 8 }
+
     @ViewBuilder
     private func bucketHeader(_ bucket: AssetBucket) -> some View {
         let header = GroupTitle(
@@ -229,9 +237,9 @@ struct AssetListView: View {
         .stockLinkHit(enabled: linkAction(for: bucket) != nil, margin: 24) { linkAction(for: bucket)?() }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { trackLink(bucket, frame: $0) }
         if let title = linkActionTitle(bucket) {
-            header.accessibilityAction(named: Text(title)) { linkAction(for: bucket)?() }.groupHeaderChrome()
+            header.accessibilityAction(named: Text(title)) { linkAction(for: bucket)?() }.groupHeaderChrome(top: headerTop, bottom: headerBottom)
         } else {
-            header.groupHeaderChrome()
+            header.groupHeaderChrome(top: headerTop, bottom: headerBottom)
         }
     }
 

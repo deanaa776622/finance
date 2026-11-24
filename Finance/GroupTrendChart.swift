@@ -5,8 +5,13 @@ import SwiftUI
 struct GroupTrendChart: View, Equatable {
     /// Plot, the room above it, the gap, and three legend rows. The exposure page's target editor uses this band.
     private static let legendHeight: CGFloat = 84
-    static let bandHeight: CGFloat = 112 + 36 + 8 + legendHeight
+    static let plotHeight: CGFloat = 112
+    /// Cover only. Short enough to free a sliver, not enough to shrink the trend.
+    static let coverPlotHeight: CGFloat = 96
+    static let bandHeight: CGFloat = plotHeight + 36 + 8 + legendHeight
     var buckets: [AssetBucket]
+    /// Folded cover. The plot gives up 16pt.
+    var cover = false
     /// Marks and backfills. The chart ignores other parent updates so scrolling stays cheap.
     var historyKey = ""
     @Environment(Portfolio.self) private var portfolio
@@ -29,11 +34,14 @@ struct GroupTrendChart: View, Equatable {
     /// Months under the two fingers. The right month is compared with the left.
     @State private var fingerSpan: FingerSpan?
 
+    private var plot: CGFloat { cover ? Self.coverPlotHeight : Self.plotHeight }
+    private var band: CGFloat { plot + 36 + 8 + Self.legendHeight }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack(alignment: .top) {
                 chart
-                    .frame(height: 112)
+                    .frame(height: plot)
                     .padding(.top, 36)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(accessibilityText)
@@ -42,7 +50,7 @@ struct GroupTrendChart: View, Equatable {
             legend
                 .frame(height: Self.legendHeight, alignment: .top)
         }
-        .frame(height: Self.bandHeight, alignment: .top)
+        .frame(height: band, alignment: .top)
         .onChange(of: plotKey, initial: true) { _, _ in
             let placed = layout()
             morph(to: placed.lines, zero: placed.zero)
@@ -258,7 +266,7 @@ struct GroupTrendChart: View, Equatable {
     }
 
     static func == (lhs: GroupTrendChart, rhs: GroupTrendChart) -> Bool {
-        lhs.buckets == rhs.buckets && lhs.historyKey == rhs.historyKey
+        lhs.buckets == rhs.buckets && lhs.historyKey == rhs.historyKey && lhs.cover == rhs.cover
     }
 
     @ChartContentBuilder

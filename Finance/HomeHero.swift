@@ -143,6 +143,7 @@ struct HomeHero: View {
 /// Fold, plus the window after rotation commits. A geometry callback reads the old orientation.
 struct UnfoldedHinge: UIViewControllerRepresentable {
     @Binding var isUnfolded: Bool
+    @Binding var isFolded: Bool
     var onChrome: (CGSize, UIEdgeInsets) -> Void
     var onExhibit: (Bool) -> Void
 
@@ -158,15 +159,20 @@ struct UnfoldedHinge: UIViewControllerRepresentable {
         controller.onChrome = onChrome
         controller.onExhibit = onExhibit
         context.coordinator.isUnfolded = $isUnfolded
+        context.coordinator.isFolded = $isFolded
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(isUnfolded: $isUnfolded)
+        Coordinator(isUnfolded: $isUnfolded, isFolded: $isFolded)
     }
 
     final class Coordinator {
         var isUnfolded: Binding<Bool>
-        init(isUnfolded: Binding<Bool>) { self.isUnfolded = isUnfolded }
+        var isFolded: Binding<Bool>
+        init(isUnfolded: Binding<Bool>, isFolded: Binding<Bool>) {
+            self.isUnfolded = isUnfolded
+            self.isFolded = isFolded
+        }
     }
 
     final class Controller: UIViewController {
@@ -193,8 +199,10 @@ struct UnfoldedHinge: UIViewControllerRepresentable {
                 let open = status == .fullyOpen || status == .partiallyOpen
                 DispatchQueue.main.async {
                     guard let self else { return }
-                    self.folded = status == .closed
+                    let closed = status == .closed
+                    self.folded = closed
                     if fold.isUnfolded.wrappedValue != open { fold.isUnfolded.wrappedValue = open }
+                    if fold.isFolded.wrappedValue != closed { fold.isFolded.wrappedValue = closed }
                     self.syncExhibit()
                 }
             })

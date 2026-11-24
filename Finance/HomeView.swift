@@ -39,6 +39,8 @@ struct HomeView: View {
     @State private var safeRight = Self.windowSafeArea.right
     /// Unfolded Duo. Portrait then keeps the menu in the top safe area, not the phone's bottom bar.
     @State private var unfolded = false
+    /// Hinge closed. A phone with no hinge stays false.
+    @State private var folded = false
     /// Folded, hinge up. Home only, no touches, screen stays on.
     @State private var exhibit = false
     /// 總淨值 and 總曝險 keep their own grouping. The home screen owns both, so closing the page does not drop them.
@@ -79,6 +81,7 @@ struct HomeView: View {
                             topColumn: topColumn,
                             topInset: AssetListView.restingTopInset * drop,
                             exposureOnly: exposureList,
+                            cover: folded,
                             groups: exposureList ? exposureGroups : netGroups
                         )
                         .padding(.leading, safeLeft)
@@ -154,7 +157,7 @@ struct HomeView: View {
                 .simultaneousGesture(panelDrag(screen: geo.size.height))
             }
             .background {
-                UnfoldedHinge(isUnfolded: $unfolded, onChrome: applyChrome, onExhibit: setExhibit)
+                UnfoldedHinge(isUnfolded: $unfolded, isFolded: $folded, onChrome: applyChrome, onExhibit: setExhibit)
             }
             .ignoresSafeArea()
             .background(palette.ground.ignoresSafeArea())
