@@ -80,16 +80,16 @@ struct HomeHero: View {
     private var lensPager: some View {
         GeometryReader { geo in
             HStack(spacing: 0) {
-                metric(title: "總淨值", value: portfolio.netWorth, showsMix: false)
+                metric(title: "總淨值", value: portfolio.netWorth)
                     .frame(width: geo.size.width, height: geo.size.height)
-                metric(title: "總曝險", value: portfolio.exposure, showsMix: true)
+                metric(title: "總曝險", value: portfolio.exposure)
                     .frame(width: geo.size.width, height: geo.size.height)
             }
             .offset(x: -geo.size.width * lens)
         }
     }
 
-    private func metric(title: String, value: Decimal, showsMix: Bool) -> some View {
+    private func metric(title: String, value: Decimal) -> some View {
         VStack(spacing: 6) {
             Text(title)
                 .font(.caption.weight(.semibold))
@@ -101,12 +101,6 @@ struct HomeHero: View {
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
-            if showsMix {
-                Text(portfolio.allocationMixLabel)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-            }
         }
         .padding(.horizontal, 16)
     }

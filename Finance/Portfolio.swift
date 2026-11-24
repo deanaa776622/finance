@@ -107,11 +107,6 @@ final class Portfolio {
         }
     }
 
-    var allocationMixLabel: String {
-        func pct(_ kind: AssetKind) -> Int { Int(actualPercent(for: kind).rounded()) }
-        return "原 \(pct(.original))%　槓 \(pct(.leverage))%　現 \(pct(.cash))%"
-    }
-
     var allocableTotal: Decimal {
         items.filter(\.kind.countsTowardAllocation).reduce(0) { $0 + $1.twdValue }
     }

@@ -440,11 +440,10 @@ struct HomeView: View {
             return "距離目標 \(amount)，\(line.detail)"
         }
         if position < -0.5 {
-            if hideAmounts { return exposureList ? "總曝險已隱藏" : "總淨值已隱藏" }
-            if exposureList {
-                return "總曝險 \(MoneyFormat.string(portfolio.exposure))，\(portfolio.allocationMixLabel)"
-            }
-            return "總淨值 \(MoneyFormat.string(portfolio.netWorth))"
+            let title = exposureList ? "總曝險" : "總淨值"
+            if hideAmounts { return "\(title)已隱藏" }
+            let amount = exposureList ? portfolio.exposure : portfolio.netWorth
+            return "\(title) \(MoneyFormat.string(amount))"
         }
         return "\(portfolio.statusTitle)。\(portfolio.homeSubtitle())"
     }
