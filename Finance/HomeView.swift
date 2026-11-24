@@ -63,7 +63,7 @@ struct HomeView: View {
                 let corner = 28 * reveal
                 let drop = max(-position, 0)
                 let topLift = safeTop * max(position, 0)
-                let bottomLift = safeBottom * drop
+                let bottomLift = dockedBottom * drop
                 let assetTop = safeTop * drop
                 let savingsProgress = portfolio.outlook?.progress ?? 0
 
@@ -175,6 +175,15 @@ struct HomeView: View {
     }
 
     private static let dockedCard: CGFloat = 168
+
+    /// Status column is on the side: folded cover, or unfolded landscape (wider than tall).
+    /// The card then sits as far from the bottom as the trend panel sits from the top.
+    private var dockedBottom: CGFloat {
+        let sideStatus = safeLeft > 20 || safeRight > 20
+        let unfoldedLandscape = unfolded && windowSize.width > windowSize.height
+        guard (sideStatus && !unfolded) || unfoldedLandscape else { return safeBottom }
+        return safeTop + AssetListView.chartPanelTop
+    }
 
     /// Unfolded Duo, taller than wide: the status column is the top safe area.
     private var topColumn: Bool {
@@ -330,7 +339,7 @@ struct HomeView: View {
     private func trackedPanel(dy: CGFloat, screen: CGFloat) -> CGFloat {
         let range = max(screen - Self.dockedCard, 1)
         let f = min(1, max(0, dragSession.grabFraction))
-        let slopeDown = range * (f - 1) + safeBottom
+        let slopeDown = range * (f - 1) + dockedBottom
         let slopeUp = safeTop - f * range
         guard slopeDown < -0.5, slopeUp < -0.5 else {
             return min(1, max(-1, panel - dy / range))

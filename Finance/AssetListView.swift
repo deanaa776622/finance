@@ -3,6 +3,8 @@ import SwiftUI
 struct AssetListView: View {
     /// Pulls the chart up into the lower edge of the 40pt top fade.
     static let restingTopInset: CGFloat = 32
+    /// Settled distance from the list top to the trend panel. The chart row pulls up out of `restingTopInset`.
+    static let chartPanelTop: CGFloat = 24
     var showsChrome = true
     /// Side status column, as on iPhone Duo. The settings menu joins that column.
     var sideColumn = false
@@ -77,7 +79,7 @@ struct AssetListView: View {
                         RoundedRectangle(cornerRadius: GroupCardBackground.radius, style: .continuous)
                             .fill(palette.panel)
                     }
-                    .listRowInsets(EdgeInsets(top: -8, leading: 16, bottom: 0, trailing: 16))
+                    .listRowInsets(EdgeInsets(top: Self.chartPanelTop - Self.restingTopInset, leading: 16, bottom: 0, trailing: 16))
                     .listRowSeparator(.hidden)
                     .listRowBackground(palette.ground)
             }
