@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>配置實際 vs 目標 — mockup</title>
+  <style>
+    :root {
+      --bg: #05080f;
+      --panel: #0b1220;
+      --track: rgba(255, 255, 255, 0.08);
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --amber: #d9946b;
+      --original: #38bdf8;
+      --leverage: #4ade80;
+      --cash: #facc15;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at 30% 20%, #0f1a2e 0%, var(--bg) 55%);
+      font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      padding: 32px 16px;
+    }
+    .phone {
+      width: 390px;
+      background: var(--panel);
+      border-radius: 28px;
+      padding: 28px 22px 24px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .status {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .hint {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+      margin-bottom: 28px;
+    }
+    .rows { display: flex; flex-direction: column; gap: 22px; }
+    .row {
+      display: grid;
+      grid-template-columns: 64px 1fr 72px;
+      align-items: center;
+      gap: 12px;
+    }
+    .label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .track {
+      position: relative;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--track);
+    }
+    .fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      border-radius: 999px;
+    }
+    .target {
+      position: absolute;
+      top: -5px;
+      bottom: -5px;
+      width: 2px;
+      margin-left: -1px;
+      border-radius: 1px;
+      background: rgba(255, 255, 255, 0.85);
+      box-shadow: 0 0 0 3px rgba(11, 18, 32, 0.9);
+    }
+    .target.warn { background: var(--amber); }
+    .pct {
+      text-align: right;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+      line-height: 1.25;
+    }
+    .pct strong {
+      display: block;
+      color: var(--text);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .pct .drift {
+      color: var(--amber);
+      font-size: 12px;
+    }
+    .pct .ok { color: var(--muted); font-size: 12px; }
+    .legend {
+      margin-top: 26px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      gap: 18px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .swatch-fill {
+      width: 16px;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--original);
+    }
+    .swatch-target {
+      width: 2px;
+      height: 12px;
+      background: #fff;
+      border-radius: 1px;
+    }
+    .badge {
+      display: inline-block;
+      margin-bottom: 16px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: rgba(148, 163, 184, 0.8);
+      border: 1px dashed rgba(148, 163, 184, 0.35);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="badge">MOCK · 非實作</div>
+    <div class="eyebrow">配置</div>
+    <div class="status">留意配置</div>
+    <p class="hint">與目標最多偏離約 18%，有空再平衡即可</p>
+
+    <div class="rows">
+      <!-- 原型：實際 42% → 目標 50%，偏 -8% -->
+      <div class="row">
+        <div class="label"><span class="dot" style="background: var(--original)"></span>原型</div>
+        <div class="track">
+          <div class="fill" style="width: 42%; background: var(--original)"></div>
+          <div class="target" style="left: 50%"></div>
+        </div>
+        <div class="pct">
+          <strong>42%</strong>
+          <span class="ok">→ 50%</span>
+        </div>
+      </div>
+
+      <!-- 槓桿：實際 48% → 目標 30%，偏 +18% -->
+      <div class="row">
+        <div class="label"><span class="dot" style="background: var(--leverage)"></span>槓桿</div>
+        <div class="track">
+          <div class="fill" style="width: 48%; background: var(--leverage)"></div>
+          <div class="target warn" style="left: 30%"></div>
+        </div>
+        <div class="pct">
+          <strong>48%</strong>
+          <span class="drift">+18%</span>
+        </div>
+      </div>
+
+      <!-- 現金：實際 10% → 目標 20%，偏 -10% -->
+      <div class="row">
+        <div class="label"><span class="dot" style="background: var(--cash)"></span>現金</div>
+        <div class="track">
+          <div class="fill" style="width: 10%; background: var(--cash)"></div>
+          <div class="target" style="left: 20%"></div>
+        </div>
+        <div class="pct">
+          <strong>10%</strong>
+          <span class="ok">→ 20%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span><i class="swatch-fill"></i>實際</span>
+      <span><i class="swatch-target"></i>目標</span>
+    </div>
+  </div>
+</body>
+</html>

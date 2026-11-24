@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>光暈面板 — 淨值 / 曝險</title>
+  <style>
+    :root {
+      --bg: #03060c;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --dim: #64748b;
+      --line: rgba(255, 255, 255, 0.06);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh; background: var(--bg); color: var(--text);
+      font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: 32px 20px 48px;
+    }
+    .page-title { text-align: center; margin-bottom: 24px; }
+    .badge {
+      display: inline-block; font-size: 11px; letter-spacing: 0.08em;
+      color: rgba(148, 163, 184, 0.85); border: 1px dashed rgba(148, 163, 184, 0.35);
+      padding: 4px 10px; border-radius: 6px; margin-bottom: 10px;
+    }
+    .page-title h1 { font-size: 17px; font-weight: 600; }
+    .page-title p { margin-top: 8px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .stage {
+      display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; align-items: flex-start;
+    }
+    .col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .col-label { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; color: var(--dim); text-align: center; }
+
+    .phone {
+      width: 320px; height: 700px; background: #000;
+      border-radius: 36px; border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 28px 70px rgba(0,0,0,0.55);
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .status-bar {
+      height: 44px; display: flex; align-items: flex-end; justify-content: center;
+      padding-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--muted); flex-shrink: 0;
+    }
+    .list {
+      flex: 1; overflow: hidden; padding: 8px 0 0; background: #000;
+      display: flex; flex-direction: column;
+    }
+
+    /* Centered blocks — same weight as nav title「資產」 */
+    .block-stack {
+      flex: 1; display: flex; flex-direction: column;
+      justify-content: center; gap: 36px; padding: 0 24px 8px;
+    }
+    .block {
+      text-align: center;
+    }
+    .block .title {
+      font-size: 17px; font-weight: 600; letter-spacing: -0.01em;
+      /* matches inline nav title「資產」 */
+    }
+    .block .amt {
+      margin-top: 8px;
+      font-size: 15px; font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+    }
+    .block.debt .amt { color: var(--dim); }
+
+    /* Expanded 資產 → 原槓現 (+ 實體仍屬資產，列在展開後) */
+    .expanded-head {
+      text-align: center; padding: 10px 16px 6px;
+    }
+    .expanded-head .title {
+      font-size: 17px; font-weight: 600;
+    }
+    .expanded-head .amt {
+      margin-top: 4px; font-size: 13px; color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .section { padding: 0 16px; }
+    .header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 11px 4px; font-size: 14px;
+    }
+    .header .chev { font-size: 9px; color: var(--dim); width: 10px; }
+    .header .chev.open { display: inline-block; transform: rotate(90deg); color: var(--muted); }
+    .header .t { flex: 1; font-weight: 500; }
+    .header .a { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .item {
+      display: flex; align-items: center; padding: 8px 4px 8px 22px;
+      border-top: 1px solid var(--line); font-size: 13px;
+    }
+    .item .n { flex: 1; }
+    .item .sub { font-size: 11px; color: var(--dim); margin-top: 2px; }
+    .item .a { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .debt-block-bottom {
+      margin-top: auto; padding: 20px 24px 12px; text-align: center;
+      border-top: 1px solid var(--line);
+    }
+    .debt-block-bottom .title { font-size: 17px; font-weight: 600; }
+    .debt-block-bottom .amt {
+      margin-top: 6px; font-size: 15px; color: var(--dim);
+      font-variant-numeric: tabular-nums;
+    }
+    .fade-note {
+      text-align: center; font-size: 11px; color: var(--dim);
+      padding: 6px 16px 2px; letter-spacing: 0.04em;
+    }
+
+    .dock {
+      flex-shrink: 0; margin: 6px 12px 14px; height: 150px;
+      border-radius: 22px; position: relative; overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+    }
+    .dock .glow-nw {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 22% 30%, rgba(56, 189, 248, 0.42), transparent 44%),
+        radial-gradient(circle at 78% 28%, rgba(74, 222, 128, 0.28), transparent 40%),
+        radial-gradient(circle at 48% 85%, rgba(250, 204, 21, 0.2), transparent 45%),
+        linear-gradient(180deg, #0f1a2e, #070b14);
+    }
+    .dock .glow-ex {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 30% 35%, rgba(56, 189, 248, 0.5), transparent 42%),
+        radial-gradient(circle at 72% 40%, rgba(74, 222, 128, 0.45), transparent 40%),
+        linear-gradient(180deg, #0f1a2e, #070b14);
+    }
+    .pager {
+      position: relative; z-index: 1; height: 100%;
+      display: flex; transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .phone[data-page="1"] .pager { transform: translateX(-100%); }
+    .page {
+      flex: 0 0 100%; width: 100%; height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 12px 16px 26px; text-align: center;
+    }
+    .page .label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
+      color: rgba(241, 245, 249, 0.65);
+    }
+    .page .value {
+      margin-top: 6px; font-size: 24px; font-weight: 700;
+      font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+    }
+    .page .alloc {
+      margin-top: 8px; font-size: 12px; color: rgba(148, 163, 184, 0.95);
+      font-variant-numeric: tabular-nums; min-height: 16px;
+    }
+    .dots {
+      position: absolute; z-index: 3; left: 0; right: 0; bottom: 10px;
+      display: flex; justify-content: center; gap: 7px; pointer-events: none;
+    }
+    .dots span {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.28);
+    }
+    .phone[data-page="0"] .dots span:nth-child(1),
+    .phone[data-page="1"] .dots span:nth-child(2) {
+      background: rgba(255, 255, 255, 0.92);
+      transform: scale(1.15);
+    }
+  </style>
+</head>
+<body>
+  <div class="page-title">
+    <div class="badge">MOCK · 非實作</div>
+    <h1>淨值：資產／負債兩塊 · 點資產展開原槓現</h1>
+    <p>面板無滑動提示文案；小點表示頁次。</p>
+  </div>
+
+  <div class="stage">
+    <!-- 淨值 · 收合 -->
+    <div class="col">
+      <div class="col-label">總淨值 · 預設</div>
+      <div class="phone" data-page="0">
+        <div class="status-bar">9:41</div>
+        <div class="list">
+          <div class="block-stack">
+            <div class="block">
+              <div class="title">資產</div>
+              <div class="amt">$5,000,000</div>
+            </div>
+            <div class="block debt">
+              <div class="title">負債</div>
+              <div class="amt">$380,000</div>
+            </div>
+          </div>
+        </div>
+        <div class="dock">
+          <div class="glow-nw"></div>
+          <div class="pager">
+            <div class="page">
+              <div class="label">總淨值</div>
+              <div class="value">$4,620,000</div>
+              <div class="alloc"></div>
+            </div>
+            <div class="page">
+              <div class="label">總曝險</div>
+              <div class="value">$5,796,000</div>
+              <div class="alloc">原 42%　槓 48%　現 10%</div>
+            </div>
+          </div>
+          <div class="dots"><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 淨值 · 點資產展開 -->
+    <div class="col">
+      <div class="col-label">總淨值 · 點「資產」</div>
+      <div class="phone" data-page="0">
+        <div class="status-bar">9:41</div>
+        <div class="list">
+          <div class="expanded-head">
+            <div class="title">資產</div>
+            <div class="amt">$5,000,000</div>
+          </div>
+          <div class="section">
+            <div class="header"><span class="chev open">▶</span><span class="t">原型</span><span class="a">$1,764,000</span></div>
+            <div class="item"><div class="n">0050<div class="sub">20,000 股 · 190</div></div><span class="a">$1,216,000</span></div>
+          </div>
+          <div class="section">
+            <div class="header"><span class="chev">▶</span><span class="t">槓桿</span><span class="a">$2,016,000</span></div>
+          </div>
+          <div class="section">
+            <div class="header"><span class="chev">▶</span><span class="t">現金</span><span class="a">$420,000</span></div>
+          </div>
+          <div class="section">
+            <div class="header"><span class="chev">▶</span><span class="t">實體資產</span><span class="a">$800,000</span></div>
+          </div>
+          <div class="debt-block-bottom">
+            <div class="title">負債</div>
+            <div class="amt">$380,000</div>
+          </div>
+        </div>
+        <div class="dock">
+          <div class="glow-nw"></div>
+          <div class="pager">
+            <div class="page">
+              <div class="label">總淨值</div>
+              <div class="value">$4,620,000</div>
+              <div class="alloc"></div>
+            </div>
+            <div class="page">
+              <div class="label">總曝險</div>
+              <div class="value">$5,796,000</div>
+              <div class="alloc">原 42%　槓 48%　現 10%</div>
+            </div>
+          </div>
+          <div class="dots"><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 曝險 -->
+    <div class="col">
+      <div class="col-label">總曝險 · 往左滑</div>
+      <div class="phone" data-page="1">
+        <div class="status-bar">9:41</div>
+        <div class="list">
+          <div class="section">
+            <div class="header"><span class="chev open">▶</span><span class="t">原型</span><span class="a">$1,764,000</span></div>
+            <div class="item"><div class="n">0050<div class="sub">20,000 股 · 190</div></div><span class="a">$1,216,000</span></div>
+            <div class="item"><div class="n">VT<div class="sub">USD · 120 股</div></div><span class="a">$432,000</span></div>
+          </div>
+          <div class="section">
+            <div class="header"><span class="chev open">▶</span><span class="t">槓桿</span><span class="a">$2,016,000</span></div>
+            <div class="item"><div class="n">00631L<div class="sub">2×</div></div><span class="a">$2,016,000</span></div>
+          </div>
+          <div class="section">
+            <div class="header"><span class="chev">▶</span><span class="t">現金</span><span class="a">$420,000</span></div>
+          </div>
+        </div>
+        <div class="dock">
+          <div class="glow-ex"></div>
+          <div class="pager">
+            <div class="page">
+              <div class="label">總淨值</div>
+              <div class="value">$4,620,000</div>
+              <div class="alloc"></div>
+            </div>
+            <div class="page">
+              <div class="label">總曝險</div>
+              <div class="value">$5,796,000</div>
+              <div class="alloc">原 42%　槓 48%　現 10%</div>
+            </div>
+          </div>
+          <div class="dots"><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
