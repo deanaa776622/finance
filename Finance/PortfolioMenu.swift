@@ -5,6 +5,9 @@ struct PortfolioMenu: ViewModifier {
     var showsChrome: Bool
     var sideColumn: Bool
     var topColumn: Bool
+    /// Width of the side status column. The menu sits in that strip, under the clock.
+    var sideInset: CGFloat = 0
+    var sideLeading = false
     var bottomBar: Bool
     var showsSort: Bool
     var groups: AssetGroups
@@ -45,17 +48,23 @@ struct PortfolioMenu: ViewModifier {
                 showBackfillLocked = false
             }
             .toolbar {
-                if showsChrome, sideColumn || topColumn {
-                    ToolbarItem(placement: .topBarTrailing) { hideControl }.preferStatusColumn(vertical: sideColumn)
-                    if #available(iOS 26.0, *) {
-                        ToolbarSpacer(.fixed, placement: .topBarTrailing).preferStatusColumn(vertical: sideColumn)
-                    }
+                if showsChrome, topColumn {
+                    ToolbarItem(placement: .topBarTrailing) { hideControl }.preferStatusColumn(vertical: false)
                     if showsSort {
-                        ToolbarItem(placement: .topBarTrailing) { sortControl }.preferStatusColumn(vertical: sideColumn)
+                        ToolbarItem(placement: .topBarTrailing) { sortControl }.preferStatusColumn(vertical: false)
                     }
-                    ToolbarItem(placement: .topBarTrailing) { refreshControl }.preferStatusColumn(vertical: sideColumn)
-                    ToolbarItem(placement: .topBarTrailing) { addControl }.preferStatusColumn(vertical: sideColumn)
-                    ToolbarItem(placement: .topBarTrailing) { settingsMenu }.preferStatusColumn(vertical: sideColumn)
+                    ToolbarItem(placement: .topBarTrailing) { refreshControl }.preferStatusColumn(vertical: false)
+                    ToolbarItem(placement: .topBarTrailing) { addControl }.preferStatusColumn(vertical: false)
+                    ToolbarItem(placement: .topBarTrailing) { settingsMenu }.preferStatusColumn(vertical: false)
+                }
+            }
+            .overlay(alignment: sideLeading ? .topLeading : .topTrailing) {
+                if showsChrome, sideColumn, sideInset > 20 {
+                    sideMenu
+                        .fixedSize()
+                        .frame(width: sideInset)
+                        .padding(.top, 168)
+                        .offset(x: sideLeading ? -sideInset : sideInset)
                 }
             }
             .modifier(AssetMenuBar(isShown: showsChrome && bottomBar && !sideColumn && !topColumn) { menuBar })
@@ -89,6 +98,23 @@ struct PortfolioMenu: ViewModifier {
             } message: {
                 Text("免費版不能補上過去的月份。")
             }
+    }
+
+    private var sideMenu: some View {
+        VStack(spacing: 12) {
+            hideControl.modifier(CircleGlass())
+            VStack(spacing: 0) {
+                if showsSort {
+                    sortControl.frame(width: 44, height: 44)
+                }
+                refreshControl.frame(width: 44, height: 44)
+                addControl.frame(width: 44, height: 44)
+                settingsMenu.frame(width: 44, height: 44)
+            }
+            .buttonStyle(.plain)
+            .padding(.vertical, 4)
+            .modifier(CapsuleGlass())
+        }
     }
 
     private var menuBar: some View {
@@ -284,7 +310,7 @@ private func assetGroupID(_ kind: AssetKind, groups: AssetGroups) -> String {
 private struct CircleGlass: ViewModifier {
     func body(content: Content) -> some View {
         if #available(iOS 26.0, *) {
-            content.buttonStyle(.glass)
+            content.buttonStyle(.glass).buttonBorderShape(.circle)
         } else {
             content
                 .frame(width: 44, height: 44)

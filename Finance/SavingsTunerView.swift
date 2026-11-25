@@ -4,6 +4,8 @@ struct SavingsTunerView: View {
     var showsChrome = false
     var sideColumn = false
     var topColumn = false
+    var sideInset: CGFloat = 0
+    var sideLeading = false
     var exposureOnly = false
     var assetGroups = AssetGroups()
     @Environment(Portfolio.self) private var portfolio
@@ -38,6 +40,8 @@ struct SavingsTunerView: View {
                 showsChrome: showsChrome,
                 sideColumn: sideColumn,
                 topColumn: topColumn,
+                sideInset: sideInset,
+                sideLeading: sideLeading,
                 bottomBar: false,
                 showsSort: false,
                 groups: assetGroups,

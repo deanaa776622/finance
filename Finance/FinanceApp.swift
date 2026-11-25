@@ -44,7 +44,7 @@ struct FinanceApp: App {
     }
 }
 
-/// Portrait, except the folded Duo exhibit pose, which is landscape with the hinge up.
+/// Portrait, unless the Duo is held hinge-up. Unfolding that pose stays landscape.
 enum InterfaceLock {
     static var mask: UIInterfaceOrientationMask = .portrait
 

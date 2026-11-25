@@ -77,8 +77,10 @@ struct HomeView: View {
                     shellSlot(height: assetHeight) {
                         AssetListView(
                             showsChrome: position < -0.5,
-                            sideColumn: safeRight > 20,
+                            sideColumn: sideStatus,
                             topColumn: topColumn,
+                            sideInset: max(safeLeft, safeRight),
+                            sideLeading: safeLeft > safeRight,
                             topInset: AssetListView.restingTopInset * drop,
                             exposureOnly: exposureList,
                             cover: folded,
@@ -138,8 +140,10 @@ struct HomeView: View {
                     shellSlot(height: savingsHeight) {
                         SavingsTunerView(
                             showsChrome: position > 0.5,
-                            sideColumn: safeRight > 20,
+                            sideColumn: sideStatus,
                             topColumn: topColumn,
+                            sideInset: max(safeLeft, safeRight),
+                            sideLeading: safeLeft > safeRight,
                             exposureOnly: exposureList,
                             assetGroups: exposureList ? exposureGroups : netGroups
                         )
@@ -162,7 +166,7 @@ struct HomeView: View {
             .ignoresSafeArea()
             .background(palette.ground.ignoresSafeArea())
             .preferredColorScheme(palette.colorScheme)
-            .toolbar((safeRight > 20 || topColumn) && abs(panel + drag) > 0.5 ? .visible : .hidden, for: .navigationBar)
+            .toolbar(topColumn && abs(panel + drag) > 0.5 ? .visible : .hidden, for: .navigationBar)
         }
         .environment(\.standDisplay, exhibit)
         .allowsHitTesting(!exhibit)
@@ -179,18 +183,20 @@ struct HomeView: View {
 
     private static let dockedCard: CGFloat = 168
 
+    /// Status column on the left or the right. A tall frame must not steal the menu while this is set.
+    private var sideStatus: Bool { safeLeft > 20 || safeRight > 20 }
+
     /// Status column is on the side: folded cover, or unfolded landscape (wider than tall).
     /// The card then sits as far from the bottom as the trend panel sits from the top.
     private var dockedBottom: CGFloat {
-        let sideStatus = safeLeft > 20 || safeRight > 20
         let unfoldedLandscape = unfolded && windowSize.width > windowSize.height
         guard (sideStatus && !unfolded) || unfoldedLandscape else { return safeBottom }
         return safeTop + AssetListView.chartPanelTop
     }
 
-    /// Unfolded Duo, taller than wide: the status column is the top safe area.
+    /// Unfolded Duo, taller than wide, and the status column is not on the side.
     private var topColumn: Bool {
-        unfolded && windowSize.width < windowSize.height
+        unfolded && windowSize.width < windowSize.height && !sideStatus
     }
 
     private func setExhibit(_ on: Bool) {

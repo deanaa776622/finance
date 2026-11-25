@@ -262,15 +262,20 @@ struct UnfoldedHinge: UIViewControllerRepresentable {
 
         /// Clockwise 90° from portrait: power button down, hinge up.
         /// That device orientation is landscapeRight; the interface that keeps the hinge at the top is landscapeLeft.
+        /// Unfolding while still hinge-up stays landscape, so the menu does not jump to the top safe area.
         private func syncExhibit() {
             let orientation = UIDevice.current.orientation
             guard orientation != .faceUp, orientation != .faceDown, orientation != .unknown else { return }
-            let next = folded && orientation == .landscapeRight
-            guard next != exhibit else { return }
-            exhibit = next
+            let hingeUp = orientation == .landscapeRight
+            let next = folded && hingeUp
+            if next != exhibit {
+                exhibit = next
+                onExhibit?(next)
+            }
+            let mask: UIInterfaceOrientationMask = hingeUp ? .landscapeLeft : .portrait
+            guard InterfaceLock.mask != mask else { return }
             setNeedsUpdateOfSupportedInterfaceOrientations()
-            onExhibit?(next)
-            InterfaceLock.apply(next ? .landscapeLeft : .portrait)
+            InterfaceLock.apply(mask)
         }
 
         private func watchWindow() {
