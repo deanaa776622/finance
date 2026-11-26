@@ -36,9 +36,10 @@ struct TargetEditor: View {
                     )
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 16) {
-                            percentReadout("原型", percent: portfolio.actualPercent(for: .original), kind: .original)
-                            percentReadout("槓桿", percent: portfolio.actualPercent(for: .leverage), kind: .leverage)
-                            percentReadout("現金", percent: portfolio.actualPercent(for: .cash), kind: .cash)
+                            let shown = portfolio.shownAllocation
+                            percentReadout("原型", percent: shown.original, kind: .original)
+                            percentReadout("槓桿", percent: shown.leverage, kind: .leverage)
+                            percentReadout("現金", percent: shown.cash, kind: .cash)
                         }
                         HStack(spacing: 16) {
                             gapReadout("原型", kind: .original, percent: gapPercent(.original, shown: originalPercent))
@@ -145,8 +146,8 @@ struct TargetEditor: View {
             .accessibilityLabel("\(title)，\(label)")
     }
 
-    private func percentReadout(_ title: String, percent: Double, kind: AssetKind) -> some View {
-        let shown = NumberParse.displayPercent(percent.rounded())
+    private func percentReadout(_ title: String, percent: Int, kind: AssetKind) -> some View {
+        let shown = NumberParse.displayPercent(Double(percent))
         return centeredPercent(shown)
             .font(.title3.weight(.semibold))
             .foregroundStyle(
@@ -195,11 +196,10 @@ struct TargetEditor: View {
             return
         }
         if portfolio.targets == nil {
-            let orig = weights.original.rounded()
-            let lev = min(100 - orig, max(0, weights.leverage.rounded()))
-            originalText = NumberParse.displayPercent(orig)
-            leverageText = NumberParse.displayPercent(lev)
-            cashText = NumberParse.displayPercent(100 - orig - lev)
+            let shown = portfolio.shownAllocation
+            originalText = NumberParse.displayPercent(Double(shown.original))
+            leverageText = NumberParse.displayPercent(Double(shown.leverage))
+            cashText = NumberParse.displayPercent(Double(shown.cash))
             return
         }
         originalText = NumberParse.displayPercent(weights.original)
@@ -259,7 +259,16 @@ private struct AllocationGlowTrack: View {
         .sensoryFeedback(.selection, trigger: hapticTick)
         .accessibilityElement()
         .accessibilityLabel(label)
-        .accessibilityValue(unset ? "尚未設定" : "原型 \(Int(orig.rounded()))%，槓桿 \(Int(lev.rounded()))%，現金 \(Int((100 - orig - lev).rounded()))%")
+        .accessibilityValue(voiceValue(orig: orig, lev: lev))
+    }
+
+    private func voiceValue(orig: Double, lev: Double) -> String {
+        if unset { return "尚未設定" }
+        if tracksDrift {
+            let shown = portfolio.shownAllocation
+            return "原型 \(shown.original)%，槓桿 \(shown.leverage)%，現金 \(shown.cash)%"
+        }
+        return "原型 \(Int(orig.rounded()))%，槓桿 \(Int(lev.rounded()))%，現金 \(Int((100 - orig - lev).rounded()))%"
     }
 
     private func barFill(originalColor: Color, leverageColor: Color, cashColor: Color, p1: Double, p2: Double) -> AnyShapeStyle {

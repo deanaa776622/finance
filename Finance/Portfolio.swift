@@ -179,6 +179,28 @@ final class Portfolio {
             / NSDecimalNumber(decimal: allocableTotal).doubleValue * 100
     }
 
+    /// 原型、槓桿、現金的顯示整數。差額補給小數最大的那幾項，所以加總仍是 100。
+    var shownAllocation: (original: Int, leverage: Int, cash: Int) {
+        guard allocableTotal > 0 else { return (0, 0, 0) }
+        let raw = [AssetKind.original, .leverage, .cash].map { actualPercent(for: $0) }
+        let base = raw.map { Int($0.rounded(.down)) }
+        var shares = base
+        let spare = 100 - base.reduce(0, +)
+        if spare != 0 {
+            let order = raw.indices.sorted { i, j in
+                let left = raw[i] - Double(base[i])
+                let right = raw[j] - Double(base[j])
+                if left != right { return spare > 0 ? left > right : left < right }
+                return i < j
+            }
+            for step in 0..<min(abs(spare), order.count) {
+                let next = shares[order[step]] + (spare > 0 ? 1 : -1)
+                if next >= 0 { shares[order[step]] = next }
+            }
+        }
+        return (shares[0], shares[1], shares[2])
+    }
+
     /// Signed TWD so `kind` matches `targetPercent` of today's allocable total. Positive means short.
     func rebalanceGap(for kind: AssetKind, targetPercent: Double) -> Decimal {
         guard kind.countsTowardAllocation else { return 0 }
