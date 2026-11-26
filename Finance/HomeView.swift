@@ -79,8 +79,6 @@ struct HomeView: View {
                             showsChrome: position < -0.5,
                             sideColumn: sideStatus,
                             topColumn: topColumn,
-                            sideInset: max(safeLeft, safeRight),
-                            sideLeading: safeLeft > safeRight,
                             topInset: AssetListView.restingTopInset * drop,
                             exposureOnly: exposureList,
                             cover: folded,
@@ -142,8 +140,6 @@ struct HomeView: View {
                             showsChrome: position > 0.5,
                             sideColumn: sideStatus,
                             topColumn: topColumn,
-                            sideInset: max(safeLeft, safeRight),
-                            sideLeading: safeLeft > safeRight,
                             exposureOnly: exposureList,
                             assetGroups: exposureList ? exposureGroups : netGroups
                         )
@@ -166,7 +162,7 @@ struct HomeView: View {
             .ignoresSafeArea()
             .background(palette.ground.ignoresSafeArea())
             .preferredColorScheme(palette.colorScheme)
-            .toolbar(topColumn && abs(panel + drag) > 0.5 ? .visible : .hidden, for: .navigationBar)
+            .toolbar((sideStatus || topColumn) && abs(panel + drag) > 0.5 ? .visible : .hidden, for: .navigationBar)
         }
         .environment(\.standDisplay, exhibit)
         .allowsHitTesting(!exhibit)

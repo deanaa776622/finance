@@ -10,8 +10,6 @@ struct AssetListView: View {
     var sideColumn = false
     /// Unfolded Duo portrait. The same menu sits in the top safe area.
     var topColumn = false
-    var sideInset: CGFloat = 0
-    var sideLeading = false
     var topInset = restingTopInset
     /// Exposure lens keeps 原／槓／現. Net worth lists every kind.
     var exposureOnly = false
@@ -55,8 +53,6 @@ struct AssetListView: View {
         showsChrome: Bool = true,
         sideColumn: Bool = false,
         topColumn: Bool = false,
-        sideInset: CGFloat = 0,
-        sideLeading: Bool = false,
         topInset: CGFloat = restingTopInset,
         exposureOnly: Bool = false,
         cover: Bool = false,
@@ -65,8 +61,6 @@ struct AssetListView: View {
         self.showsChrome = showsChrome
         self.sideColumn = sideColumn
         self.topColumn = topColumn
-        self.sideInset = sideInset
-        self.sideLeading = sideLeading
         self.topInset = topInset
         self.exposureOnly = exposureOnly
         self.cover = cover
@@ -136,8 +130,6 @@ struct AssetListView: View {
             showsChrome: showsChrome,
             sideColumn: sideColumn,
             topColumn: topColumn,
-            sideInset: sideInset,
-            sideLeading: sideLeading,
             bottomBar: true,
             showsSort: true,
             groups: groups,
