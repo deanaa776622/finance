@@ -72,68 +72,34 @@ struct HomeView: View {
                 let savingsGap: CGFloat = position > 0 ? 12 * position : 0
                 let assetHeight = position < 0 ? max(0, range * -position - bottomLift - assetTop) : 0
                 let savingsHeight = position > 0 ? max(0, range * position - topLift - savingsGap) : 0
+                let heroHeight = geo.size.height - range * reveal
+                // Unfolded and wider than tall. The asset page splits down the hinge.
+                let landscape = unfolded && windowSize.width > windowSize.height
+                let assetOpen = min(1, max(-position, 0))
+                let lead = landscape && position < 0
+                    ? (geo.size.width / 2 + 16) * assetOpen
+                    : (safeLeft + 16) * reveal
+                let trail = (safeRight + 16) * reveal
 
                 VStack(spacing: 0) {
                     shellSlot(height: assetHeight) {
-                        AssetListView(
-                            showsChrome: position < -0.5,
-                            sideColumn: sideStatus,
-                            topColumn: topColumn,
-                            topInset: AssetListView.restingTopInset * drop,
-                            exposureOnly: exposureList,
-                            cover: folded,
-                            groups: exposureList ? exposureGroups : netGroups
-                        )
-                        .padding(.leading, safeLeft)
-                        .padding(.trailing, safeRight)
-                        .ignoresSafeArea(edges: .bottom)
-                        .mask {
-                            VStack(spacing: 0) {
-                                ScrollFade.top
-                                Color.black
-                            }
+                        if landscape {
+                            Color.clear
+                        } else {
+                            assetPage(position: position, drop: drop, split: false, fraction: 1, reserve: 0)
                         }
-                        .opacity(position < 0 ? -position : 0)
-                        .scrollDisabled(dock != -1)
-                        .allowsHitTesting(position < 0 && (dock == -1 || panel < -0.85))
                     }
 
-                    HomeHero(
-                        portfolio: portfolio,
-                        position: position,
-                        settled: panel,
-                        lens: lensPosition,
-                        showsDots: showDots,
-                        screen: geo.size,
-                        safeTop: safeTop,
-                        safeBottom: safeBottom,
-                        safeLeft: safeLeft,
-                        safeRight: safeRight,
-                        opensVertically: windowSize.width < windowSize.height,
-                        unfolded: unfolded,
-                        exhibit: exhibit
-                    )
-                        .frame(height: geo.size.height - range * reveal)
-                        .overlay(alignment: .bottom) {
-                            YearsProgressBar(progress: savingsProgress)
-                                .opacity(portfolio.savings == nil ? 0 : max(panel, 0))
-                                .accessibilityHidden(true)
-                                .allowsHitTesting(false)
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
-                        .padding(.leading, (safeLeft + 16) * reveal)
-                        .padding(.trailing, (safeRight + 16) * reveal)
-                        .shadow(color: .black.opacity(0.35 * reveal), radius: 20 * reveal, y: 8 * reveal)
-                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { heroFrame = $0 }
-                        .onTapGesture { if panel != 0 { snap(0) } }
-                        .accessibilityAddTraits(.isButton)
-                        .accessibilityHint(hint(panel))
-                        .accessibilityAction(named: "儲蓄目標") { snap(1) }
-                        .accessibilityAction(named: "資產") { snap(-1) }
-                        .accessibilityAction(named: "回到全螢幕") { snap(0) }
-                        .accessibilityAction(named: "總淨值") { snapLens(0) }
-                        .accessibilityAction(named: "總曝險") { snapLens(1) }
-                        .accessibilityLabel(heroLabel(panel))
+                    if landscape {
+                        Color.clear
+                            .frame(height: heroHeight)
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                    } else {
+                        heroFace(position: position, height: heroHeight, corner: corner, progress: savingsProgress, screen: geo.size)
+                            .padding(.leading, lead)
+                            .padding(.trailing, trail)
+                    }
 
                     shellSlot(height: savingsHeight) {
                         SavingsTunerView(
@@ -153,6 +119,29 @@ struct HomeView: View {
                 }
                 .padding(.top, topLift + assetTop)
                 .padding(.bottom, bottomLift)
+                .overlay(alignment: .topLeading) {
+                    if landscape, assetOpen > 0 {
+                        assetPage(
+                            position: position,
+                            drop: drop,
+                            split: true,
+                            fraction: assetOpen,
+                            reserve: heroHeight
+                        )
+                        .frame(width: geo.size.width, height: assetHeight + heroHeight)
+                        .clipped()
+                    }
+                }
+                .overlay(alignment: .topTrailing) {
+                    if landscape {
+                        let cardTop = position < 0 ? assetHeight : 0
+                        heroFace(position: position, height: heroHeight, corner: corner, progress: savingsProgress, screen: geo.size)
+                            .frame(width: max(0, geo.size.width - lead - trail), height: heroHeight)
+                            .padding(.top, cardTop)
+                            .padding(.trailing, trail)
+                            .contentShape(CardHit(top: cardTop, trail: trail, cardHeight: heroHeight))
+                    }
+                }
                 .contentShape(Rectangle())
                 .simultaneousGesture(panelDrag(screen: geo.size.height))
             }
@@ -178,6 +167,79 @@ struct HomeView: View {
     }
 
     private static let dockedCard: CGFloat = 168
+
+    private func assetPage(
+        position: CGFloat,
+        drop: CGFloat,
+        split: Bool,
+        fraction: CGFloat,
+        reserve: CGFloat
+    ) -> some View {
+        AssetListView(
+            showsChrome: position < -0.5,
+            sideColumn: sideStatus,
+            topColumn: topColumn,
+            topInset: AssetListView.restingTopInset * drop,
+            exposureOnly: exposureList,
+            cover: folded,
+            splitPane: split,
+            splitFraction: fraction,
+            cardReserve: reserve,
+            safeLeading: safeLeft,
+            safeTrailing: safeRight,
+            groups: exposureList ? exposureGroups : netGroups
+        )
+        .padding(.leading, split ? 0 : safeLeft)
+        .padding(.trailing, split ? 0 : safeRight)
+        .ignoresSafeArea(edges: .bottom)
+        .opacity(position < 0 ? -position : 0)
+        .scrollDisabled(dock != -1)
+        .allowsHitTesting(position < 0 && (dock == -1 || panel < -0.85))
+    }
+
+    private func heroFace(
+        position: CGFloat,
+        height: CGFloat,
+        corner: CGFloat,
+        progress: Double,
+        screen: CGSize
+    ) -> some View {
+        let reveal = abs(position)
+        return HomeHero(
+            portfolio: portfolio,
+            position: position,
+            settled: panel,
+            lens: lensPosition,
+            showsDots: showDots,
+            screen: screen,
+            safeTop: safeTop,
+            safeBottom: safeBottom,
+            safeLeft: safeLeft,
+            safeRight: safeRight,
+            opensVertically: windowSize.width < windowSize.height,
+            unfolded: unfolded,
+            exhibit: exhibit
+        )
+        .frame(height: height)
+        .overlay(alignment: .bottom) {
+            YearsProgressBar(progress: progress)
+                .opacity(portfolio.savings == nil ? 0 : max(panel, 0))
+                .accessibilityHidden(true)
+                .allowsHitTesting(false)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+        .shadow(color: .black.opacity(0.35 * reveal), radius: 20 * reveal, y: 8 * reveal)
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { heroFrame = $0 }
+        .onTapGesture { if panel != 0 { snap(0) } }
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint(hint(panel))
+        .accessibilityAction(named: "儲蓄目標") { snap(1) }
+        .accessibilityAction(named: "資產") { snap(-1) }
+        .accessibilityAction(named: "回到全螢幕") { snap(0) }
+        .accessibilityAction(named: "總淨值") { snapLens(0) }
+        .accessibilityAction(named: "總曝險") { snapLens(1) }
+        .accessibilityLabel(heroLabel(panel))
+    }
 
     /// Status column on the left or the right. A tall frame must not steal the menu while this is set.
     private var sideStatus: Bool { safeLeft > 20 || safeRight > 20 }
@@ -460,6 +522,17 @@ struct HomeView: View {
             return "\(title) \(MoneyFormat.string(amount))"
         }
         return "\(portfolio.statusTitle)。\(portfolio.homeSubtitle())"
+    }
+}
+
+/// Hit target of the total card. The padding that places it is not part of the card.
+private struct CardHit: Shape {
+    var top: CGFloat
+    var trail: CGFloat
+    var cardHeight: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        Path(CGRect(x: 0, y: top, width: max(0, rect.width - trail), height: cardHeight))
     }
 }
 

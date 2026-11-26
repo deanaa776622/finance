@@ -37,6 +37,7 @@
 		E7C41A09B2D64F58A1C03E77 /* StockLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8D52B10C3E74A69B2D14F88 /* StockLink.swift */; };
 		F2C5492553DF4B92AA92D16C /* Portfolio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473D2B4067D142F2A2C45A33 /* Portfolio.swift */; };
 		F449C90D5036484FB22DD932 /* AssetListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D4C730906A644DC837867DB /* AssetListView.swift */; };
+		A6C1E8D24F3B40A9B7E15C30 /* AssetSplitColumn.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7D2F9E35A4C41B0C8F26D41 /* AssetSplitColumn.swift */; };
 		F8D5B02C3E7A49B4C6F21D88 /* ChartRangeGesture.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C4A91B2D6F48A3B5E10C77 /* ChartRangeGesture.swift */; };
 		F9B3D5E26C7048B1A2D4E3F5 /* ColorDraftPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8A2C4D15B6F47A091C3D2E4 /* ColorDraftPicker.swift */; };
 		A4E8C1D27B5F49A0C6D38E15 /* PortfolioMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F9D2E38C6A40B1D7E49F26 /* PortfolioMenu.swift */; };
@@ -46,6 +47,7 @@
 		0ACEF765DE7D48D9943D7D84 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		285FDE10B2E64BF885533CE6 /* Editors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Editors.swift; sourceTree = "<group>"; };
 		2D4C730906A644DC837867DB /* AssetListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetListView.swift; sourceTree = "<group>"; };
+		B7D2F9E35A4C41B0C8F26D41 /* AssetSplitColumn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetSplitColumn.swift; sourceTree = "<group>"; };
 		3E8A1B2C4D5E4F6A8B9C0D1E /* QuoteClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteClient.swift; sourceTree = "<group>"; };
 		473D2B4067D142F2A2C45A33 /* Portfolio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Portfolio.swift; sourceTree = "<group>"; };
 		5E8A1B2C4D5E4F6A8B9C0D1E /* AssetEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetEditor.swift; sourceTree = "<group>"; };
@@ -105,6 +107,7 @@
 				D1F6B4E07A5C41D92E3F8044 /* BackupSettingsView.swift */,
 				E8A2C4D15B6F47A091C3D2E4 /* ColorDraftPicker.swift */,
 				2D4C730906A644DC837867DB /* AssetListView.swift */,
+				B7D2F9E35A4C41B0C8F26D41 /* AssetSplitColumn.swift */,
 				B5F9D2E38C6A40B1D7E49F26 /* PortfolioMenu.swift */,
 				C3A91E7B4F2D48A0B6E15C84 /* AssetGrouping.swift */,
 				F8D52B10C3E74A69B2D14F88 /* StockLink.swift */,
@@ -225,6 +228,7 @@
 				C0E5A3D96F4B40C81D2E7F33 /* BackupSettingsView.swift in Sources */,
 				F9B3D5E26C7048B1A2D4E3F5 /* ColorDraftPicker.swift in Sources */,
 				F449C90D5036484FB22DD932 /* AssetListView.swift in Sources */,
+				A6C1E8D24F3B40A9B7E15C30 /* AssetSplitColumn.swift in Sources */,
 				A4E8C1D27B5F49A0C6D38E15 /* PortfolioMenu.swift in Sources */,
 				D4B02F8C5A3E49B1C7F26D95 /* AssetGrouping.swift in Sources */,
 				E7C41A09B2D64F58A1C03E77 /* StockLink.swift in Sources */,

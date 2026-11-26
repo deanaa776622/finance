@@ -15,6 +15,14 @@ struct AssetListView: View {
     var exposureOnly = false
     /// Folded cover. Title rows give up 10pt so the fifth title stays above the card.
     var cover = false
+    /// Unfolded landscape. The list is the left half. Trend and 原／槓／現 sit on the right.
+    var splitPane = false
+    /// 0–1 as the asset page opens. The left column grows to half the width.
+    var splitFraction: CGFloat = 1
+    /// Total card height. The right column leaves this clear so the card can sit there.
+    var cardReserve: CGFloat = 0
+    var safeLeading: CGFloat = 0
+    var safeTrailing: CGFloat = 0
     var groups = AssetGroups()
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
@@ -56,6 +64,11 @@ struct AssetListView: View {
         topInset: CGFloat = restingTopInset,
         exposureOnly: Bool = false,
         cover: Bool = false,
+        splitPane: Bool = false,
+        splitFraction: CGFloat = 1,
+        cardReserve: CGFloat = 0,
+        safeLeading: CGFloat = 0,
+        safeTrailing: CGFloat = 0,
         groups: AssetGroups = AssetGroups()
     ) {
         self.showsChrome = showsChrome
@@ -64,28 +77,61 @@ struct AssetListView: View {
         self.topInset = topInset
         self.exposureOnly = exposureOnly
         self.cover = cover
+        self.splitPane = splitPane
+        self.splitFraction = splitFraction
+        self.cardReserve = cardReserve
+        self.safeLeading = safeLeading
+        self.safeTrailing = safeTrailing
         self.groups = groups
     }
 
     var body: some View {
+        if splitPane {
+            GeometryReader { geo in
+                let left = geo.size.width / 2 * min(1, max(0, splitFraction))
+                HStack(alignment: .top, spacing: 0) {
+                    groupsList
+                        .padding(.leading, safeLeading)
+                        .frame(width: left, height: geo.size.height, alignment: .leading)
+                        .clipped()
+                    AssetSplitColumn(
+                        buckets: shownBuckets,
+                        cover: cover,
+                        historyKey: portfolio.historyKey,
+                        cardReserve: cardReserve,
+                        leadingInset: 16 * splitFraction,
+                        trailingInset: (safeTrailing + 16) * splitFraction
+                    )
+                    .frame(width: max(0, geo.size.width - left), height: geo.size.height)
+                }
+                .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
+            }
+        } else {
+            groupsList
+        }
+    }
+
+    private var groupsList: some View {
         List {
-            if exposureOnly {
-                TargetEditor()
-                    .frame(height: GroupTrendChart.bandHeight, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 32, bottom: 8, trailing: 32))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(palette.ground)
-            } else {
-                GroupTrendChart(buckets: shownBuckets, cover: cover, historyKey: portfolio.historyKey)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background {
-                        RoundedRectangle(cornerRadius: GroupCardBackground.radius, style: .continuous)
-                            .fill(palette.panel)
-                    }
-                    .listRowInsets(EdgeInsets(top: Self.chartPanelTop - Self.restingTopInset, leading: 16, bottom: 0, trailing: 16))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(palette.ground)
+            if !splitPane {
+                if exposureOnly {
+                    TargetEditor()
+                        .frame(height: GroupTrendChart.bandHeight, alignment: .center)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 32, bottom: 8, trailing: 32))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(palette.ground)
+                } else {
+                    GroupTrendChart(buckets: shownBuckets, cover: cover, historyKey: portfolio.historyKey)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background {
+                            RoundedRectangle(cornerRadius: GroupCardBackground.radius, style: .continuous)
+                                .fill(palette.panel)
+                        }
+                        .listRowInsets(EdgeInsets(top: Self.chartPanelTop - Self.restingTopInset, leading: 16, bottom: 0, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(palette.ground)
+                }
             }
             ForEach(shownBuckets) { bucket in
                 Section {
@@ -108,13 +154,19 @@ struct AssetListView: View {
         .background(palette.ground)
         .contentMargins(.top, topInset, for: .scrollContent)
         // Phone: room for the menu bar. Duo has no bar; keep the last row above the total card's shadow.
-        .contentMargins(.bottom, statusColumn ? ScrollFade.depth + 8 : (showsChrome ? 64 : 0), for: .scrollContent)
+        .contentMargins(.bottom, splitPane ? 16 : (statusColumn ? ScrollFade.depth + 8 : (showsChrome ? 64 : 0)), for: .scrollContent)
         .onGeometryChange(for: CGPoint.self) {
             let frame = $0.frame(in: .global)
             return CGPoint(x: frame.minX, y: frame.minY)
         } action: { listGlobalOrigin = $0 }
         .overlay(alignment: .topLeading) { stockLinkLayer }
-        .scrollEdgeFade(edges: .bottom)
+        .scrollEdgeFade(edges: splitPane ? [] : .bottom)
+        .mask {
+            VStack(spacing: 0) {
+                ScrollFade.top
+                Color.black
+            }
+        }
         .sensoryFeedback(.impact(flexibility: .soft), trigger: groups.stocksMerged)
         .sensoryFeedback(.impact(flexibility: .soft), trigger: groups.liquidMerged)
         .sensoryFeedback(.impact(flexibility: .soft), trigger: groups.assetMerged)
