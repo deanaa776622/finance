@@ -107,7 +107,8 @@ struct AssetListView: View {
         .scrollContentBackground(.hidden)
         .background(palette.ground)
         .contentMargins(.top, topInset, for: .scrollContent)
-        .contentMargins(.bottom, showsChrome && !statusColumn ? 64 : 0, for: .scrollContent)
+        // Phone: room for the menu bar. Duo has no bar; keep the last row above the total card's shadow.
+        .contentMargins(.bottom, statusColumn ? ScrollFade.depth + 8 : (showsChrome ? 64 : 0), for: .scrollContent)
         .onGeometryChange(for: CGPoint.self) {
             let frame = $0.frame(in: .global)
             return CGPoint(x: frame.minX, y: frame.minY)
