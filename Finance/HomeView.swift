@@ -86,7 +86,8 @@ struct HomeView: View {
                         if landscape {
                             Color.clear
                         } else {
-                            assetPage(position: position, drop: drop, split: false, fraction: 1, reserve: 0)
+                            assetPage(position: position, drop: drop, split: false, reserve: 0)
+                                .opacity(position < 0 ? -position : 0)
                         }
                     }
 
@@ -121,15 +122,13 @@ struct HomeView: View {
                 .padding(.bottom, bottomLift)
                 .overlay(alignment: .topLeading) {
                     if landscape, assetOpen > 0 {
-                        assetPage(
-                            position: position,
-                            drop: drop,
-                            split: true,
-                            fraction: assetOpen,
-                            reserve: heroHeight
+                        movingAssetPage(
+                            width: geo.size.width,
+                            screen: geo.size,
+                            settledAsset: max(0, range - dockedBottom - safeTop),
+                            open: assetOpen,
+                            position: position
                         )
-                        .frame(width: geo.size.width, height: assetHeight + heroHeight)
-                        .clipped()
                     }
                 }
                 .overlay(alignment: .topTrailing) {
@@ -172,7 +171,6 @@ struct HomeView: View {
         position: CGFloat,
         drop: CGFloat,
         split: Bool,
-        fraction: CGFloat,
         reserve: CGFloat
     ) -> some View {
         AssetListView(
@@ -183,7 +181,6 @@ struct HomeView: View {
             exposureOnly: exposureList,
             cover: folded,
             splitPane: split,
-            splitFraction: fraction,
             cardReserve: reserve,
             safeLeading: safeLeft,
             safeTrailing: safeRight,
@@ -192,9 +189,25 @@ struct HomeView: View {
         .padding(.leading, split ? 0 : safeLeft)
         .padding(.trailing, split ? 0 : safeRight)
         .ignoresSafeArea(edges: .bottom)
-        .opacity(position < 0 ? -position : 0)
         .scrollDisabled(dock != -1)
         .allowsHitTesting(position < 0 && (dock == -1 || panel < -0.85))
+    }
+
+    /// Settled landscape asset page. Opening and closing only slide this layout.
+    /// The home card shrinks onto the reserved slot on its own.
+    private func movingAssetPage(
+        width: CGFloat,
+        screen: CGSize,
+        settledAsset: CGFloat,
+        open: CGFloat,
+        position: CGFloat
+    ) -> some View {
+        let pageHeight = settledAsset + Self.dockedCard
+        return assetPage(position: position, drop: 1, split: true, reserve: Self.dockedCard)
+            .frame(width: width, height: pageHeight)
+            .offset(y: settledAsset * (open - 1))
+            .frame(width: width, height: screen.height, alignment: .top)
+            .clipped()
     }
 
     private func heroFace(
@@ -528,11 +541,12 @@ struct HomeView: View {
 /// Hit target of the total card. The padding that places it is not part of the card.
 private struct CardHit: Shape {
     var top: CGFloat
+    var lead: CGFloat = 0
     var trail: CGFloat
     var cardHeight: CGFloat
 
     func path(in rect: CGRect) -> Path {
-        Path(CGRect(x: 0, y: top, width: max(0, rect.width - trail), height: cardHeight))
+        Path(CGRect(x: lead, y: top, width: max(0, rect.width - lead - trail), height: cardHeight))
     }
 }
 

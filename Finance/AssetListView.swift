@@ -17,8 +17,6 @@ struct AssetListView: View {
     var cover = false
     /// Unfolded landscape. The list is the left half. Trend and 原／槓／現 sit on the right.
     var splitPane = false
-    /// 0–1 as the asset page opens. The left column grows to half the width.
-    var splitFraction: CGFloat = 1
     /// Total card height. The right column leaves this clear so the card can sit there.
     var cardReserve: CGFloat = 0
     var safeLeading: CGFloat = 0
@@ -65,7 +63,6 @@ struct AssetListView: View {
         exposureOnly: Bool = false,
         cover: Bool = false,
         splitPane: Bool = false,
-        splitFraction: CGFloat = 1,
         cardReserve: CGFloat = 0,
         safeLeading: CGFloat = 0,
         safeTrailing: CGFloat = 0,
@@ -78,7 +75,6 @@ struct AssetListView: View {
         self.exposureOnly = exposureOnly
         self.cover = cover
         self.splitPane = splitPane
-        self.splitFraction = splitFraction
         self.cardReserve = cardReserve
         self.safeLeading = safeLeading
         self.safeTrailing = safeTrailing
@@ -88,7 +84,7 @@ struct AssetListView: View {
     var body: some View {
         if splitPane {
             GeometryReader { geo in
-                let left = geo.size.width / 2 * min(1, max(0, splitFraction))
+                let left = geo.size.width / 2
                 HStack(alignment: .top, spacing: 0) {
                     groupsList
                         .padding(.leading, safeLeading)
@@ -99,8 +95,8 @@ struct AssetListView: View {
                         cover: cover,
                         historyKey: portfolio.historyKey,
                         cardReserve: cardReserve,
-                        leadingInset: 16 * splitFraction,
-                        trailingInset: (safeTrailing + 16) * splitFraction
+                        leadingInset: 16,
+                        trailingInset: safeTrailing + 16
                     )
                     .frame(width: max(0, geo.size.width - left), height: geo.size.height)
                 }
