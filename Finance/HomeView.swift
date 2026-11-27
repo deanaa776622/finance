@@ -208,6 +208,7 @@ struct HomeView: View {
             .offset(y: settledAsset * (open - 1))
             .frame(width: width, height: screen.height, alignment: .top)
             .clipped()
+            .opacity(open)
     }
 
     private func heroFace(
