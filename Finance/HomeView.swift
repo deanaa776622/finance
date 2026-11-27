@@ -63,7 +63,7 @@ struct HomeView: View {
                 let reveal = abs(position)
                 let corner = 28 * reveal
                 let drop = max(-position, 0)
-                let topLift = safeTop * max(position, 0)
+                let topLift = dockedTop * max(position, 0)
                 let bottomLift = dockedBottom * drop
                 let assetTop = safeTop * drop
                 let savingsProgress = portfolio.outlook?.progress ?? 0
@@ -134,7 +134,8 @@ struct HomeView: View {
                 }
                 .overlay(alignment: .topTrailing) {
                     if landscape {
-                        let cardTop = position < 0 ? assetHeight : 0
+                        // Overlay is the full screen. The VStack's top padding does not move this card.
+                        let cardTop = position < 0 ? assetHeight : topLift
                         heroFace(position: position, height: heroHeight, corner: corner, progress: savingsProgress, screen: geo.size)
                             .frame(width: max(0, geo.size.width - lead - trail), height: heroHeight)
                             .padding(.top, cardTop)
@@ -259,12 +260,21 @@ struct HomeView: View {
     /// Status column on the left or the right. A tall frame must not steal the menu while this is set.
     private var sideStatus: Bool { safeLeft > 20 || safeRight > 20 }
 
-    /// Status column is on the side: folded cover, or unfolded landscape (wider than tall).
-    /// The card then sits as far from the bottom as the trend panel sits from the top.
+    /// Folded cover with a side status column, or unfolded and wider than tall.
+    /// Both docked cards then use the trend panel's distance from the screen edge.
+    private var trendDocked: Bool {
+        (sideStatus && !unfolded) || (unfolded && windowSize.width > windowSize.height)
+    }
+
+    private var trendScreenMargin: CGFloat { safeTop + AssetListView.chartPanelTop }
+
     private var dockedBottom: CGFloat {
-        let unfoldedLandscape = unfolded && windowSize.width > windowSize.height
-        guard (sideStatus && !unfolded) || unfoldedLandscape else { return safeBottom }
-        return safeTop + AssetListView.chartPanelTop
+        trendDocked ? trendScreenMargin : safeBottom
+    }
+
+    /// 距離目標. Same screen margin as the total card along the bottom.
+    private var dockedTop: CGFloat {
+        trendDocked ? trendScreenMargin : safeTop
     }
 
     /// Unfolded Duo, taller than wide, and the status column is not on the side.
@@ -422,7 +432,7 @@ struct HomeView: View {
         let range = max(screen - Self.dockedCard, 1)
         let f = min(1, max(0, dragSession.grabFraction))
         let slopeDown = range * (f - 1) + dockedBottom
-        let slopeUp = safeTop - f * range
+        let slopeUp = dockedTop - f * range
         guard slopeDown < -0.5, slopeUp < -0.5 else {
             return min(1, max(-1, panel - dy / range))
         }
