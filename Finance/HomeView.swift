@@ -119,7 +119,8 @@ struct HomeView: View {
                 .padding(.top, topLift + assetTop)
                 .padding(.bottom, bottomLift)
                 .overlay(alignment: .topLeading) {
-                    if landscape, assetOpen > 0 {
+                    // Stay mounted. A threshold here freezes the page for the tap-home animation.
+                    if landscape {
                         movingAssetPage(
                             width: geo.size.width,
                             screen: geo.size,
@@ -127,6 +128,8 @@ struct HomeView: View {
                             open: assetOpen,
                             position: position
                         )
+                        .allowsHitTesting(assetOpen > 0)
+                        .accessibilityHidden(assetOpen == 0)
                     }
                 }
                 .overlay(alignment: .topTrailing) {
