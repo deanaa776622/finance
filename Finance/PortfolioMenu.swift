@@ -8,7 +8,6 @@ struct PortfolioMenu: ViewModifier {
     var bottomBar: Bool
     var showsSort: Bool
     var groups: AssetGroups
-    var exposureOnly: Bool
 
     @Environment(Portfolio.self) private var portfolio
     @AppStorage("hideAmounts") private var hideAmounts = false
@@ -222,7 +221,7 @@ struct PortfolioMenu: ViewModifier {
     }
 
     private func save(_ item: AssetItem) {
-        saveAsset(item, portfolio: portfolio, groups: groups, exposureOnly: exposureOnly, isPro: isPro)
+        saveAsset(item, portfolio: portfolio, groups: groups, isPro: isPro)
     }
 
     private func refreshQuotes() async {
@@ -255,18 +254,12 @@ func saveAsset(
     _ item: AssetItem,
     portfolio: Portfolio,
     groups: AssetGroups,
-    exposureOnly: Bool,
     isPro: Bool
 ) {
     let isNew = !portfolio.items.contains { $0.id == item.id }
     if isNew, !ProPreview.canAddAsset(count: portfolio.items.count, isPro: isPro) { return }
     portfolio.upsert(item)
     withAnimation {
-        if exposureOnly {
-            groups.expandedKinds.insert(item.kind)
-            AssetListMemory.exposureKinds = groups.expandedKinds
-            return
-        }
         groups.openGroupIDs.insert(assetGroupID(item.kind, groups: groups))
     }
 }

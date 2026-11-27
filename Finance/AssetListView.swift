@@ -11,7 +11,7 @@ struct AssetListView: View {
     /// Unfolded Duo portrait. The same menu sits in the top safe area.
     var topColumn = false
     var topInset = restingTopInset
-    /// Exposure lens keeps 原／槓／現. Net worth lists every kind.
+    /// 總曝險 shows the 原／槓／現 bar. 總淨值 shows the trend. Groups stay.
     var exposureOnly = false
     /// Folded cover. Title rows give up 10pt so the fifth title stays above the card.
     var cover = false
@@ -181,8 +181,7 @@ struct AssetListView: View {
             topColumn: topColumn,
             bottomBar: true,
             showsSort: true,
-            groups: groups,
-            exposureOnly: exposureOnly
+            groups: groups
         ))
         .sheet(item: $editing) { item in
             AssetEditor(item: item, onSave: saveItem, onDelete: {
@@ -224,8 +223,7 @@ struct AssetListView: View {
     }
 
     private var baseBuckets: [AssetBucket] {
-        let kinds: [AssetKind] = exposureOnly ? [.original, .leverage, .cash] : AssetKind.allCases
-        return kinds.map { AssetBucket(id: $0.rawValue, title: $0.compactTitle, kinds: [$0]) }
+        AssetKind.allCases.map { AssetBucket(id: $0.rawValue, title: $0.compactTitle, kinds: [$0]) }
     }
 
     private var shownBuckets: [AssetBucket] {
@@ -280,7 +278,7 @@ struct AssetListView: View {
             open: isOpen(bucket),
             titleFrame: { trackTitle(bucket, $0) }
         ) {
-            toggleBucket(bucket)
+            toggle(bucket)
         }
         .opacity(linkBucketFades(bucket.kinds) ? 0 : 1)
         .stockLinkHit(enabled: linkAction(for: bucket) != nil, margin: 24) { linkAction(for: bucket)?() }
@@ -403,34 +401,11 @@ struct AssetListView: View {
     }
 
     private func persistGroups() {
-        if exposureOnly {
-            AssetListMemory.exposureKinds = groups.expandedKinds
-        } else {
-            AssetListMemory.netOpenGroups = groups.openGroupIDs
-        }
+        AssetListMemory.netOpenGroups = groups.openGroupIDs
     }
 
     private func isOpen(_ bucket: AssetBucket) -> Bool {
-        if exposureOnly {
-            return bucket.kinds.contains { groups.expandedKinds.contains($0) }
-        }
-        return groups.openGroupIDs.contains(bucket.id)
-    }
-
-    private func toggleBucket(_ bucket: AssetBucket) {
-        if exposureOnly {
-            withAnimation {
-                let open = isOpen(bucket)
-                var next = groups.expandedKinds
-                for kind in bucket.kinds {
-                    if open { next.remove(kind) } else { next.insert(kind) }
-                }
-                groups.expandedKinds = next
-            }
-            persistGroups()
-            return
-        }
-        toggle(bucket)
+        groups.openGroupIDs.contains(bucket.id)
     }
 
     private func isLinkBucket(_ bucket: AssetBucket) -> Bool {
@@ -799,7 +774,7 @@ struct AssetListView: View {
         if reduceMotion {
             groups.stocksMerged = true
             linkEpoch += 1
-            syncShell(groups.stockChildren, kinds: [.original, .leverage])
+            syncShell(groups.stockChildren)
             return
         }
         withAnimation(.smooth(duration: 0.3)) {
@@ -809,7 +784,7 @@ struct AssetListView: View {
                 groups.stocksMerged = true
                 linkCollapsed = false
                 linkEpoch += 1
-                syncShell(groups.stockChildren, kinds: [.original, .leverage])
+                syncShell(groups.stockChildren)
             }
         }
     }
@@ -837,7 +812,7 @@ struct AssetListView: View {
             groups.liquidMerged = true
             groups.stocksMerged = false
             linkEpoch += 1
-            syncShell(groups.liquidChildren, kinds: [.original, .leverage, .cash])
+            syncShell(groups.liquidChildren)
             return
         }
         withAnimation(.smooth(duration: 0.3)) {
@@ -851,7 +826,7 @@ struct AssetListView: View {
                 linkCollapsed = false
                 collapsingLiquid = false
                 linkEpoch += 1
-                syncShell(groups.liquidChildren, kinds: [.original, .leverage, .cash])
+                syncShell(groups.liquidChildren)
             }
         }
     }
@@ -895,7 +870,7 @@ struct AssetListView: View {
         groups.liquidMerged = false
         groups.assetMerged = false
         linkEpoch += 1
-        syncShell(groups.netChildren, kinds: [.original, .leverage, .cash, .realEstate, .debt])
+        syncShell(groups.netChildren)
     }
 
     private func splitNet() {
@@ -995,7 +970,7 @@ struct AssetListView: View {
     }
 
     private func syncAssetOpen() {
-        syncShell(groups.assetChildren, kinds: [.original, .leverage, .cash, .realEstate])
+        syncShell(groups.assetChildren)
     }
 
     private func undoStockMerge() {
@@ -1050,36 +1025,14 @@ struct AssetListView: View {
     }
 
     private func restore(_ children: [AssetChild]) {
-        if exposureOnly {
-            for child in children {
-                for kind in child.kinds { setExpanded(kind, child.open) }
-            }
-            persistGroups()
-            return
-        }
         for child in children { setOpen(child.storageID, child.open) }
         AssetListMemory.netOpenGroups = groups.openGroupIDs
     }
 
-    private func syncShell(_ children: [AssetChild], kinds: [AssetKind]) {
+    private func syncShell(_ children: [AssetChild]) {
         guard let head = children.first else { return }
-        let open = children.contains(where: \.open)
-        if exposureOnly {
-            var next = groups.expandedKinds
-            if open { next.formUnion(kinds) } else { next.subtract(kinds) }
-            groups.expandedKinds = next
-            persistGroups()
-            return
-        }
-        setOpen(head.storageID, open)
+        setOpen(head.storageID, children.contains(where: \.open))
         AssetListMemory.netOpenGroups = groups.openGroupIDs
-    }
-
-    private func setExpanded(_ kind: AssetKind, _ open: Bool) {
-        var next = groups.expandedKinds
-        if open { next.insert(kind) } else { next.remove(kind) }
-        groups.expandedKinds = next
-        AssetListMemory.exposureKinds = next
     }
 
     private func setOpen(_ id: String, _ open: Bool) {
@@ -1100,7 +1053,7 @@ struct AssetListView: View {
     }
 
     private func saveItem(_ item: AssetItem) {
-        saveAsset(item, portfolio: portfolio, groups: groups, exposureOnly: exposureOnly, isPro: isPro)
+        saveAsset(item, portfolio: portfolio, groups: groups, isPro: isPro)
     }
 }
 

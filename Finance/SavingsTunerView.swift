@@ -4,7 +4,6 @@ struct SavingsTunerView: View {
     var showsChrome = false
     var sideColumn = false
     var topColumn = false
-    var exposureOnly = false
     var assetGroups = AssetGroups()
     @Environment(Portfolio.self) private var portfolio
     @Environment(Palette.self) private var palette
@@ -40,8 +39,7 @@ struct SavingsTunerView: View {
                 topColumn: topColumn,
                 bottomBar: false,
                 showsSort: false,
-                groups: assetGroups,
-                exposureOnly: exposureOnly
+                groups: assetGroups
             ))
             .onAppear(perform: load)
             .onChange(of: isFresh) { _, _ in load() }

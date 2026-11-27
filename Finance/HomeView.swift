@@ -43,9 +43,8 @@ struct HomeView: View {
     @State private var folded = false
     /// Folded, hinge up. Home only, no touches, screen stays on.
     @State private var exhibit = false
-    /// 總淨值 and 總曝險 keep their own grouping. The home screen owns both, so closing the page does not drop them.
+    /// One grouping for both lenses. Closing the page must not drop open groups or merges.
     @State private var netGroups = AssetGroups()
-    @State private var exposureGroups = AssetGroups()
 
     init() {
         let exposure = AssetListMemory.showsExposure
@@ -107,8 +106,7 @@ struct HomeView: View {
                             showsChrome: position > 0.5,
                             sideColumn: sideStatus,
                             topColumn: topColumn,
-                            exposureOnly: exposureList,
-                            assetGroups: exposureList ? exposureGroups : netGroups
+                            assetGroups: netGroups
                         )
                             .padding(.leading, safeLeft)
                             .padding(.trailing, safeRight)
@@ -184,7 +182,7 @@ struct HomeView: View {
             cardReserve: reserve,
             safeLeading: safeLeft,
             safeTrailing: safeRight,
-            groups: exposureList ? exposureGroups : netGroups
+            groups: netGroups
         )
         .padding(.leading, split ? 0 : safeLeft)
         .padding(.trailing, split ? 0 : safeRight)

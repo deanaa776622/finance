@@ -4,23 +4,11 @@ import Observation
 /// Last asset lens, and which groups were open.
 enum AssetListMemory {
     private static let lensKey = "assetLens"
-    private static let exposureKindsKey = "assetExposureKinds"
     private static let netOpenGroupsKey = "assetNetOpenGroups"
 
     static var showsExposure: Bool {
         get { UserDefaults.standard.bool(forKey: lensKey) }
         set { UserDefaults.standard.set(newValue, forKey: lensKey) }
-    }
-
-    static var exposureKinds: Set<AssetKind> {
-        get {
-            let raw = UserDefaults.standard.string(forKey: exposureKindsKey) ?? ""
-            return Set(raw.split(separator: ",").compactMap { AssetKind(rawValue: String($0)) })
-        }
-        set {
-            let raw = newValue.map(\.rawValue).sorted().joined(separator: ",")
-            UserDefaults.standard.set(raw, forKey: exposureKindsKey)
-        }
     }
 
     static var netOpenGroups: Set<String> {
@@ -43,7 +31,7 @@ struct AssetChild: Identifiable {
     var open: Bool
 }
 
-/// One lens's grouping. The home screen keeps a separate one for 總淨值 and 總曝險.
+/// Grouping shared by 總淨值 and 總曝險. Only the chart above the list changes.
 @Observable
 final class AssetGroups {
     var stocksMerged = false
@@ -61,5 +49,4 @@ final class AssetGroups {
     var assetChildren: [AssetChild] = []
     var netChildren: [AssetChild] = []
     var openGroupIDs: Set<String> = AssetListMemory.netOpenGroups
-    var expandedKinds: Set<AssetKind> = AssetListMemory.exposureKinds
 }
