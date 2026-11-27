@@ -110,24 +110,10 @@ struct AssetListView: View {
     private var groupsList: some View {
         List {
             if !splitPane {
-                if exposureOnly {
-                    TargetEditor()
-                        .frame(height: GroupTrendChart.bandHeight, alignment: .center)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 32, bottom: 8, trailing: 32))
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(palette.ground)
-                } else {
-                    GroupTrendChart(buckets: shownBuckets, cover: cover, historyKey: portfolio.historyKey)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background {
-                            RoundedRectangle(cornerRadius: GroupCardBackground.radius, style: .continuous)
-                                .fill(palette.panel)
-                        }
-                        .listRowInsets(EdgeInsets(top: Self.chartPanelTop - Self.restingTopInset, leading: 16, bottom: 0, trailing: 16))
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(palette.ground)
-                }
+                lensChart
+                    .listRowInsets(EdgeInsets(top: Self.chartPanelTop - Self.restingTopInset, leading: 16, bottom: 0, trailing: 16))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(palette.ground)
             }
             ForEach(shownBuckets) { bucket in
                 Section {
@@ -203,6 +189,31 @@ struct AssetListView: View {
             editing = nil
             pendingDelete = []
         }
+    }
+
+    /// One row for both lenses. Swapping rows would change the cover height and push the groups.
+    private var lensChart: some View {
+        let band = GroupTrendChart.bandHeight(cover: cover)
+        return ZStack {
+            GroupTrendChart(buckets: shownBuckets, cover: cover, historyKey: portfolio.historyKey)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background {
+                    RoundedRectangle(cornerRadius: GroupCardBackground.radius, style: .continuous)
+                        .fill(palette.panel)
+                }
+                .opacity(exposureOnly ? 0 : 1)
+                .allowsHitTesting(!exposureOnly)
+                .accessibilityHidden(exposureOnly)
+            TargetEditor()
+                .frame(height: band, alignment: .center)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .opacity(exposureOnly ? 1 : 0)
+                .allowsHitTesting(exposureOnly)
+                .accessibilityHidden(!exposureOnly)
+        }
+        .frame(height: band + 16)
     }
 
     private var statusColumn: Bool { sideColumn || topColumn }

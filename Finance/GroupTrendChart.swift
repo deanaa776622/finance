@@ -9,6 +9,11 @@ struct GroupTrendChart: View, Equatable {
     /// Cover only. Short enough to free a sliver, not enough to shrink the trend.
     static let coverPlotHeight: CGFloat = 96
     static let bandHeight: CGFloat = plotHeight + 36 + 8 + legendHeight
+
+    /// Cover plot is 16pt shorter. The ratio bar uses this so the groups below stay put.
+    static func bandHeight(cover: Bool) -> CGFloat {
+        bandHeight - (cover ? plotHeight - coverPlotHeight : 0)
+    }
     var buckets: [AssetBucket]
     /// Folded cover. The plot gives up 16pt.
     var cover = false
